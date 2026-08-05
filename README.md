@@ -79,7 +79,34 @@ resources/theme-reference/                                   pristine original t
 docker/                                                      php, nginx, mysql config
 ```
 
+## Database
+
+36 tables across five bounded contexts. The authoritative design, with the reasoning for
+every index and denormalisation, is the schema plan in the academy brain.
+
+```bash
+docker compose exec app php artisan migrate:fresh --seed   # ~21 seconds
+```
+
+Seeds 5,000 products, 2,000 vehicle variants, **148,908 fitment rows**, 500 receipts. The
+volume is the point: a bad index on the hot path is invisible at a thousand rows.
+
+Three things worth knowing before you touch a migration:
+
+1. **Use `$table->ulidPrimary()` / `$table->ulidColumn()`, never `ulid()` / `foreignUlid()`.**
+   Laravel's versions create utf8mb4 `char(26)` — 104 bytes inside every index that includes
+   the column. Ours are `ascii`, so 26. A test fails if a plain `foreignUlid()` slips in.
+2. **`product_vehicle_fitments` has no `id`.** Its primary key is
+   `(vehicle_variant_id, product_id)`, vehicle first, so "parts for my car" is a range scan
+   over the clustered index. Treat it as a link table: `insert()`/`upsert()`, never `save()`.
+3. **Listing queries select `Product::LISTING_COLUMNS`, never `*`.** Pulling the description
+   columns into a 24-card page is the easiest way to make the catalogue feel slow.
+
+`QueryPlanTest` runs `EXPLAIN` and asserts which index MySQL picks, so a change that turns a
+range scan into a table scan fails the suite instead of surfacing in production.
+
 ## Status
 
-**Phase 1 complete.** Docker, Laravel 13 skeleton, DDD context roots, theme cut into Blade,
-homepage verified against the original. Phase 2 is the schema.
+**Phases 1–2 complete.** Docker, Laravel 13 skeleton, theme cut into Blade and verified
+against the original, full schema with models, factories, seeders and 22 passing tests.
+Phase 3 is catalogue reads — homepage strips, category pages, listing, product page.
