@@ -15,11 +15,18 @@ use Illuminate\Support\Str;
  */
 class HomepageSeeder extends Seeder
 {
+    /** The hero slides the theme actually ships — there is no slide-01.jpg. */
+    private const HERO_IMAGES = [
+        'assets/images/slider/slider-01.jpg',
+        'assets/images/slider/slide-02.jpg',
+        'assets/images/slider/slide-03.jpg',
+    ];
+
     /** @var list<array{type: string, heading: ?string, collection: ?string}> */
     private const SECTIONS = [
         ['type' => 'hero_banner', 'heading' => null, 'collection' => null],
         ['type' => 'categories_strip', 'heading' => 'Shop by Categories', 'collection' => null],
-        ['type' => 'whats_hot', 'heading' => "What's Hot", 'collection' => 'whats-hot'],
+        ['type' => 'whats_hot', 'heading' => "What's Hot", 'collection' => null],
         ['type' => 'featured_makes', 'heading' => 'Shop by Make', 'collection' => null],
         ['type' => 'best_sellers', 'heading' => 'Best Seller', 'collection' => 'best-sellers'],
         ['type' => 'essential_items', 'heading' => 'Essential Items for New Car', 'collection' => 'essential-items'],
@@ -54,13 +61,41 @@ class HomepageSeeder extends Seeder
         DB::table('homepage_sections')->insert($rows);
 
         $banners = [];
+
+        // What's Hot: four promo boxes. The theme gives each its own design class, and
+        // the loop position picks it, so the four look as the theme author intended.
+        $hot = [
+            ['title' => "Helix\nEngine\nOils", 'subtitle' => 'Keep things running smoothly'],
+            ['title' => "Brake\nPads &\nDiscs", 'subtitle' => 'Stop shorter, wear slower'],
+            ['title' => "Alloy\nWheels", 'subtitle' => 'Fit your car, not just any car'],
+            ['title' => "Filters\n& Service\nKits", 'subtitle' => 'Everything for a full service'],
+        ];
+        foreach ($hot as $i => $box) {
+            $banners[] = [
+                'id' => (string) Str::ulid(),
+                'placement' => 'home_secondary',
+                'title' => $box['title'],
+                'subtitle' => $box['subtitle'],
+                'image_path' => 'assets/images/hot/hot-'.($i + 1).'.png',
+                'mobile_image_path' => null,
+                'link_url' => '/shop',
+                'link_label' => 'Shop Now',
+                'position' => $i,
+                'is_active' => true,
+                'starts_at' => null,
+                'ends_at' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
         for ($i = 1; $i <= 3; $i++) {
             $banners[] = [
                 'id' => (string) Str::ulid(),
                 'placement' => 'home_hero',
                 'title' => 'Up to 50% off selected parts',
                 'subtitle' => 'Free delivery on orders over 3.000 ден',
-                'image_path' => 'assets/images/slider/slider-'.$i.'.png',
+                'image_path' => self::HERO_IMAGES[$i - 1],
                 'mobile_image_path' => null,
                 'link_url' => '/shop',
                 'link_label' => 'Shop now',

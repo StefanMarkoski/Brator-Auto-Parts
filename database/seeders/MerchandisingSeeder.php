@@ -20,7 +20,6 @@ class MerchandisingSeeder extends Seeder
 {
     /** @var list<array{slug: string, name: string, type: string, rule: ?array<string, string>}> */
     private const COLLECTIONS = [
-        ['slug' => 'whats-hot', 'name' => "What's Hot", 'type' => 'manual', 'rule' => null],
         ['slug' => 'best-sellers', 'name' => 'Best Seller', 'type' => 'automatic', 'rule' => ['order_by' => 'units_sold']],
         ['slug' => 'essential-items', 'name' => 'Essential Items for New Car', 'type' => 'manual', 'rule' => null],
         ['slug' => 'new-arrivals', 'name' => 'New Arrivals', 'type' => 'automatic', 'rule' => ['order_by' => 'published_at']],

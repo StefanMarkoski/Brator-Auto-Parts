@@ -1,10 +1,12 @@
 {{--
-    Homepage — cut from the theme's index-2.html.
+    The homepage, driven by the homepage_sections table.
 
-    Section order is hardcoded here for now. In phase 3 this becomes a loop over
-    the `homepage_sections` table so staff can reorder, hide, and retitle them
-    (see the schema plan, §5). The include list below is deliberately in the
-    theme's original order so the page is byte-comparable against the original.
+    Staff control which sections appear, in what order, their headings, and which
+    collection feeds each one. They cannot introduce a new SECTION TYPE, because each
+    type maps to a partial cut from the theme's existing markup and a new type would
+    mean writing new markup — the styling change that is forbidden.
+
+    @param  \Illuminate\Support\Collection  $sections
 --}}
 @extends('layouts.storefront')
 
@@ -15,14 +17,7 @@
 @endpush
 
 @section('content')
-@include('home.sections.hero-banner')
-@include('home.sections.categories-strip')
-@include('home.sections.whats-hot')
-@include('home.sections.featured-makes')
-@include('home.sections.best-sellers')
-@include('home.sections.essential-items')
-@include('home.sections.new-arrivals')
-@include('home.sections.articles')
-@include('home.sections.featured-brands')
-@include('home.sections.newsletter')
+@foreach ($sections as $section)
+@include($section->view, ['section' => $section])
+@endforeach
 @endsection

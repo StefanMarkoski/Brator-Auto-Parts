@@ -4,7 +4,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="brator-section-header">
-                        <h2>What's Hot</h2>
+                        <h2>{{ $section->heading ?? "What's Hot" }}</h2>
                     </div>
                     <div class="brator-offer-slider brator-whats-hot-slider splide js-splide p-splide" data-splide='{"autoplay":false, "arrows":true,"pagination":false,"type":"loop","perPage":4,"perMove":"1","gap":15, "breakpoints":{ "520" :{ "perPage": "1" },"767" :{ "perPage": "1" }, "991" :{ "perPage" : "2" }, "1090":{ "perPage" : "2" }, "1366":{ "perPage" : "3" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "4" }}}'>
                         <div class="splide__arrows style-two">
@@ -22,70 +22,21 @@
                         <div class="splide__track">
                             <div class="splide__list">
                                 <!-- single item -->
-                                <div class="splide__slide">
-                                    <div class="brator-hot-single-box brator-hot-box-design-one lazyload" data-bg="/assets/images/hot/hot-1.png">
-                                        <div class="brator-hot-box-content">
-                                            <div class="brator-hot-box-text">
-                                                <p>Keep things running smoothly</p>
-                                                <h2>Helix <br />Engine <br />Oils</h2>
-                                            </div>
-                                            <div class="brator-hot-box-button">
-                                                <a href="shop-sub-category.html">Shop Now</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- single item -->
-                                <div class="splide__slide">
-                                    <div class="brator-hot-single-box brator-hot-box-design-two lazyload" data-bg="/assets/images/hot/hot-2.png">
-                                        <div class="brator-hot-box-content">
-                                            <div class="brator-hot-box-text">
-                                                <h2><span>Dunlon</span> Tires<br />& Wheels</h2>
-                                                <div class="best-choise-batch">
-                                                    <span>Best Choice</span>
+                                @foreach ($section->items as $banner)
+                                    <div class="splide__slide">
+                                        <div class="brator-hot-single-box brator-hot-box-design-{{ ['one', 'two', 'three', 'four'][$loop->index % 4] }} lazyload" data-bg="/{{ $banner->image_path }}">
+                                            <div class="brator-hot-box-content">
+                                                <div class="brator-hot-box-text">
+                                                    <p>{{ $banner->subtitle }}</p>
+                                                    <h2>{!! nl2br(e($banner->title)) !!}</h2>
+                                                </div>
+                                                <div class="brator-hot-box-button">
+                                                    <a href="{{ $banner->link_url ?? '#_' }}">{{ $banner->link_label ?? 'Shop Now' }}</a>
                                                 </div>
                                             </div>
-                                            <div class="brator-hot-box-button">
-                                                <a href="shop-sub-category.html">Shop Now</a>
-                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <!-- single item -->
-                                <div class="splide__slide">
-                                    <div class="brator-hot-single-box brator-hot-box-design-three lazyload" data-bg="/assets/images/hot/hot-3.png">
-                                        <div class="brator-hot-box-content">
-                                            <div class="brator-hot-box-text">
-                                                <p>Big Season Sale Of The Year</p>
-                                                <h6>35% OFF</h6>
-                                                <h2>Sport Gas Shock <br />Absorers</h2>
-                                            </div>
-                                            <div class="brator-hot-box-button">
-                                                <a href="shop-sub-category.html">Shop Now</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- single item -->
-                                <div class="splide__slide">
-                                    <div class="brator-hot-single-box brator-hot-box-design-four lazyload" data-bg="/assets/images/hot/hot-4.png">
-                                        <div class="brator-hot-box-content">
-                                            <div class="brator-hot-box-text">
-                                                <h2>Super Saver</h2>
-                                                <p>Sale up to 70% for over 8,000 products</p>
-                                                <div class="best-choise-batch best-use-code-batch">
-                                                    <div class="use-code-off">
-                                                        <span>USE Code</span><span class="use-code-separator">|</span><span class="use-code-code">SUPER70</span>
-                                                    </div>
-                                                </div>
-
-                                            </div>
-                                            <div class="brator-hot-box-button">
-                                                <a href="shop-sub-category.html">Shop Now</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                @endforeach
 
                             </div>
                         </div>
