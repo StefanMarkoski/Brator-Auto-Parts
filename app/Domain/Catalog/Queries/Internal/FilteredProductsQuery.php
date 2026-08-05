@@ -79,14 +79,25 @@ final class FilteredProductsQuery
                 ->all();
         }
 
-        $ratings = [];
+        // Four separate COUNT queries collapsed into one pass. The review measured
+        // facet counting at 157ms of a ~225ms unfiltered listing, of which these four
+        // were a meaningful share — and they all scan the same set, just with different
+        // thresholds, so one query with four conditional sums does the same work once.
+        $row = $this->base($this->without($filter, rating: true), sorted: false)
+            ->selectRaw(
+                'COUNT(DISTINCT CASE WHEN products.rating_avg >= 4 THEN products.id END) as r4, '
+                .'COUNT(DISTINCT CASE WHEN products.rating_avg >= 3 THEN products.id END) as r3, '
+                .'COUNT(DISTINCT CASE WHEN products.rating_avg >= 2 THEN products.id END) as r2, '
+                .'COUNT(DISTINCT CASE WHEN products.rating_avg >= 1 THEN products.id END) as r1'
+            )
+            ->first();
 
-        foreach ([4, 3, 2, 1] as $stars) {
-            $ratings[$stars] = $this->base($this->without($filter, rating: true), sorted: false)
-                ->where('products.rating_avg', '>=', $stars)
-                ->distinct()
-                ->count('products.id');
-        }
+        $ratings = [
+            4 => (int) ($row->r4 ?? 0),
+            3 => (int) ($row->r3 ?? 0),
+            2 => (int) ($row->r2 ?? 0),
+            1 => (int) ($row->r1 ?? 0),
+        ];
 
         return ['brands' => $brands, 'attributes' => $attributes, 'ratings' => $ratings];
     }
