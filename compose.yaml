@@ -1,0 +1,80 @@
+# Brator Auto Parts — local development stack.
+#
+# The host has no PHP and no Composer, so every PHP command runs in here:
+#   docker compose exec app php artisan migrate
+#   docker compose exec app composer require vendor/package
+#
+# Project name is pinned because the folder name contains spaces.
+name: brator
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8090}:80"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT_HOST:-3310}:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-brator}
+      MYSQL_USER: ${DB_USERNAME:-brator}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/brator.cnf:ro
+    healthcheck:
+      # Everything waits on this — migrations against a half-started MySQL is the
+      # classic first-run failure.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${DB_PASSWORD:-secret}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT_HOST:-6382}:6379"
+    volumes:
+      - redis-data:/data
+
+  mailpit:
+    # Not optional on this project: the receipt is delivered by email, so without
+    # a mail catcher the main deliverable is invisible during development.
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_PORT:-8030}:8025"
+
+volumes:
+  mysql-data:
+  redis-data:
