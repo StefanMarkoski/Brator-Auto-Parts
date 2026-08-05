@@ -1,11 +1,7 @@
-* text=auto eol=lf
+* text=auto
 
-*.blade.php diff=html
-*.css diff=css
-*.html diff=html
-*.md diff=markdown
-*.php diff=php
-
-/.github export-ignore
-CHANGELOG.md export-ignore
-.styleci.yml export-ignore
+# The bought theme is stored verbatim. Git must not normalise line endings here:
+# rtl.css and jquery.js ship with CRLF, and rewriting them would break the
+# byte-for-byte guarantee that the storefront styling is unchanged.
+public/assets/**            -text
+resources/theme-reference/** -text
