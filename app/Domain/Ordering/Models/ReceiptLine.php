@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Ordering\Models;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Ordering\Exceptions\ReceiptIsSealedException;
 use App\Support\Casts\MoneyCast;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,24 @@ class ReceiptLine extends Model
         'vat_rate' => 'float',
         'quantity' => 'integer',
     ];
+
+    /**
+     * A receipt line is part of the financial record. It may be created, never changed
+     * or removed — the same reasoning as the receipt itself.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (self $line): void {
+            throw new ReceiptIsSealedException(
+                'Receipt lines cannot be changed once written. They are the record of '
+                .'what was actually sold.'
+            );
+        });
+
+        static::deleting(function (self $line): void {
+            throw new ReceiptIsSealedException('Receipt lines cannot be deleted.');
+        });
+    }
 
     /** @return BelongsTo<Receipt, $this> */
     public function receipt(): BelongsTo

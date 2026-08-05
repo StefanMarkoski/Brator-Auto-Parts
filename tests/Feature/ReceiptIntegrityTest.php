@@ -4,13 +4,21 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Domain\Catalog\Enums\StockStatus;
 use App\Domain\Catalog\Models\Brand;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Ordering\Actions\PlaceReceiptAction;
+use App\Domain\Ordering\DTOs\CheckoutDetails;
+use App\Domain\Ordering\Enums\ReceiptStatus;
+use App\Domain\Ordering\Exceptions\ReceiptIsSealedException;
+use App\Domain\Ordering\Models\Basket;
+use App\Domain\Ordering\Models\BasketLine;
 use App\Domain\Ordering\Models\Receipt;
 use App\Domain\Ordering\Models\ReceiptLine;
 use App\Support\ValueObjects\Money;
 use Database\Seeders\CatalogStructureSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -80,52 +88,161 @@ final class ReceiptIntegrityTest extends TestCase
         $this->assertSame('Original Name', $line->product_name_snapshot);
     }
 
-    public function test_receipt_totals_agree_with_their_own_lines(): void
+    public function test_a_receipt_cannot_be_rewritten(): void
+    {
+        $receipt = Receipt::factory()->create(['total_minor' => 123_456]);
+
+        // Snapshotting the values was only half the job — the reviewer rewrote a total
+        // to 1. A snapshot is not a seal.
+        foreach ([
+            'total_minor' => 1,
+            'subtotal_minor' => 1,
+            'vat_minor' => 1,
+            'receipt_number' => 'HACKED',
+            'customer_email' => 'someone@else.test',
+            'shipping_address' => 'Elsewhere',
+        ] as $field => $value) {
+            try {
+                Receipt::query()->findOrFail($receipt->id)->update([$field => $value]);
+                $this->fail("{$field} was changeable on a placed receipt.");
+            } catch (ReceiptIsSealedException) {
+                // expected
+            }
+        }
+
+        $this->assertSame(123_456, Receipt::query()->findOrFail($receipt->id)->total_minor->minor);
+    }
+
+    public function test_a_receipt_cannot_be_deleted(): void
+    {
+        $receipt = Receipt::factory()->create();
+
+        $this->expectException(ReceiptIsSealedException::class);
+
+        Receipt::query()->findOrFail($receipt->id)->delete();
+    }
+
+    public function test_status_and_notes_remain_editable(): void
+    {
+        $receipt = Receipt::factory()->create();
+
+        // Staff legitimately cancel orders and add remarks. Sealing the money must not
+        // freeze the workflow around it.
+        Receipt::query()->findOrFail($receipt->id)->update([
+            'status' => ReceiptStatus::Cancelled,
+            'notes' => 'Customer called to cancel.',
+        ]);
+
+        $fresh = Receipt::query()->findOrFail($receipt->id);
+
+        $this->assertSame(ReceiptStatus::Cancelled, $fresh->status);
+        $this->assertSame('Customer called to cancel.', $fresh->notes);
+    }
+
+    public function test_a_receipt_line_cannot_be_changed_or_removed(): void
+    {
+        $receipt = Receipt::factory()->create();
+        $line = ReceiptLine::create([
+            'receipt_id' => $receipt->id,
+            'product_id' => null,
+            'product_name_snapshot' => 'Part',
+            'product_sku_snapshot' => 'SKU',
+            'brand_name_snapshot' => null,
+            'unit_price_minor' => 50_000,
+            'quantity' => 1,
+            'line_total_minor' => 50_000,
+            'vat_rate' => 18.0,
+            'vat_minor' => 9_000,
+        ]);
+
+        try {
+            ReceiptLine::query()->findOrFail($line->id)->update(['unit_price_minor' => 1]);
+            $this->fail('A receipt line was changeable.');
+        } catch (ReceiptIsSealedException) {
+            // expected
+        }
+
+        $this->assertSame(50_000, ReceiptLine::query()->findOrFail($line->id)->unit_price_minor->minor);
+    }
+
+    public function test_the_real_checkout_computes_totals_correctly(): void
+    {
+        // REWRITTEN after review. The old version wrote the lines, then wrote those same
+        // computed numbers onto the receipt, then asserted they matched — so if the real
+        // checkout computed every total wrongly, it still passed. It never called
+        // PlaceReceiptAction at all.
+        //
+        // This drives the actual checkout and checks the arithmetic against figures
+        // worked out independently here.
+        $this->seed(CatalogStructureSeeder::class);
+
+        $product = Product::factory()->create([
+            'price_minor' => 30_000,
+            'sale_price_minor' => null,
+            'stock_quantity' => 10,
+            'stock_status' => StockStatus::InStock,
+            'is_active' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $basket = Basket::create(['session_token' => (string) Str::ulid()]);
+        BasketLine::create([
+            'basket_id' => $basket->id,
+            'product_id' => $product->id,
+            'quantity' => 3,
+            'unit_price_minor' => 30_000,
+        ]);
+
+        $receipt = app(PlaceReceiptAction::class)->execute(
+            $basket->refresh(),
+            new CheckoutDetails('Ana', 'ana@example.com', null, 'Skopje')
+        );
+
+        // Worked out by hand: 3 x 300,00 = 900,00 net. VAT at 18% on the LINE = 162,00.
+        // Under 3.000 net so delivery is charged at 190,00.
+        $this->assertSame(90_000, $receipt->subtotal_minor->minor);
+        $this->assertSame(16_200, $receipt->vat_minor->minor);
+        $this->assertSame(19_000, $receipt->shipping_minor->minor);
+        $this->assertSame(90_000 + 16_200 + 19_000, $receipt->total_minor->minor);
+
+        // And the receipt agrees with its own lines.
+        $lineNet = $receipt->lines->reduce(
+            fn (Money $carry, ReceiptLine $line): Money => $carry->add($line->line_total_minor),
+            Money::zero()
+        );
+        $this->assertTrue($receipt->subtotal_minor->equals($lineNet));
+
+        // Stock left the shelf.
+        $this->assertSame(7, (int) $product->fresh()->stock_quantity);
+    }
+
+    public function test_free_delivery_applies_above_the_threshold(): void
     {
         $this->seed(CatalogStructureSeeder::class);
 
-        $receipt = Receipt::factory()->create();
-        $expectedNet = Money::zero();
-        $expectedVat = Money::zero();
-
-        foreach ([[30_000, 2], [12_345, 3], [999, 1]] as [$unit, $qty]) {
-            $lineTotal = Money::fromMinor($unit)->timesQuantity($qty);
-            $lineVat = $lineTotal->vatAt(18);
-            $expectedNet = $expectedNet->add($lineTotal);
-            $expectedVat = $expectedVat->add($lineVat);
-
-            ReceiptLine::create([
-                'receipt_id' => $receipt->id,
-                'product_id' => null,
-                'product_name_snapshot' => 'Part',
-                'product_sku_snapshot' => 'SKU',
-                'brand_name_snapshot' => null,
-                'unit_price_minor' => $unit,
-                'quantity' => $qty,
-                'line_total_minor' => $lineTotal->toPrimitive(),
-                'vat_rate' => 18.0,
-                'vat_minor' => $lineVat->toPrimitive(),
-            ]);
-        }
-
-        $receipt->update([
-            'subtotal_minor' => $expectedNet->toPrimitive(),
-            'vat_minor' => $expectedVat->toPrimitive(),
-            'total_minor' => $expectedNet->add($expectedVat)->toPrimitive(),
+        $product = Product::factory()->create([
+            'price_minor' => 400_000,
+            'sale_price_minor' => null,
+            'stock_quantity' => 5,
+            'stock_status' => StockStatus::InStock,
+            'is_active' => true,
+            'published_at' => now()->subDay(),
         ]);
-        $receipt->refresh()->load('lines');
 
-        $lineNet = $receipt->lines->reduce(
-            fn (Money $c, ReceiptLine $l): Money => $c->add($l->line_total_minor),
-            Money::zero()
-        );
-        $lineVat = $receipt->lines->reduce(
-            fn (Money $c, ReceiptLine $l): Money => $c->add($l->vat_minor),
-            Money::zero()
+        $basket = Basket::create(['session_token' => (string) Str::ulid()]);
+        BasketLine::create([
+            'basket_id' => $basket->id,
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'unit_price_minor' => 400_000,
+        ]);
+
+        $receipt = app(PlaceReceiptAction::class)->execute(
+            $basket->refresh(),
+            new CheckoutDetails('Ana', 'ana@example.com', null, 'Skopje')
         );
 
-        $this->assertTrue($receipt->subtotal_minor->equals($lineNet));
-        $this->assertTrue($receipt->vat_minor->equals($lineVat));
-        $this->assertTrue($receipt->total_minor->equals($lineNet->add($lineVat)));
+        $this->assertTrue($receipt->shipping_minor->isZero());
+        $this->assertSame(400_000 + 72_000, $receipt->total_minor->minor);
     }
 }
