@@ -14,11 +14,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
+            // ULID rather than Laravel's default auto-increment, so users match every
+            // other domain table in the schema (see the schema plan, §2).
+            $table->ulidPrimary();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            // Admin-only login — there are no customer accounts on this shop. A plain
+            // enum rather than a permissions package: two staff do not need role
+            // tables, and adding Spatie later is a well-worn path. Stated here so the
+            // choice is visible rather than accidental.
+            $table->enum('role', ['admin', 'staff'])->default('staff');
+
             $table->rememberToken();
             $table->timestamps();
         });
@@ -31,7 +40,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->ulidColumn('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
