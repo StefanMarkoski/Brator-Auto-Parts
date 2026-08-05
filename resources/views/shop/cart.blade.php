@@ -154,7 +154,7 @@
                                     <div class="brator-cart-list-items-title">
                                         <div class="prodct-info">
                                             <h5>Delivery</h5>
-                                            <p>{{ $basket->qualifiesForFreeShipping() ? 'Free on orders over 3.000 ден' : 'Flat rate' }}</p>
+                                            <p>{{ $basket->qualifiesForFreeShipping() ? 'Free on orders over '.\App\Domain\Ordering\DTOs\BasketSummary::freeDeliveryFrom()->format() : 'Flat rate' }}</p>
                                         </div>
                                     </div>
                                     <div class="brator-cart-list-items-subtotal">

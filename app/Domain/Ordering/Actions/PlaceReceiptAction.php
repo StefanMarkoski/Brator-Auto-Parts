@@ -14,6 +14,7 @@ use App\Domain\Ordering\Exceptions\PriceChangedException;
 use App\Domain\Ordering\Models\Basket;
 use App\Domain\Ordering\Models\BasketLine;
 use App\Domain\Ordering\Models\Receipt;
+use App\Domain\Ordering\Support\DeliveryCharge;
 use App\Support\ValueObjects\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -112,7 +113,11 @@ final class PlaceReceiptAction
                 ];
             }
 
-            $shipping = Money::fromMinor($subtotal->minor >= 300_000 ? 0 : 19_000);
+            // Same rule as the cart, from the same class — these used to be two
+            // copies of a pricing rule, which is how a cart and a receipt end up
+            // disagreeing about what someone owes.
+            $shipping = DeliveryCharge::for($subtotal);
+            $vatTotal = $vatTotal->add(DeliveryCharge::vatOn($shipping, $vatRate));
 
             $receipt = Receipt::create([
                 'receipt_number' => $this->nextReceiptNumber(),

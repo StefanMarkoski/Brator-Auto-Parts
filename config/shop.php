@@ -16,4 +16,10 @@ return [
     // Single currency, but named here so a future multi-currency migration has one
     // place to start rather than a grep.
     'currency_symbol' => 'ден',
+
+    /*
+     | Delivery is a taxable supply in North Macedonia, so the delivery charge
+     | carries VAT like any other line. Flip this only on an accountant's word.
+     */
+    'vat_on_delivery' => (bool) env('SHOP_VAT_ON_DELIVERY', true),
 ];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Domain\Ordering\Support\DeliveryCharge;
 use App\Support\ValueObjects\Money;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -80,7 +81,10 @@ class ReceiptSeeder extends Seeder
                 ];
             }
 
-            $shipping = Money::fromMinor($subtotal->minor >= 300_000 ? 0 : 19_000);
+            $shipping = DeliveryCharge::for($subtotal);
+            $vatTotal = $vatTotal->add(
+                DeliveryCharge::vatOn($shipping, $vatRate)
+            );
             $total = $subtotal->add($vatTotal)->add($shipping);
             $placedAt = $now->copy()->subDays(random_int(0, 180));
 

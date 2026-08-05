@@ -199,11 +199,15 @@ final class ReceiptIntegrityTest extends TestCase
         );
 
         // Worked out by hand: 3 x 300,00 = 900,00 net. VAT at 18% on the LINE = 162,00.
-        // Under 3.000 net so delivery is charged at 190,00.
+        // Under 3.000 net, so delivery is charged at 190,00 — and delivery is itself a
+        // taxable supply, so it carries 34,20 of VAT. Total VAT 196,20.
+        //
+        // That 34,20 is the exact figure the review said was being under-collected on
+        // every delivered order, and this assertion is what would have caught it.
         $this->assertSame(90_000, $receipt->subtotal_minor->minor);
-        $this->assertSame(16_200, $receipt->vat_minor->minor);
+        $this->assertSame(16_200 + 3_420, $receipt->vat_minor->minor);
         $this->assertSame(19_000, $receipt->shipping_minor->minor);
-        $this->assertSame(90_000 + 16_200 + 19_000, $receipt->total_minor->minor);
+        $this->assertSame(90_000 + 19_620 + 19_000, $receipt->total_minor->minor);
 
         // And the receipt agrees with its own lines.
         $lineNet = $receipt->lines->reduce(

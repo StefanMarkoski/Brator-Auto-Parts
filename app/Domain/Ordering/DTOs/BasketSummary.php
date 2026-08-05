@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Ordering\DTOs;
 
+use App\Domain\Ordering\Support\DeliveryCharge;
 use App\Support\ValueObjects\Money;
 use Illuminate\Support\Collection;
 
@@ -15,11 +16,6 @@ use Illuminate\Support\Collection;
  */
 final readonly class BasketSummary
 {
-    /** Free delivery threshold, in minor units (3.000 ден). */
-    private const FREE_SHIPPING_FROM = 300_000;
-
-    private const SHIPPING_FLAT = 19_000;
-
     /** @param  Collection<int, BasketLineSummary>  $lines */
     private function __construct(
         public Collection $lines,
@@ -43,11 +39,13 @@ final readonly class BasketSummary
             Money::zero()
         );
 
-        $shipping = Money::fromMinor(
-            $subtotal->minor >= self::FREE_SHIPPING_FROM || $subtotal->isZero()
-                ? 0
-                : self::SHIPPING_FLAT
-        );
+        // One source of truth for delivery, shared with PlaceReceiptAction so the
+        // cart and the receipt cannot disagree about what someone owes.
+        $shipping = DeliveryCharge::for($subtotal);
+
+        // Delivery carries VAT too. Leaving it out zero-rated the charge and
+        // under-collected on every order that paid for delivery.
+        $vat = $vat->add(DeliveryCharge::vatOn($shipping, $vatRate));
 
         return new self(
             lines: $lines,
@@ -67,6 +65,11 @@ final readonly class BasketSummary
     public function isEmpty(): bool
     {
         return $this->lines->isEmpty();
+    }
+
+    public static function freeDeliveryFrom(): Money
+    {
+        return Money::fromMinor(DeliveryCharge::FREE_FROM_MINOR);
     }
 
     public function qualifiesForFreeShipping(): bool
