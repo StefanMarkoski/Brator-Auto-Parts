@@ -88,7 +88,12 @@ final class AdminPanelTest extends TestCase
 
     public function test_editing_a_product_claims_only_the_fields_that_changed(): void
     {
+        // Pinned rather than "whatever came back first": 20% of seeded products carry a
+        // sale price, so this test used to pass or fail depending on which one it drew.
+        // A test that depends on the seed is a test you cannot trust.
         $product = Product::query()->firstOrFail();
+        $product->update(['sale_price_minor' => null]);
+        $product->refresh();
         $originalPrice = $product->price_minor->toMajor();
 
         $this->actingAs($this->admin())->put("/admin/products/{$product->id}", [

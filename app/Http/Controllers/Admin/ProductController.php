@@ -73,7 +73,11 @@ final class ProductController
             'name' => $validated['name'],
             'brand_id' => $validated['brand_id'] ?? null,
             'price_minor' => (int) round(((float) $validated['price_major']) * 100),
-            'sale_price_minor' => $validated['sale_price_major'] === null
+            // `nullable` means the key may be ABSENT, not merely null — reading it
+            // directly threw "Undefined array key" and 500'd every save that omitted
+            // the field. A test caught this only intermittently, because it depended on
+            // whether the fixture product happened to have a sale price.
+            'sale_price_minor' => ($validated['sale_price_major'] ?? null) === null
                 ? null
                 : (int) round(((float) $validated['sale_price_major']) * 100),
             'stock_status' => $validated['stock_status'],
