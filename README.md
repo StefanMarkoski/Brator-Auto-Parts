@@ -105,8 +105,35 @@ Three things worth knowing before you touch a migration:
 `QueryPlanTest` runs `EXPLAIN` and asserts which index MySQL picks, so a change that turns a
 range scan into a table scan fails the suite instead of surfacing in production.
 
+## Admin panel
+
+TailAdmin (Tailwind v4 + Alpine), at **http://localhost:8090/admin** — sign in with the
+seeded staff account (`stefan.m@xgate.io` / `password`).
+
+Assets are built separately from the storefront and must be rebuilt after changing any
+admin view's classes:
+
+```bash
+docker compose --profile build run --rm node
+```
+
+**The isolation rule, and why it is not negotiable:** Tailwind ships a global CSS reset
+that would flatten the Brator theme anywhere the two met. So:
+
+- `admin/layouts/admin.blade.php` is the **only** view that references `@vite`
+- `vite.config.js` builds admin assets and nothing else
+- Tailwind's `@source` scans `resources/views/admin` only
+- the two sides share no layout, no partial, not even a `<head>`
+
+`AdminAssetIsolationTest` asserts every one of those, in both directions. Don't work
+around it — if an admin screen needs storefront data, pass it through a controller.
+
 ## Status
 
-**Phases 1–2 complete.** Docker, Laravel 13 skeleton, theme cut into Blade and verified
-against the original, full schema with models, factories, seeders and 22 passing tests.
-Phase 3 is catalogue reads — homepage strips, category pages, listing, product page.
+**Phases 1–6 complete.** Docker, Laravel 13 skeleton, theme cut into Blade and verified
+against the original, full schema, dynamic homepage and listings, working filters
+including shop-by-vehicle, basket with a fake checkout that emails a real receipt, and
+the TailAdmin staff panel. 77 tests passing.
+
+Not built yet: the import *runner* (the override rule it must respect is done and
+enforced), review submission, blog pages, and the compare page.
