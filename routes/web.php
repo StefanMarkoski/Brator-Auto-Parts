@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Storefront\CartController;
+use App\Http\Controllers\Storefront\BasketController;
 use App\Http\Controllers\Storefront\CategoryController;
+use App\Http\Controllers\Storefront\CheckoutController;
 use App\Http\Controllers\Storefront\HomeController;
 use App\Http\Controllers\Storefront\PageController;
 use App\Http\Controllers\Storefront\ProductController;
@@ -27,7 +28,16 @@ Route::get('/shop', [CategoryController::class, 'index'])->name('shop.categories
 Route::get('/shop/{slug}', [CategoryController::class, 'show'])->name('shop.category');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('shop.product');
 Route::get('/search', SearchController::class)->name('search');
-Route::get('/cart', [CartController::class, 'index'])->name('cart');
+Route::get('/cart', [BasketController::class, 'show'])->name('cart');
+Route::post('/cart/add', [BasketController::class, 'add'])->name('cart.add');
+Route::post('/cart/{line}', [BasketController::class, 'update'])->name('cart.update');
+Route::delete('/cart/{line}', [BasketController::class, 'remove'])->name('cart.remove');
+
+// The fake payment step, and the receipt it produces. Addressed by ULID rather than
+// listed at /receipts: an unauthenticated index would expose every customer's name,
+// email and address. The staff list arrives with the admin login in phase 6.
+Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
+Route::get('/receipt/{receipt}', [CheckoutController::class, 'show'])->name('receipt');
 
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');

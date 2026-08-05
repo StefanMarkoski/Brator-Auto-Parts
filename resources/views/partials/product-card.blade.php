@@ -46,6 +46,6 @@
                                                 <p class="brator-price-black-text"><sub>{{ $product->price->format() }}</sub></p>
                                             @endif
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="{{ route('shop.product', $product->slug, false) }}">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><form method="post" action="{{ route('cart.add', [], false) }}">@csrf<input type="hidden" name="product_id" value="{{ $product->id }}" /><button type="submit" @disabled(! $product->inStock)>Add to cart</button></form></div>
                                     </div>
                                 </div>

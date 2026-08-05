@@ -1,0 +1,149 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Ordering\Actions;
+
+use App\Domain\Catalog\Enums\StockMovementReason;
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\StockMovement;
+use App\Domain\Ordering\DTOs\CheckoutDetails;
+use App\Domain\Ordering\Enums\ReceiptStatus;
+use App\Domain\Ordering\Events\ReceiptPlaced;
+use App\Domain\Ordering\Models\Basket;
+use App\Domain\Ordering\Models\Receipt;
+use App\Support\ValueObjects\Money;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
+
+/**
+ * Turns a basket into a receipt. The payment is deliberately fake; the arithmetic and
+ * the record are not.
+ *
+ * Touches basket, receipt, receipt lines, products and the stock ledger, so the whole
+ * body is one transaction — a half-written order must not be able to exist.
+ */
+final class PlaceReceiptAction
+{
+    public function execute(Basket $basket, CheckoutDetails $details): Receipt
+    {
+        $basket->loadMissing(['lines.product.brand']);
+
+        if ($basket->lines->isEmpty()) {
+            throw new RuntimeException('Cannot place a receipt for an empty basket.');
+        }
+
+        $vatRate = (float) config('shop.vat_rate');
+
+        $receipt = DB::transaction(function () use ($basket, $details, $vatRate): Receipt {
+            $subtotal = Money::zero();
+            $vatTotal = Money::zero();
+            $lines = [];
+
+            foreach ($basket->lines as $line) {
+                /** @var Product $product */
+                $product = $line->product;
+
+                if (! $product->stock_status->isBuyable()) {
+                    throw new RuntimeException("Product [{$product->sku}] went out of stock.");
+                }
+
+                // Re-read the price from the product rather than trusting the basket
+                // snapshot: between adding and checking out, the price may have moved,
+                // and the receipt must record what was actually charged.
+                $unit = $product->sale_price_minor ?? $product->price_minor;
+                $lineTotal = $unit->timesQuantity($line->quantity);
+                $lineVat = $lineTotal->vatAt($vatRate);
+
+                $subtotal = $subtotal->add($lineTotal);
+                $vatTotal = $vatTotal->add($lineVat);
+
+                $lines[] = [
+                    'product_id' => $product->id,
+                    // Snapshots: this receipt must still read correctly after the
+                    // product is renamed, repriced or deleted.
+                    'product_name_snapshot' => $product->name,
+                    'product_sku_snapshot' => $product->sku,
+                    'brand_name_snapshot' => $product->brand?->name,
+                    'unit_price_minor' => $unit->toPrimitive(),
+                    'quantity' => $line->quantity,
+                    'line_total_minor' => $lineTotal->toPrimitive(),
+                    'vat_rate' => $vatRate,
+                    'vat_minor' => $lineVat->toPrimitive(),
+                ];
+            }
+
+            $shipping = Money::fromMinor($subtotal->minor >= 300_000 ? 0 : 19_000);
+
+            $receipt = Receipt::create([
+                'receipt_number' => $this->nextReceiptNumber(),
+                'customer_name' => $details->customerName,
+                'customer_email' => $details->customerEmail,
+                'customer_phone' => $details->customerPhone,
+                'shipping_address' => $details->shippingAddress,
+                'subtotal_minor' => $subtotal->toPrimitive(),
+                'vat_minor' => $vatTotal->toPrimitive(),
+                'shipping_minor' => $shipping->toPrimitive(),
+                'total_minor' => $subtotal->add($vatTotal)->add($shipping)->toPrimitive(),
+                // The fake payment step. A real gateway would set the same state.
+                'status' => ReceiptStatus::Paid,
+                'notes' => $details->notes,
+                'placed_at' => now(),
+            ]);
+
+            $receipt->lines()->createMany($lines);
+
+            // The stock ledger, and the cached quantity in the same transaction so the
+            // two cannot drift.
+            foreach ($basket->lines as $line) {
+                StockMovement::create([
+                    'product_id' => $line->product_id,
+                    'delta' => -$line->quantity,
+                    'reason' => StockMovementReason::Sale,
+                    'reference_type' => Receipt::class,
+                    'reference_id' => $receipt->id,
+                    'note' => 'Receipt '.$receipt->receipt_number,
+                ]);
+
+                Product::query()->whereKey($line->product_id)
+                    ->decrement('stock_quantity', $line->quantity);
+            }
+
+            $basket->lines()->delete();
+
+            return $receipt;
+        });
+
+        ReceiptPlaced::dispatch($receipt->id);
+
+        Log::info('ordering.place_receipt.success', [
+            'receipt_id' => $receipt->id,
+            'receipt_number' => $receipt->receipt_number,
+            'total_minor' => $receipt->total_minor->toPrimitive(),
+            'lines' => $receipt->lines()->count(),
+        ]);
+
+        return $receipt;
+    }
+
+    /**
+     * BR-YYYY-NNNNNN, sequential within the year. Locked inside the surrounding
+     * transaction so two simultaneous checkouts cannot claim the same number.
+     */
+    private function nextReceiptNumber(): string
+    {
+        $year = now()->format('Y');
+        $prefix = "BR-{$year}-";
+
+        $last = Receipt::query()
+            ->where('receipt_number', 'like', $prefix.'%')
+            ->lockForUpdate()
+            ->orderByDesc('receipt_number')
+            ->value('receipt_number');
+
+        $next = $last === null ? 1 : ((int) substr($last, strlen($prefix))) + 1;
+
+        return $prefix.str_pad((string) $next, 6, '0', STR_PAD_LEFT);
+    }
+}

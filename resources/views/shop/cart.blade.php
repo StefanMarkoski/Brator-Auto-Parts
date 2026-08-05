@@ -43,6 +43,11 @@
                         <div class="brator-cart-h">
                             <h3>Your Cart</h3>
                         </div>
+                        @if (session('status'))
+                            <div class="brator-contact-form-field-info">
+                                <p>{{ session('status') }}</p>
+                            </div>
+                        @endif
                         <div class="brator-cart-list">
                             <div class="brator-cart-list-items title-me">
                                 <div class="brator-cart-list-items-title">
@@ -59,74 +64,162 @@
                                 </div>
                                 <div class="brator-cart-list-items-removed"></div>
                             </div>
-                            <div class="brator-cart-list-items">
-                                <div class="brator-cart-list-items-title">
-                                    <div class="img-cart"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/cart-1.png" alt="alt" /></a></div>
-                                    <div class="prodct-info">
-                                        <h5><a href="#_">Silver with Mirror Cut Facewheels</a></h5>
-                                        <p>19” DIAMETER (19” x 8.5”), White/Sliver</p><a href="#_">Edit </a>
+                            @forelse ($basket->lines as $line)
+                                <div class="brator-cart-list-items">
+                                    <div class="brator-cart-list-items-title">
+                                        <div class="img-cart"><a href="{{ route('shop.product', $line->productSlug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $line->imagePath }}" alt="{{ $line->productName }}" /></a></div>
+                                        <div class="prodct-info">
+                                            <h5><a href="{{ route('shop.product', $line->productSlug, false) }}">{{ $line->productName }}</a></h5>
+                                            <p>{{ $line->brandName }} &middot; SKU {{ $line->productSku }}</p><a href="{{ route('shop.product', $line->productSlug, false) }}">Edit </a>
+                                        </div>
+                                    </div>
+                                    <div class="brator-cart-list-items-price">
+                                        <p><sup>{{ $line->unitPrice->format() }}</sup></p>
+                                    </div>
+                                    <div class="brator-cart-list-items-qty-area">
+                                        <form method="post" action="{{ route('cart.update', $line->lineId, false) }}">
+                                            @csrf
+                                            <div class="brator-cart-list-items-qty">
+                                                <button class="decrement-count-qty" type="submit" name="quantity" value="{{ $line->quantity - 1 }}">-</button>
+                                                <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" max="99" />
+                                                <button class="add-count-qty" type="submit" name="quantity" value="{{ $line->quantity + 1 }}">+</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="brator-cart-list-items-subtotal">
+                                        <p>{{ $line->lineTotal->format() }}</p>
+                                    </div>
+                                    <div class="brator-cart-list-items-removed">
+                                        <form method="post" action="{{ route('cart.remove', $line->lineId, false) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" aria-label="Remove {{ $line->productName }}">
+                                                <svg class="bi bi-x" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
-                                <div class="brator-cart-list-items-price">
-                                    <p><sup>$204.05</sup><b class="pub">$1000</b></p>
-                                </div>
-                                <div class="brator-cart-list-items-qty-area">
-                                    <div class="brator-cart-list-items-qty">
-                                        <button class="decrement-count-qty">-</button>
-                                        <input type="number" />
-                                        <button class="add-count-qty">+</button>
+                            @empty
+                                <div class="brator-cart-list-items">
+                                    <div class="brator-cart-list-items-title">
+                                        <div class="prodct-info">
+                                            <h5>Your cart is empty.</h5>
+                                            <p>Browse the catalogue and add the parts you need.</p><a href="{{ route('shop.categories', [], false) }}">Shop all parts </a>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="brator-cart-list-items-subtotal">
-                                    <p>$816.2</p>
-                                </div>
-                                <div class="brator-cart-list-items-removed">
-                                    <button>
-                                        <svg class="bi bi-x" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="brator-cart-list-items">
-                                <div class="brator-cart-list-items-title">
-                                    <div class="img-cart"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/cart-2.png" alt="alt" /></a></div>
-                                    <div class="prodct-info">
-                                        <h5><a href="#_">Automatic Proshift Shift Knob </a></h5>
-                                        <p>19” DIAMETER (19” x 8.5”), White/Sliver</p><a href="#_">Edit </a>
-                                    </div>
-                                </div>
-                                <div class="brator-cart-list-items-price">
-                                    <p><sup>$204.05</sup><b class="pub">$1000</b></p>
-                                </div>
-                                <div class="brator-cart-list-items-qty-area">
-                                    <div class="brator-cart-list-items-qty">
-                                        <button class="decrement-count-qty">-</button>
-                                        <input type="number" />
-                                        <button class="add-count-qty">+</button>
-                                    </div>
-                                </div>
-                                <div class="brator-cart-list-items-subtotal">
-                                    <p>$816.2</p>
-                                </div>
-                                <div class="brator-cart-list-items-removed">
-                                    <button>
-                                        <svg class="bi bi-x" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
+                            @endforelse
                         </div>
+
+                        @if (! $basket->isEmpty())
+                            <div class="brator-cart-list">
+                                <div class="brator-cart-list-items title-me">
+                                    <div class="brator-cart-list-items-title">
+                                        <h6>order summary</h6>
+                                    </div>
+                                    <div class="brator-cart-list-items-subtotal">
+                                        <h6>amount</h6>
+                                    </div>
+                                </div>
+                                <div class="brator-cart-list-items">
+                                    <div class="brator-cart-list-items-title">
+                                        <div class="prodct-info">
+                                            <h5>Subtotal</h5>
+                                            <p>{{ $basket->itemCount }} item(s), excluding VAT</p>
+                                        </div>
+                                    </div>
+                                    <div class="brator-cart-list-items-subtotal">
+                                        <p>{{ $basket->subtotal->format() }}</p>
+                                    </div>
+                                </div>
+                                <div class="brator-cart-list-items">
+                                    <div class="brator-cart-list-items-title">
+                                        <div class="prodct-info">
+                                            <h5>VAT ({{ (int) config('shop.vat_rate') }}%)</h5>
+                                            <p>Added at checkout</p>
+                                        </div>
+                                    </div>
+                                    <div class="brator-cart-list-items-subtotal">
+                                        <p>{{ $basket->vat->format() }}</p>
+                                    </div>
+                                </div>
+                                <div class="brator-cart-list-items">
+                                    <div class="brator-cart-list-items-title">
+                                        <div class="prodct-info">
+                                            <h5>Delivery</h5>
+                                            <p>{{ $basket->qualifiesForFreeShipping() ? 'Free on orders over 3.000 ден' : 'Flat rate' }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="brator-cart-list-items-subtotal">
+                                        <p>{{ $basket->shipping->isZero() ? 'Free' : $basket->shipping->format() }}</p>
+                                    </div>
+                                </div>
+                                <div class="brator-cart-list-items title-me">
+                                    <div class="brator-cart-list-items-title">
+                                        <h6>total to pay</h6>
+                                    </div>
+                                    <div class="brator-cart-list-items-subtotal">
+                                        <h6>{{ $basket->total->format() }}</h6>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="brator-contact-form-area">
+                                <div class="brator-contact-form">
+                                    <div class="brator-contact-form-header">
+                                        <h2>Checkout</h2>
+                                        <p>No card is charged — this shop takes payment on delivery or by phone. You will get a receipt by email.</p>
+                                    </div>
+                                    @if (session('error'))
+                                        <div class="brator-contact-form-field-info">
+                                            <p>{{ session('error') }}</p>
+                                        </div>
+                                    @endif
+                                    @if ($errors->any())
+                                        <div class="brator-contact-form-field-info">
+                                            @foreach ($errors->all() as $message)
+                                                <p>{{ $message }}</p>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                    <form method="post" action="{{ route('checkout.place', [], false) }}">
+                                        @csrf
+                                        <div class="brator-contact-form-fields">
+                                            <div class="brator-contact-form-field-two-items">
+                                                <div class="brator-contact-form-field">
+                                                    <input type="text" name="customer_name" value="{{ old('customer_name') }}" placeholder="Full name *" required />
+                                                </div>
+                                                <div class="brator-contact-form-field">
+                                                    <input type="email" name="customer_email" value="{{ old('customer_email') }}" placeholder="Email *" required />
+                                                </div>
+                                            </div>
+                                            <div class="brator-contact-form-field">
+                                                <input type="text" name="customer_phone" value="{{ old('customer_phone') }}" placeholder="Phone (optional)" />
+                                            </div>
+                                            <div class="brator-contact-form-field">
+                                                <textarea name="shipping_address" placeholder="Delivery address *" required>{{ old('shipping_address') }}</textarea>
+                                            </div>
+                                            <div class="brator-contact-form-field">
+                                                <textarea name="notes" placeholder="Anything we should know? (optional)">{{ old('notes') }}</textarea>
+                                            </div>
+                                            <button type="submit">Place order &mdash; {{ $basket->total->format() }}</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="brator-cart-checkout">
                             <div class="brator-cart-checkout-left">
                                 <div class="brator-cart-checkout-fields">
-                                    <input type="text" placeholder="Enter Coupon Code" />
-                                    <button>Apply Coupon</button>
+                                    <input type="text" placeholder="Coupon codes coming soon" disabled />
+                                    <button type="button" disabled>Apply Coupon</button>
                                 </div>
                             </div>
                             <div class="brator-cart-checkout-right">
-                                <div class="brator-cart-checkout-back"><a href="#_"> Continue Shopping</a></div>
+                                <div class="brator-cart-checkout-back"><a href="{{ route('shop.categories', [], false) }}"> Continue Shopping</a></div>
                             </div>
                         </div>
                     </div>

@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Catalog\Queries\Public\GetNavigationQuery;
+use App\Domain\Ordering\Events\ReceiptPlaced;
+use App\Domain\Ordering\Listeners\Internal\SendReceiptEmail;
+use App\Domain\Ordering\Queries\Internal\GetBasketSummaryQuery;
+use App\Domain\Ordering\Services\BasketResolver;
 use App\Support\Database\SchemaMacros;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -41,6 +46,8 @@ class AppServiceProvider extends ServiceProvider
             fn (string $modelName): string => 'Database\\Factories\\'.class_basename($modelName).'Factory'
         );
 
+        Event::listen(ReceiptPlaced::class, SendReceiptEmail::class);
+
         // The header's mega menu needs the category tree on every page. A composer
         // keeps that out of every controller — a nav that only works on pages whose
         // controller remembered to pass it is how half a site ends up with dead links.
@@ -48,5 +55,15 @@ class AppServiceProvider extends ServiceProvider
             ['partials.header', 'partials.header-shop', 'partials.footer-top'],
             fn ($view) => $view->with('navCategories', app(GetNavigationQuery::class)->execute())
         );
+
+        // The cart badge in the header, on every page — same reasoning as the nav.
+        View::composer(['partials.header', 'partials.header-shop'], function ($view): void {
+            $resolver = app(BasketResolver::class);
+            $view->with(
+                'basketCount',
+                app(GetBasketSummaryQuery::class)
+                    ->itemCount($resolver->current())
+            );
+        });
     }
 }

@@ -60,7 +60,11 @@
                                 </div>
                                 <div class="brator-product-single-item-btn">
                                     <div class="brator-product-single-item-btn-cart">
-                                        <button>Add To Cart</button>
+                                        <form method="post" action="{{ route('cart.add', [], false) }}">
+                                            @csrf
+                                            <input type="hidden" name="product_id" value="{{ $product->id }}" />
+                                            <button type="submit" @disabled(! $product->inStock)>Add To Cart</button>
+                                        </form>
                                     </div>
                                     <div class="brator-product-single-cart-action">
                                         <div class="brator-product-single-cart-wish">

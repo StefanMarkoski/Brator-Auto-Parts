@@ -108,20 +108,24 @@
                                         </select>
                                     </div>
                                     <div class="brator-product-single-cart-sub-total">
-                                        <p><span>Subtotal:</span> $816.2</p>
+                                        <p><span>Subtotal:</span> {{ ($product->sale_price_minor ?? $product->price_minor)->format() }}</p>
                                     </div>
-                                    <div class="brator-product-single-cart-count-add">
-                                        <div class="brator-product-single-cart-count">
-                                            <div class="brator-brator-cart-list-items-qty">
-                                                <button class="decrement-count-qty">-</button>
-                                                <input type="number" />
-                                                <button class="add-count-qty">+</button>
+                                    <form method="post" action="{{ route('cart.add', [], false) }}">
+                                        @csrf
+                                        <input type="hidden" name="product_id" value="{{ $product->id }}" />
+                                        <div class="brator-product-single-cart-count-add">
+                                            <div class="brator-product-single-cart-count">
+                                                <div class="brator-brator-cart-list-items-qty">
+                                                    <button class="decrement-count-qty" type="button">-</button>
+                                                    <input type="number" name="quantity" value="1" min="1" max="99" />
+                                                    <button class="add-count-qty" type="button">+</button>
+                                                </div>
+                                            </div>
+                                            <div class="brator-product-single-cart-add">
+                                                <button type="submit" @disabled(! $product->stock_status->isBuyable())>Add To Cart</button>
                                             </div>
                                         </div>
-                                        <div class="brator-product-single-cart-add">
-                                            <button>Add To Cart</button>
-                                        </div>
-                                    </div>
+                                    </form>
                                     <div class="brator-product-single-cart-action">
                                         <div class="brator-product-single-cart-wish">
                                             <button>

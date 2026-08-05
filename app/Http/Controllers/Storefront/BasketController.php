@@ -1,0 +1,96 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Storefront;
+
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Ordering\Actions\AddProductToBasketAction;
+use App\Domain\Ordering\Actions\UpdateBasketLineAction;
+use App\Domain\Ordering\Http\Requests\AddToBasketRequest;
+use App\Domain\Ordering\Models\BasketLine;
+use App\Domain\Ordering\Queries\Internal\GetBasketSummaryQuery;
+use App\Domain\Ordering\Services\BasketResolver;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+final class BasketController
+{
+    public function __construct(
+        private BasketResolver $baskets,
+        private GetBasketSummaryQuery $summary,
+        private AddProductToBasketAction $addAction,
+        private UpdateBasketLineAction $updateAction,
+    ) {}
+
+    public function show(): View
+    {
+        return view('shop.cart', [
+            'basket' => $this->summary->execute($this->baskets->current()),
+            'breadcrumbs' => ['Your Cart' => null],
+        ]);
+    }
+
+    public function add(AddToBasketRequest $request): RedirectResponse
+    {
+        $product = Product::query()->findOrFail($request->validated()['product_id']);
+
+        try {
+            $this->addAction->execute(
+                $this->baskets->currentOrCreate(),
+                $product,
+                $request->quantity()
+            );
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('cart')
+            ->with('status', "{$product->name} was added to your cart.");
+    }
+
+    public function update(Request $request, string $line): RedirectResponse
+    {
+        $this->updateAction->execute(
+            $this->ownedLine($line),
+            (int) $request->input('quantity', 1)
+        );
+
+        return redirect()->route('cart');
+    }
+
+    public function remove(string $line): RedirectResponse
+    {
+        $this->ownedLine($line)->delete();
+
+        return redirect()->route('cart')->with('status', 'Item removed from your cart.');
+    }
+
+    /**
+     * A line may only be touched through the basket it belongs to. Without this check
+     * anyone could post another visitor's line id and edit their cart.
+     */
+    private function ownedLine(string $lineId): BasketLine
+    {
+        $basket = $this->baskets->current();
+
+        if ($basket === null) {
+            throw new NotFoundHttpException('No basket.');
+        }
+
+        $line = BasketLine::query()
+            ->where('basket_id', $basket->id)
+            ->whereKey($lineId)
+            ->first();
+
+        if ($line === null) {
+            throw new NotFoundHttpException('That item is not in your cart.');
+        }
+
+        return $line;
+    }
+}
