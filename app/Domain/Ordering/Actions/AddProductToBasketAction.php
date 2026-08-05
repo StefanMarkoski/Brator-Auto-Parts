@@ -33,8 +33,14 @@ final class AddProductToBasketAction
                 ->where('product_id', $product->id)
                 ->first();
 
+            $available = (int) $product->stock_quantity;
+
             if ($existing !== null) {
-                $existing->update(['quantity' => $existing->quantity + $quantity]);
+                // Capped against stock, not simply added — otherwise pressing "add"
+                // repeatedly walks the basket past what exists.
+                $existing->update([
+                    'quantity' => max(1, min($existing->quantity + $quantity, $available)),
+                ]);
 
                 return $existing;
             }
@@ -42,7 +48,7 @@ final class AddProductToBasketAction
             return BasketLine::create([
                 'basket_id' => $basket->id,
                 'product_id' => $product->id,
-                'quantity' => $quantity,
+                'quantity' => max(1, min($quantity, $available)),
                 // Snapshot the price the shopper is being shown. Net of VAT, and
                 // taken from the database rather than from the form — a posted price
                 // is a suggestion from a stranger.

@@ -9,6 +9,7 @@ use App\Domain\Ordering\Actions\AddProductToBasketAction;
 use App\Domain\Ordering\Actions\PruneOrphanedBasketLinesAction;
 use App\Domain\Ordering\Actions\UpdateBasketLineAction;
 use App\Domain\Ordering\Http\Requests\AddToBasketRequest;
+use App\Domain\Ordering\Http\Requests\UpdateBasketLineRequest;
 use App\Domain\Ordering\Models\BasketLine;
 use App\Domain\Ordering\Queries\Internal\GetBasketSummaryQuery;
 use App\Domain\Ordering\Services\BasketResolver;
@@ -99,12 +100,19 @@ final class BasketController
         );
     }
 
-    public function update(Request $request, string $line): RedirectResponse
+    public function update(UpdateBasketLineRequest $request, string $line): RedirectResponse
     {
-        $this->updateAction->execute(
-            $this->ownedLine($line),
-            (int) $request->input('quantity', 1)
-        );
+        $requested = $request->quantity();
+        $set = $this->updateAction->execute($this->ownedLine($line), $requested);
+
+        // Tell the shopper when they got less than they asked for. Quietly capping is
+        // how someone discovers the shortfall at the till.
+        if ($set > 0 && $set < $requested) {
+            return redirect()->route('cart')->with(
+                'error',
+                "Only {$set} of that part are in stock, so your cart was set to {$set}."
+            );
+        }
 
         return redirect()->route('cart');
     }
@@ -128,7 +136,10 @@ final class BasketController
             throw new NotFoundHttpException('No basket.');
         }
 
+        // The product is loaded explicitly: the stock cap needs it, and relying on a
+        // lazy load made the cap read stock as zero and clamp every quantity to 1.
         $line = BasketLine::query()
+            ->with('product')
             ->where('basket_id', $basket->id)
             ->whereKey($lineId)
             ->first();

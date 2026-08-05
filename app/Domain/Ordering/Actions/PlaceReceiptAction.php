@@ -67,6 +67,13 @@ final class PlaceReceiptAction
                 // Re-read the price from the product rather than trusting the basket
                 // snapshot: between adding and checking out, the price may have moved,
                 // and the receipt must record what was actually charged.
+                if ($line->quantity > (int) $product->stock_quantity) {
+                    throw new RuntimeException(
+                        "Only {$product->stock_quantity} of {$product->name} remain. "
+                        .'Please lower the quantity and try again.'
+                    );
+                }
+
                 $unit = $product->sale_price_minor ?? $product->price_minor;
                 $lineTotal = $unit->timesQuantity($line->quantity);
                 $lineVat = $lineTotal->vatAt($vatRate);
