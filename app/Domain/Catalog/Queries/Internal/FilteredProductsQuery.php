@@ -93,7 +93,8 @@ final class FilteredProductsQuery
     public function priceBounds(ProductFilter $filter): array
     {
         $row = $this->base($this->without($filter, price: true), sorted: false)
-            ->selectRaw('MIN(products.price_minor) as lo, MAX(products.price_minor) as hi')
+            ->selectRaw('MIN(COALESCE(products.sale_price_minor, products.price_minor)) as lo, '
+                .'MAX(COALESCE(products.sale_price_minor, products.price_minor)) as hi')
             ->first();
 
         return [
@@ -123,12 +124,18 @@ final class FilteredProductsQuery
             });
         }
 
+        // Filter and sort on the EFFECTIVE price — the number the shopper actually
+        // pays. Comparing against price_minor alone was a real bug: a discounted part
+        // was filtered and ordered by its list price while the card displayed the sale
+        // price, so "sort by price, low to high" produced a visibly wrong sequence.
+        // Caught by a test that only failed on runs where the seed happened to put a
+        // sale item in the sample.
         if ($filter->priceMinMinor !== null) {
-            $query->where('products.price_minor', '>=', $filter->priceMinMinor);
+            $query->whereRaw('COALESCE(products.sale_price_minor, products.price_minor) >= ?', [$filter->priceMinMinor]);
         }
 
         if ($filter->priceMaxMinor !== null) {
-            $query->where('products.price_minor', '<=', $filter->priceMaxMinor);
+            $query->whereRaw('COALESCE(products.sale_price_minor, products.price_minor) <= ?', [$filter->priceMaxMinor]);
         }
 
         if ($filter->minRating !== null) {
@@ -172,8 +179,8 @@ final class FilteredProductsQuery
 
         if ($sorted) {
             match ($filter->sort) {
-                'price_asc' => $query->orderBy('products.price_minor'),
-                'price_desc' => $query->orderByDesc('products.price_minor'),
+                'price_asc' => $query->orderByRaw('COALESCE(products.sale_price_minor, products.price_minor) ASC'),
+                'price_desc' => $query->orderByRaw('COALESCE(products.sale_price_minor, products.price_minor) DESC'),
                 'rating' => $query->orderByDesc('products.rating_avg'),
                 'name' => $query->orderBy('products.name'),
                 default => $query->orderByDesc('products.published_at'),

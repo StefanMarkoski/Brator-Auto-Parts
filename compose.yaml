@@ -68,6 +68,17 @@ services:
     volumes:
       - redis-data:/data
 
+  # Builds the ADMIN panel's assets only. The storefront has no build step — see
+  # vite.config.js. Kept as a one-shot profile so `docker compose up` does not start a
+  # node container nobody asked for.
+  node:
+    image: node:22-alpine
+    profiles: ["build"]
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "npm install && npm run build"
+
   mailpit:
     # Not optional on this project: the receipt is delivered by email, so without
     # a mail catcher the main deliverable is invisible during development.

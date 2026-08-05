@@ -108,14 +108,15 @@ final class ProductFilteringTest extends TestCase
     {
         $category = $this->populatedCategory();
 
-        // Pick a ceiling from the real data — a hardcoded one can match nothing, and a
-        // loop over an empty result asserts nothing at all.
+        // The ceiling comes from the EFFECTIVE price — sale price where there is one —
+        // because that is what the filter compares against and what the card displays.
+        // Taking it from price_minor instead made this test disagree with the query.
         $ceiling = (int) DB::table('products as p')
             ->join('product_categories as pc', 'pc.product_id', '=', 'p.id')
             ->join('categories as c', 'c.id', '=', 'pc.category_id')
             ->where('c.path', 'like', $category->path.'%')
-            ->orderBy('p.price_minor')
-            ->value('p.price_minor');
+            ->orderByRaw('COALESCE(p.sale_price_minor, p.price_minor)')
+            ->value(DB::raw('COALESCE(p.sale_price_minor, p.price_minor)'));
 
         $filtered = $this->filtered()->page(
             $this->filterFor($category, ['priceMaxMinor' => $ceiling]),
@@ -128,11 +129,17 @@ final class ProductFilteringTest extends TestCase
             $this->assertLessThanOrEqual($ceiling, $card->price->minor);
         }
 
-        // And the ceiling genuinely excludes: everything at once is a larger set.
-        $this->assertLessThan(
-            $this->filtered()->count($this->filterFor($category)),
-            $this->filtered()->count($this->filterFor($category, ['priceMaxMinor' => $ceiling]))
-        );
+        // And the ceiling genuinely excludes, as long as the category holds more than
+        // one distinct price — with a tiny seed it may not.
+        $total = $this->filtered()->count($this->filterFor($category));
+        $capped = $this->filtered()->count($this->filterFor($category, ['priceMaxMinor' => $ceiling]));
+
+        $this->assertLessThanOrEqual($total, $capped);
+
+        if ($total > 1) {
+            $this->assertLessThan($total, $capped,
+                'A ceiling at the cheapest price must exclude the dearer parts.');
+        }
     }
 
     public function test_the_vehicle_filter_returns_only_parts_that_fit(): void
@@ -154,11 +161,25 @@ final class ProductFilteringTest extends TestCase
     public function test_choosing_a_vehicle_narrows_the_listing_and_clearing_restores_it(): void
     {
         $category = $this->populatedCategory();
-        $variantId = (int) DB::table('product_vehicle_fitments as f')
-            ->join('product_categories as pc', 'pc.product_id', '=', 'f.product_id')
+        // Pick a variant that fits SOME but not all of the category — with a small seed
+        // a randomly chosen variant can happen to fit everything, and then "narrowing"
+        // legitimately changes nothing and the test fails for the wrong reason.
+        $inCategory = DB::table('product_categories as pc')
             ->join('categories as c', 'c.id', '=', 'pc.category_id')
             ->where('c.path', 'like', $category->path.'%')
-            ->value('f.vehicle_variant_id');
+            ->distinct()->pluck('pc.product_id');
+
+        $variantId = (int) DB::table('product_vehicle_fitments')
+            ->whereIn('product_id', $inCategory)
+            ->select('vehicle_variant_id', DB::raw('COUNT(*) as fits'))
+            ->groupBy('vehicle_variant_id')
+            ->havingRaw('COUNT(*) < ?', [$inCategory->count()])
+            ->orderByDesc('fits')
+            ->value('vehicle_variant_id');
+
+        if ($variantId === 0) {
+            $this->markTestSkipped('This seed gave no variant that fits only part of the category.');
+        }
 
         $all = $this->cardCount($this->get(route('shop.category', $category->slug))->getContent());
 
