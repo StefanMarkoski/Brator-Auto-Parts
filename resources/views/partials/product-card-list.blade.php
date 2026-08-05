@@ -15,13 +15,13 @@
                                         @endforeach
                                     </div>
                                 </div>
-                                <div class="brator-product-single-item-img"><a href="{{ route('shop.product', $product->slug) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->imagePath }}" alt="{{ $product->name }}" /></a></div>
+                                <div class="brator-product-single-item-img"><a href="{{ route('shop.product', $product->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->imagePath }}" alt="{{ $product->name }}" /></a></div>
                             </div>
                             <div class="brator-product-single-item-area-mdl">
                                 <div class="brator-product-single-item-mini">
-                                    <div class="brator-product-single-item-cat"><a href="{{ route('shop.product', $product->slug) }}">{{ $product->brandName }}</a></div>
+                                    <div class="brator-product-single-item-cat"><a href="{{ route('shop.product', $product->slug, false) }}">{{ $product->brandName }}</a></div>
                                     <div class="brator-product-single-item-title">
-                                        <h5><a href="{{ route('shop.product', $product->slug) }}">{{ $product->name }}</a></h5>
+                                        <h5><a href="{{ route('shop.product', $product->slug, false) }}">{{ $product->name }}</a></h5>
                                     </div>
                                     <div class="brator-product-single-item-review">
                                         <div class="brator-review">

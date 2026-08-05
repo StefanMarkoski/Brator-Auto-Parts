@@ -20,8 +20,17 @@ final class ProductController
             throw new NotFoundHttpException("No active product with slug [{$slug}].");
         }
 
+        $primary = $product->categories->firstWhere('pivot.is_primary', true)
+            ?? $product->categories->first();
+
         return view('shop.product', [
             'product' => $product,
+            'breadcrumbs' => array_filter([
+                $primary?->name => $primary === null
+                    ? null
+                    : route('shop.category', $primary->slug, false),
+                $product->name => null,
+            ], fn ($_, $label) => $label !== '', ARRAY_FILTER_USE_BOTH),
             // The two recommendation blocks the theme already ships.
             'boughtTogether' => $this->detail->recommendations($product->id, 'bought_together', 3),
             'similar' => $this->detail->recommendations($product->id, 'similar', 5),

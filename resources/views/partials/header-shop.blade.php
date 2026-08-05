@@ -14,7 +14,7 @@
                                 <g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g>
                             </svg>
                         </div>
-                        <div class="brator-logo"><a href="index.html"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/logo.png" alt="logo" /></a>
+                        <div class="brator-logo"><a href="{{ route('home', [], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/logo.png" alt="logo" /></a>
                             <button>
                                 <svg class="bi bi-pause" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"></path>
@@ -25,7 +25,7 @@
                 </div>
                 <div class="col-lg-5 xl-dextop-none">
                     <div class="brator-search-area">
-                        <form class="search-form" role="search" method="get">
+                        <form class="search-form" role="search" method="get" action="{{ route('search', [], false) }}">
                             <input class="search-field" type="search" placeholder="Search by Part Name, Part Number, Vehicle and Brands" name="s" required="required" />
                             <button type="submit">
                                 <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
@@ -163,7 +163,7 @@
                                 </div>
                                 <div class="brator-cart-total-money">
                                     <div class="brator-cart-total-header"><span>total</span><span>$838.19</span></div>
-                                    <div class="brator-cart-total-action"><a href="#_">View Cart</a><a href="#_">Checkout</a></div>
+                                    <div class="brator-cart-total-action"><a href="{{ route('cart', [], false) }}">View Cart</a><a href="{{ route('cart', [], false) }}">Checkout</a></div>
                                 </div>
                             </div>
                         </div>
@@ -192,56 +192,42 @@
                     <div class="brator-header-menu-with-info">
                         <div class="brator-header-menu">
                             <ul class="list-style-outside-none">
-                                <li class="down-menu"><a href="#_">Home</a>
-                                    <ul>
-                                        <li><a href="index.html">Home 1</a></li>
-                                        <li><a href="index-2.html">Home 2</a></li>
-                                        <li><a href="index-3.html">Home 3</a></li>
-                                    </ul>
-                                </li>
-                                <li><a href="about.html">About us</a></li>
-                                <li class="mega-menu-li"><a href="#_">Auto Parts <span class="count-hot-beg">MEGA</span></a>
+                                <li><a href="{{ route('home', [], false) }}">Home</a></li>
+                                <li class="mega-menu-li"><a href="{{ route('shop.categories', [], false) }}">Auto Parts <span class="count-hot-beg">MEGA</span></a>
                                     <div class="mega-menu-area">
                                         <div class="mega-menu-cat-list">
-                                            <div class="mega-menu-cat-list-left mega-menu-cat-list-single-area"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-01.jpg" alt="alt" /><span>Auto Parts</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-09.jpg" alt="alt" /><span>Car Care</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-02.jpg" alt="alt" /><span>Performance</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-03.jpg" alt="alt" /><span>Wheels & Tires</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-04.jpg" alt="alt" /><span>Exteriors</span></a></div>
-                                            <div class="mega-menu-cat-list-mdl mega-menu-cat-list-single-area"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-05.jpg" alt="alt" /><span>Interiors</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-06.jpg" alt="alt" /><span>Entertaiments</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-07.jpg" alt="alt" /><span>Exhaust System</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-08.jpg" alt="alt" /><span>Custom Wheels</span></a></div>
-                                            <div class="mega-menu-cat-list-end mega-menu-cat-list-single-area"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-10.jpg" alt="alt" /><span>Fluids & Chemicals</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-11.jpg" alt="alt" /><span>Tools & Supplies</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-12.jpg" alt="alt" /><span>Wipers & Washers</span></a></div>
-                                        </div>
-                                        <div class="mega-menu-offer">
+                                            @foreach (collect($navCategories ?? [])->split(3) as $column)
+                                                <div class="mega-menu-cat-list-left mega-menu-cat-list-single-area">
+                                                    @foreach ($column as $navCategory)
+                                                        <a href="{{ route('shop.category', $navCategory['slug'], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $navCategory['image'] }}" alt="{{ $navCategory['name'] }}" /><span>{{ $navCategory['name'] }}</span></a>
+                                                    @endforeach
+                                                </div>
+                                            @endforeach
                                             <div class="brator-offer-box-two lazyload" data-bg="/assets/images/offer/offer-02.png">
                                                 <div class="budget-area"><span>mega bundle</span></div>
-                                                <h2>Helix Engine Fluids</h2>
-                                                <p>Pack 3pcs just:</p>
-                                                <h6><span>$89.90</span><span>$250.80</span></h6><a href="shop-sub-category.html">Shop Now</a>
+                                                <h2>Service Kits</h2>
+                                                <p>Everything for a full service</p>
+                                                <h6><span>Shop the range</span></h6><a href="{{ route('shop.categories', [], false) }}">Shop Now</a>
                                             </div>
                                         </div>
                                     </div>
                                 </li>
-                                <li class="down-menu">
-                                    <a href="#_">Blog</a>
-                                    <ul>
-                                        <li><a href="blog-grid.html">Blog Grid</a></li>
-                                        <li><a href="blog-list.html">Blog List</a></li>
-                                        <li><a href="blog-single.html">Blog Single</a></li>
-                                    </ul>
-                                </li>
-                                <li class="down-menu">
-                                    <a href="#_">Pages</a>
-                                    <ul>
-                                        <li><a href="cart.html">Cart</a></li>
-                                        <li><a href="coming-soon.html">Coming Soon</a></li>
-                                        <li><a href="compare.html">Product Compare</a></li>
-                                        <li><a href="product-layout-01.html">Product Layout 1</a></li>
-                                        <li><a href="product-layout-02.html">Product Layout 2</a></li>
-                                        <li><a href="shop-categories.html">Shop Category</a></li>
-                                        <li><a href="shop-sub-category-list.html">Shop Sub Category List</a></li>
-                                        <li><a href="shop-sub-category.html">Shop Sub Category</a></li>
-                                    </ul>
-                                </li>
-                                <li><a href="contact-us.html">Contact Us</a></li>
+                                @foreach (collect($navCategories ?? [])->take(4) as $navCategory)
+                                    @if (count($navCategory['children']))
+                                        <li class="down-menu"><a href="{{ route('shop.category', $navCategory['slug'], false) }}">{{ $navCategory['name'] }}</a>
+                                            <ul>
+                                                @foreach ($navCategory['children'] as $navChild)
+                                                    <li><a href="{{ route('shop.category', $navChild['slug'], false) }}">{{ $navChild['name'] }}</a></li>
+                                                @endforeach
+                                            </ul>
+                                        </li>
+                                    @endif
+                                @endforeach
+                                <li><a href="{{ route('about', [], false) }}">About us</a></li>
+                                <li><a href="{{ route('contact', [], false) }}">Contact Us</a></li>
                             </ul>
                         </div>
-                        <div class="brator-header-menu-info"><a href="#_">Order Status</a><span>24/7 Support:</span><a class="phomeee" href="#_">1800 500 1234</a></div>
+                        <div class="brator-header-menu-info"><a href="#_">Order Status</a><span>24/7 Support:</span><a class="phomeee" href="tel:18005001234">1800 500 1234</a></div>
                     </div>
                 </div>
             </div>
@@ -272,53 +258,39 @@
                     <div class="brator-header-menu-with-info">
                         <div class="brator-header-menu">
                             <ul class="list-style-outside-none">
-                                <li class="down-menu"><a href="#_">Home</a>
-                                    <ul>
-                                        <li><a href="index.html">Home 1</a></li>
-                                        <li><a href="index-2.html">Home 2</a></li>
-                                        <li><a href="index-3.html">Home 3</a></li>
-                                    </ul>
-                                </li>
-                                <li><a href="about.html">About us</a></li>
-                                <li class="mega-menu-li"><a href="#_">Auto Parts <span class="count-hot-beg">MEGA</span></a>
+                                <li><a href="{{ route('home', [], false) }}">Home</a></li>
+                                <li class="mega-menu-li"><a href="{{ route('shop.categories', [], false) }}">Auto Parts <span class="count-hot-beg">MEGA</span></a>
                                     <div class="mega-menu-area">
                                         <div class="mega-menu-cat-list">
-                                            <div class="mega-menu-cat-list-left mega-menu-cat-list-single-area"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-01.jpg" alt="alt" /><span>Auto Parts</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-09.jpg" alt="alt" /><span>Car Care</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-02.jpg" alt="alt" /><span>Performance</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-03.jpg" alt="alt" /><span>Wheels & Tires</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-04.jpg" alt="alt" /><span>Exteriors</span></a></div>
-                                            <div class="mega-menu-cat-list-mdl mega-menu-cat-list-single-area"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-05.jpg" alt="alt" /><span>Interiors</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-06.jpg" alt="alt" /><span>Entertaiments</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-07.jpg" alt="alt" /><span>Exhaust System</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-08.jpg" alt="alt" /><span>Custom Wheels</span></a></div>
-                                            <div class="mega-menu-cat-list-end mega-menu-cat-list-single-area"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-10.jpg" alt="alt" /><span>Fluids & Chemicals</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-11.jpg" alt="alt" /><span>Tools & Supplies</span></a><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/mega-menu-12.jpg" alt="alt" /><span>Wipers & Washers</span></a></div>
-                                        </div>
-                                        <div class="mega-menu-offer">
+                                            @foreach (collect($navCategories ?? [])->split(3) as $column)
+                                                <div class="mega-menu-cat-list-left mega-menu-cat-list-single-area">
+                                                    @foreach ($column as $navCategory)
+                                                        <a href="{{ route('shop.category', $navCategory['slug'], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $navCategory['image'] }}" alt="{{ $navCategory['name'] }}" /><span>{{ $navCategory['name'] }}</span></a>
+                                                    @endforeach
+                                                </div>
+                                            @endforeach
                                             <div class="brator-offer-box-two lazyload" data-bg="/assets/images/offer/offer-02.png">
                                                 <div class="budget-area"><span>mega bundle</span></div>
-                                                <h2>Helix Engine Fluids</h2>
-                                                <p>Pack 3pcs just:</p>
-                                                <h6><span>$89.90</span><span>$250.80</span></h6><a href="shop-sub-category.html">Shop Now</a>
+                                                <h2>Service Kits</h2>
+                                                <p>Everything for a full service</p>
+                                                <h6><span>Shop the range</span></h6><a href="{{ route('shop.categories', [], false) }}">Shop Now</a>
                                             </div>
                                         </div>
                                     </div>
                                 </li>
-                                <li class="down-menu">
-                                    <a href="#_">Blog</a>
-                                    <ul>
-                                        <li><a href="blog-grid.html">Blog Grid</a></li>
-                                        <li><a href="blog-list.html">Blog List</a></li>
-                                        <li><a href="blog-single.html">Blog Single</a></li>
-                                    </ul>
-                                </li>
-                                <li class="down-menu">
-                                    <a href="#_">Pages</a>
-                                    <ul>
-                                        <li><a href="cart.html">Cart</a></li>
-                                        <li><a href="coming-soon.html">Coming Soon</a></li>
-                                        <li><a href="compare.html">Product Compare</a></li>
-                                        <li><a href="product-layout-01.html">Product Layout 1</a></li>
-                                        <li><a href="product-layout-02.html">Product Layout 2</a></li>
-                                        <li><a href="shop-categories.html">Shop Category</a></li>
-                                        <li><a href="shop-sub-category-list.html">Shop Sub Category List</a></li>
-                                        <li><a href="shop-sub-category.html">Shop Sub Category</a></li>
-                                    </ul>
-                                </li>
-                                <li><a href="contact-us.html">Contact Us</a></li>
+                                @foreach (collect($navCategories ?? [])->take(4) as $navCategory)
+                                    @if (count($navCategory['children']))
+                                        <li class="down-menu"><a href="{{ route('shop.category', $navCategory['slug'], false) }}">{{ $navCategory['name'] }}</a>
+                                            <ul>
+                                                @foreach ($navCategory['children'] as $navChild)
+                                                    <li><a href="{{ route('shop.category', $navChild['slug'], false) }}">{{ $navChild['name'] }}</a></li>
+                                                @endforeach
+                                            </ul>
+                                        </li>
+                                    @endif
+                                @endforeach
+                                <li><a href="{{ route('about', [], false) }}">About us</a></li>
+                                <li><a href="{{ route('contact', [], false) }}">Contact Us</a></li>
                             </ul>
                         </div>
                         <div class="brator-header-menu-info"><a href="#_">Order Status</a></div>

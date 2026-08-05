@@ -13,11 +13,11 @@
                     <div class="brator-categories-list">
                         @foreach ($section->items as $category)
                             <div class="brator-categories-single">
-                                <div class="brator-categories-single-img"><a href="{{ route('shop.category', $category->slug) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $category->image_path }}" alt="{{ $category->name }}" /></a></div>
+                                <div class="brator-categories-single-img"><a href="{{ route('shop.category', $category->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $category->image_path }}" alt="{{ $category->name }}" /></a></div>
                                 <div class="brator-categories-single-title">
-                                    <p><a href="{{ route('shop.category', $category->slug) }}">{{ $category->name }}</a></p>
+                                    <p><a href="{{ route('shop.category', $category->slug, false) }}">{{ $category->name }}</a></p>
                                 </div>
-                                <div class="brator-categories-single-sub"><a href="{{ route('shop.category', $category->slug) }}">{{ $category->products_count }} parts</a></div>
+                                <div class="brator-categories-single-sub"><a href="{{ route('shop.category', $category->slug, false) }}">{{ $category->products_count }} parts</a></div>
                             </div>
                         @endforeach
                     </div>

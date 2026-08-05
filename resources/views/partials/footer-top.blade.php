@@ -12,7 +12,7 @@
         <div class="container-xxxl container-xxl container">
             <div class="row">
                 <div class="col-xl-4 col-lg-6">
-                    <div class="brator-footer-top-element brator-footer-top-address"><a href="index-2.html"><img class="title-img lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="/assets/images/logo.png" alt="logo" /></a>
+                    <div class="brator-footer-top-element brator-footer-top-address"><a href="{{ route('home', [], false) }}"><img class="title-img lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="/assets/images/logo.png" alt="logo" /></a>
                         <div class="brator-footer-top-content">
                             <h6>#1 US's biggest online marketplace for car spare OEM & Aftermarkets.</h6>
                             <p>All manufacturer names, symbols, and descriptions, used in our images and text are used solely for identification purposes only. It is neither inferred nor implied that any item sold by CARiD.com is a product authorized by or in any way connected with any vehicle manufacturers displayed on this page</p>
@@ -40,14 +40,15 @@
                 <div class="col-xl-2 col-lg-6">
                     <div class="brator-footer-top-element">
                         <h6 class="footer-top-title">Brator’s Catalog</h6>
-                        <div class="brator-footer-top-content brator-link-list-one"><a href="#_">Auto Parts</a><a href="#_">Car Care</a><a href="#_">Fluids &amp; Chemicals</a><a href="#_">OilsTools &amp; Supplies</a><a href="#_">Wheel &amp; Tires</a><a href="#_">Clearances</a><a href="#_">FAQ</a>
+                        <div class="brator-footer-top-content brator-link-list-one">
+                            @foreach ($navCategories ?? [] as $navCategory)<a href="{{ route('shop.category', $navCategory['slug'], false) }}">{{ $navCategory['name'] }}</a>@endforeach
                         </div>
                     </div>
                 </div>
                 <div class="col-xxl-2 col-xl-2 col-lg-6">
                     <div class="brator-footer-top-element">
                         <h6 class="footer-top-title">Information</h6>
-                        <div class="brator-footer-top-content brator-link-list-one"><a href="#_">About Brator</a><a href="#_">Investors</a><a href="#_">Blog</a><a href="#_">Career</a><a href="#_">Contact</a><a href="#_">Affiliate Program</a><a href="#_">Sell on Brator</a><a href="#_">Parnership</a>
+                        <div class="brator-footer-top-content brator-link-list-one"><a href="{{ route('about', [], false) }}">About Brator</a><a href="#_">Investors</a><a href="#_">Blog</a><a href="#_">Career</a><a href="{{ route('contact', [], false) }}">Contact</a><a href="#_">Affiliate Program</a><a href="#_">Sell on Brator</a><a href="#_">Parnership</a>
                         </div>
                     </div>
                 </div>

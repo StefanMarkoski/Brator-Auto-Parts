@@ -26,12 +26,15 @@
                 <div class="col-lg-12">
                     <div class="brator-breadcrumb">
                         <ul>
-                            <li><a href="#_">Home</a></li>
-                            <li><a href="#_">All Categories</a></li>
-                            <li><a href="#_">wheels & Tires</a></li>
-                            <li><a href="#_">Mercedes</a></li>
-                            <li><a href="#_">GLC Class</a></li>
-                            <li class="active-link">2018</li>
+                            <li><a href="{{ route('home', [], false) }}">Home</a></li>
+                            <li><a href="{{ route('shop.categories', [], false) }}">All Categories</a></li>
+                            @foreach ($breadcrumbs ?? [] as $crumbLabel => $crumbUrl)
+                                @if ($crumbUrl)
+                                    <li><a href="{{ $crumbUrl }}">{{ $crumbLabel }}</a></li>
+                                @else
+                                    <li class="active-link">{{ $crumbLabel }}</li>
+                                @endif
+                            @endforeach
                         </ul>
                     </div>
                 </div>
@@ -80,7 +83,7 @@
                                         <li><a href="#_">Fluids & Chemicals</a></li>
                                         <li><a href="#_">Oils</a></li>
                                         <li><a href="#_">Tools & Supplies</a></li>
-                                        <li class="sub-cat"><a href="index-3.html">wheels & Tires</a>
+                                        <li class="sub-cat"><a href="{{ route('home', [], false) }}">wheels & Tires</a>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                                 <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
                                             </svg>
@@ -91,13 +94,13 @@
                                                 <li><a href="#_">wheels</a></li>
                                             </ul>
                                         </li>
-                                        <li class="sub-cat"><a href="index-3.html">Tires</a>
+                                        <li class="sub-cat"><a href="{{ route('home', [], false) }}">Tires</a>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                                 <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
                                             </svg>
                                             <ul>
                                                 <li><a href="#_">Tires</a></li>
-                                                <li><a href="index-3.html">wheels</a></li>
+                                                <li><a href="{{ route('home', [], false) }}">wheels</a></li>
                                                 <li><a href="#_">Tires</a></li>
                                                 <li><a href="#_">wheels</a></li>
                                             </ul>
@@ -539,7 +542,7 @@
                                         </div>
                                         <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/wheel-01.jpg" alt="alt" /></a></div>
                                         <div class="brator-product-single-item-mini">
-                                            <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Polit</a></div>
+                                            <div class="brator-product-single-item-cat"><a href="#_">Polit</a></div>
                                             <div class="brator-product-single-item-title">
                                                 <h5><a href="#_"> Silver with Mirror Cut Face Wheels</a></h5>
                                             </div>
@@ -568,7 +571,7 @@
                                             <div class="brator-product-single-item-price">
                                                 <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                             </div>
-                                            <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                            <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                         </div>
                                     </div>
                                     <div class="brator-product-single-item-area splide__slide design-two">
@@ -579,7 +582,7 @@
                                         </div>
                                         <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/wheel-02.jpg" alt="alt" /></a></div>
                                         <div class="brator-product-single-item-mini">
-                                            <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Premiumwheel</a></div>
+                                            <div class="brator-product-single-item-cat"><a href="#_">Premiumwheel</a></div>
                                             <div class="brator-product-single-item-title">
                                                 <h5><a href="#_"> HE894 Satin Black red cart porst</a></h5>
                                             </div>
@@ -608,7 +611,7 @@
                                             <div class="brator-product-single-item-price">
                                                 <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                             </div>
-                                            <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                            <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                         </div>
                                     </div>
                                     <div class="brator-product-single-item-area splide__slide design-two">
@@ -619,7 +622,7 @@
                                         </div>
                                         <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/wheel-03.jpg" alt="alt" /></a></div>
                                         <div class="brator-product-single-item-mini">
-                                            <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Polit</a></div>
+                                            <div class="brator-product-single-item-cat"><a href="#_">Polit</a></div>
                                             <div class="brator-product-single-item-title">
                                                 <h5><a href="#_"> Brand Name CV10 Satin Black with Chrome</a></h5>
                                             </div>
@@ -648,7 +651,7 @@
                                             <div class="brator-product-single-item-price">
                                                 <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                             </div>
-                                            <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                            <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                         </div>
                                     </div>
                                     <div class="brator-product-single-item-area splide__slide design-two">
@@ -659,7 +662,7 @@
                                         </div>
                                         <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/wheel-05.jpg" alt="alt" /></a></div>
                                         <div class="brator-product-single-item-mini">
-                                            <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Brakepro</a></div>
+                                            <div class="brator-product-single-item-cat"><a href="#_">Brakepro</a></div>
                                             <div class="brator-product-single-item-title">
                                                 <h5><a href="#_"> Evolution Sport Drilled and Slotted Brake Kit</a></h5>
                                             </div>
@@ -688,7 +691,7 @@
                                             <div class="brator-product-single-item-price">
                                                 <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                             </div>
-                                            <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                            <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                         </div>
                                     </div>
                                 </div>
@@ -721,10 +724,10 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="brator-filter-view-type"><a class="current" href="shop-sub-category.html">
+                            <div class="brator-filter-view-type"><a class="current" href="{{ route('shop.categories', [], false) }}">
                                     <svg class="bi bi-grid" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                         <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"></path>
-                                    </svg></a><a href="shop-sub-category-list.html">
+                                    </svg></a><a href="{{ route('shop.categories', [], false) }}">
                                     <svg class="bi bi-list-task" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                         <path fill-rule="evenodd" d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5H2zM3 3H2v1h1V3z"></path>
                                         <path d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9z"></path>
@@ -797,7 +800,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-06.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Brakepro</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Brakepro</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Evolution Sport Drilled and Slotted Brake Kit</a></h5>
                                         </div>
@@ -826,7 +829,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -837,7 +840,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-02.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Machelin</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Machelin</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Universal 12 V Mini Tire Air Compressor</a></h5>
                                         </div>
@@ -866,7 +869,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -877,7 +880,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-03.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Brake oil</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Brake oil</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Simple Leather Steering Wheel</a></h5>
                                         </div>
@@ -906,7 +909,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -917,7 +920,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-04.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">onwheel</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">onwheel</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Carnauba Wash and Wax 64 oz by Norer</a></h5>
                                         </div>
@@ -946,7 +949,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -957,7 +960,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-05.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">onwheel</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">onwheel</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Carnauba Wash and Wax 64 oz by Norer</a></h5>
                                         </div>
@@ -986,7 +989,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                             </div>

@@ -26,9 +26,15 @@
                 <div class="col-lg-12">
                     <div class="brator-breadcrumb">
                         <ul>
-                            <li><a href="#_">Home</a></li>
-                            <li><a href="#_">All Categories</a></li>
-                            <li class="active-link">wheels & Tires</li>
+                            <li><a href="{{ route('home', [], false) }}">Home</a></li>
+                            <li><a href="{{ route('shop.categories', [], false) }}">All Categories</a></li>
+                            @foreach ($breadcrumbs ?? [] as $crumbLabel => $crumbUrl)
+                                @if ($crumbUrl)
+                                    <li><a href="{{ $crumbUrl }}">{{ $crumbLabel }}</a></li>
+                                @else
+                                    <li class="active-link">{{ $crumbLabel }}</li>
+                                @endif
+                            @endforeach
                         </ul>
                     </div>
                 </div>
@@ -105,13 +111,13 @@
                     <div class="brator-categories-list">
                         @foreach ($categories as $category)
                             <div class="brator-categories-single">
-                                <div class="brator-categories-single-img"><a href="{{ route('shop.category', $category->slug) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $category->image_path }}" alt="{{ $category->name }}" /></a></div>
+                                <div class="brator-categories-single-img"><a href="{{ route('shop.category', $category->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $category->image_path }}" alt="{{ $category->name }}" /></a></div>
                                 <div class="brator-categories-single-title">
-                                    <p><a href="{{ route('shop.category', $category->slug) }}">{{ $category->name }}</a></p>
+                                    <p><a href="{{ route('shop.category', $category->slug, false) }}">{{ $category->name }}</a></p>
                                 </div>
                                 <div class="brator-categories-single-sub">
                                     @foreach ($category->children->take(4) as $child)
-                                        <a href="{{ route('shop.category', $child->slug) }}">{{ $child->name }}</a>
+                                        <a href="{{ route('shop.category', $child->slug, false) }}">{{ $child->name }}</a>
                                     @endforeach
                                 </div>
                             </div>
@@ -135,139 +141,139 @@
                 </div>
                 <div class="col-md-12">
                     <div class="brator-makes-list">
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Accura</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Accura</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Chevy</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Chevy</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Ford</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Ford</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Dodge</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Dodge</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Ram</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Ram</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Toyota</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Toyota</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Honda</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Honda</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Nissan</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Nissan</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Jeep</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Jeep</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>GMC</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>GMC</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Huyndai</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Huyndai</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Kia</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Kia</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Mercerdess</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Mercerdess</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>BMW</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>BMW</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Audi</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Audi</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Lexus</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Lexus</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Jaguar</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Jaguar</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Volvo</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Volvo</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Rangover</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Rangover</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single"><a href="shop-sub-category.html"><span>Porsche</span>
+                        <div class="brator-makes-list-single"><a href="{{ route('shop.categories', [], false) }}"><span>Porsche</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Accura</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Accura</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Chevy</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Chevy</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Ford</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Ford</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Dodge</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Dodge</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Huyndai</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Huyndai</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Kia</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Kia</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Mercerdess</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Mercerdess</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>BMW</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>BMW</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Audi</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Audi</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Lexus</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Lexus</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Jaguar</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Jaguar</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Volvo</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Volvo</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Rangover</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Rangover</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
-                        <div class="brator-makes-list-single disable"><a href="shop-sub-category.html"><span>Porsche</span>
+                        <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Porsche</span>
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg></a></div>
@@ -371,7 +377,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-06.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Brakepro</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Brakepro</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Evolution Sport Drilled and Slotted Brake Kit</a></h5>
                                         </div>
@@ -400,7 +406,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -411,7 +417,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-02.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Machelin</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Machelin</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Universal 12 V Mini Tire Air Compressor</a></h5>
                                         </div>
@@ -440,7 +446,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -451,7 +457,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-03.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Brake oil</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Brake oil</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Simple Leather Steering Wheel</a></h5>
                                         </div>
@@ -480,7 +486,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -491,7 +497,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-04.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">onwheel</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">onwheel</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Carnauba Wash and Wax 64 oz by Norer</a></h5>
                                         </div>
@@ -520,7 +526,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -531,7 +537,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-05.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">onwheel</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">onwheel</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Carnauba Wash and Wax 64 oz by Norer</a></h5>
                                         </div>
@@ -560,7 +566,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                             </div>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Catalog\Queries\Internal;
 
 use App\Domain\Catalog\DTOs\ProductCardData;
+use App\Domain\Catalog\Models\ProductCrossReference;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +71,63 @@ final class ListProductCardsQuery
             ->all();
 
         return $this->forIds($ids);
+    }
+
+    /**
+     * Site search. Tries the part number first, because pasting the number off the
+     * old part is the most common real search on a parts site — and an exact
+     * cross-reference hit beats any fuzzy name match. Only falls back to the name
+     * fulltext index when the number lookup finds nothing.
+     *
+     * @return Collection<int, ProductCardData>
+     */
+    public function search(string $term, int $limit, int $offset = 0): Collection
+    {
+        $ids = $this->matchingIds($term, $limit, $offset);
+
+        return $this->forIds($ids);
+    }
+
+    public function countSearch(string $term): int
+    {
+        $normalised = ProductCrossReference::normalise($term);
+
+        $byNumber = DB::table('product_cross_references')
+            ->where('number_normalized', 'like', $normalised.'%')
+            ->distinct()->count('product_id');
+
+        if ($byNumber > 0) {
+            return $byNumber;
+        }
+
+        return DB::table('products')
+            ->where('is_active', true)->whereNull('deleted_at')
+            ->whereFullText(['name', 'sku'], $term)
+            ->count();
+    }
+
+    /** @return list<string> */
+    private function matchingIds(string $term, int $limit, int $offset): array
+    {
+        $normalised = ProductCrossReference::normalise($term);
+
+        if ($normalised !== '') {
+            $byNumber = DB::table('product_cross_references')
+                ->where('number_normalized', 'like', $normalised.'%')
+                ->orderBy('product_id')
+                ->offset($offset)->limit($limit)
+                ->pluck('product_id')->unique()->values()->all();
+
+            if ($byNumber !== []) {
+                return $byNumber;
+            }
+        }
+
+        return DB::table('products')
+            ->where('is_active', true)->whereNull('deleted_at')
+            ->whereFullText(['name', 'sku'], $term)
+            ->offset($offset)->limit($limit)
+            ->pluck('id')->all();
     }
 
     /** @return Collection<int, ProductCardData> */

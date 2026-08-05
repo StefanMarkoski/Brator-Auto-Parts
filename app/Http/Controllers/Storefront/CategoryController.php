@@ -19,12 +19,32 @@ final class CategoryController
     public function index(): View
     {
         return view('shop.categories', [
+            'breadcrumbs' => [],
             'categories' => Category::query()
                 ->where('depth', 0)->where('is_active', true)
                 ->with('children')
                 ->orderBy('position')
                 ->get(),
         ]);
+    }
+
+    /**
+     * Breadcrumb trail: parent, then the category itself as the active crumb.
+     * Label => url, and a null url marks the active (unlinked) crumb.
+     *
+     * @return array<string, ?string>
+     */
+    private function breadcrumbsFor(Category $category): array
+    {
+        $crumbs = [];
+
+        if ($category->parent !== null) {
+            $crumbs[$category->parent->name] = route('shop.category', $category->parent->slug, false);
+        }
+
+        $crumbs[$category->name] = null;
+
+        return $crumbs;
     }
 
     /** A category listing. `view=list` switches to the theme's list layout. */
@@ -42,6 +62,7 @@ final class CategoryController
 
         return view($listView ? 'shop.listing-list' : 'shop.listing-grid', [
             'category' => $category,
+            'breadcrumbs' => $this->breadcrumbsFor($category),
             'products' => $this->cards->inCategorySubtree(
                 $category->path,
                 self::PER_PAGE,

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Catalog\Queries\Public\GetNavigationQuery;
 use App\Support\Database\SchemaMacros;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -37,6 +39,14 @@ class AppServiceProvider extends ServiceProvider
         // newFactory() override on all thirty-odd models.
         Factory::guessFactoryNamesUsing(
             fn (string $modelName): string => 'Database\\Factories\\'.class_basename($modelName).'Factory'
+        );
+
+        // The header's mega menu needs the category tree on every page. A composer
+        // keeps that out of every controller — a nav that only works on pages whose
+        // controller remembered to pass it is how half a site ends up with dead links.
+        View::composer(
+            ['partials.header', 'partials.header-shop', 'partials.footer-top'],
+            fn ($view) => $view->with('navCategories', app(GetNavigationQuery::class)->execute())
         );
     }
 }

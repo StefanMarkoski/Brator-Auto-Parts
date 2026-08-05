@@ -14,7 +14,7 @@
     <div class="h-infobox__wrapper">
         <div class="tt-header-holder h-infobox__popup">
             <div class="brator-search-area">
-                <form class="search-form" role="search" method="get">
+                <form class="search-form" role="search" method="get" action="{{ route('search', [], false) }}">
                     <input class="search-field" type="search" placeholder="Search by Part Name, Part Number, Vehicle and Brands" name="s" required="required">
                     <button type="submit">
                         <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
@@ -23,9 +23,9 @@
                     </button>
                 </form>
                 <div class="search-quly">
-                    <p>Quick Search:</p><a href="#_">Replacement</a><a href="#_">Parts</a><a href="#_">Brakes</a><a href="#_">Tires</a><a href="#_">Fluids</a><a href="#_">Filters</a><a href="#_">Wipers</a>
+                    <p>Quick Search:</p><a href="{{ route('search', ['s' => 'Replacement'], false) }}">Replacement</a><a href="{{ route('search', ['s' => 'Parts'], false) }}">Parts</a><a href="{{ route('search', ['s' => 'Brakes'], false) }}">Brakes</a><a href="{{ route('search', ['s' => 'Tires'], false) }}">Tires</a><a href="{{ route('search', ['s' => 'Fluids'], false) }}">Fluids</a><a href="{{ route('search', ['s' => 'Filters'], false) }}">Filters</a><a href="{{ route('search', ['s' => 'Wipers'], false) }}">Wipers</a>
                 </div>
             </div>
-            <div class="brator-header-menu-info text-left"><a href="#_">Order Status</a><span>24/7 Support:</span><a class="phomeee" href="#_">1800 500 1234</a></div>
+            <div class="brator-header-menu-info text-left"><a href="#_">Order Status</a><span>24/7 Support:</span><a class="phomeee" href="tel:18005001234">1800 500 1234</a></div>
         </div>
     </div>

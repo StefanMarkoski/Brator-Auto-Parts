@@ -10,13 +10,15 @@
                 <div class="col-lg-12">
                     <div class="brator-breadcrumb">
                         <ul>
-                            <li><a href="#_">Home</a></li>
-                            <li><a href="#_">All Categories</a></li>
-                            <li><a href="#_">wheels & Tires</a></li>
-                            <li><a href="#_">Mercedes</a></li>
-                            <li><a href="#_">GLC Class</a></li>
-                            <li><a href="#_">All Categories</a></li>
-                            <li class="active-link">2018</li>
+                            <li><a href="{{ route('home', [], false) }}">Home</a></li>
+                            <li><a href="{{ route('shop.categories', [], false) }}">All Categories</a></li>
+                            @foreach ($breadcrumbs ?? [] as $crumbLabel => $crumbUrl)
+                                @if ($crumbUrl)
+                                    <li><a href="{{ $crumbUrl }}">{{ $crumbLabel }}</a></li>
+                                @else
+                                    <li class="active-link">{{ $crumbLabel }}</li>
+                                @endif
+                            @endforeach
                         </ul>
                     </div>
                 </div>
@@ -158,7 +160,7 @@
                                     </div>
                                     <div class="brator-product-single-light-info">
                                         <div class="brator-product-single-light-info-s cat">
-                                            <h5>Categories: </h5>@foreach ($product->categories as $category)<a href="{{ route('shop.category', $category->slug) }}">{{ $category->name }}</a>@endforeach
+                                            <h5>Categories: </h5>@foreach ($product->categories as $category)<a href="{{ route('shop.category', $category->slug, false) }}">{{ $category->name }}</a>@endforeach
                                         </div>
                                         <div class="brator-product-single-light-info-s">
                                             <h5>Part Number: </h5>@foreach ($product->crossReferences->take(3) as $ref)<a href="#_">{{ $ref->number }}</a>@endforeach
@@ -205,7 +207,7 @@
                                 <div class="type-post">
                                     <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-01.jpg" alt="blog-post-blog-01.jpg" /></a></div>
                                     <div class="brator-blog-listing-single-item-content">
-                                        <h3 class="brator-blog-listing-single-item-title"><a href="blog-single.html">Replace Brakes Guide</a></h3>
+                                        <h3 class="brator-blog-listing-single-item-title"><a href="#_">Replace Brakes Guide</a></h3>
                                         <div class="brator-blog-listing-single-item-excerpt">
                                             <p>The braking system of a vehicle is an important safety [...]</p>
                                         </div>
@@ -216,7 +218,7 @@
                                 <div class="type-post">
                                     <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-05.jpg" alt="blog-post-blog-05.jpg" /></a></div>
                                     <div class="brator-blog-listing-single-item-content">
-                                        <h3 class="brator-blog-listing-single-item-title"><a href="blog-single.html">Things to keep in mind when washing a car</a></h3>
+                                        <h3 class="brator-blog-listing-single-item-title"><a href="#_">Things to keep in mind when washing a car</a></h3>
                                         <div class="brator-blog-listing-single-item-excerpt">
                                             <p>The braking system of a vehicle is an important safety [...]</p>
                                         </div>
@@ -227,7 +229,7 @@
                                 <div class="type-post">
                                     <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-06.jpg" alt="blog-post-blog-06.jpg" /></a></div>
                                     <div class="brator-blog-listing-single-item-content">
-                                        <h3 class="brator-blog-listing-single-item-title"><a href="blog-single.html">Replace Rims by yourself,why not? All tools need to prepare</a></h3>
+                                        <h3 class="brator-blog-listing-single-item-title"><a href="#_">Replace Rims by yourself,why not? All tools need to prepare</a></h3>
                                         <div class="brator-blog-listing-single-item-excerpt">
                                             <p>The braking system of a vehicle is an important safety [...]</p>
                                         </div>
@@ -238,7 +240,7 @@
                                 <div class="type-post">
                                     <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-07.jpg" alt="blog-post-blog-07.jpg" /></a></div>
                                     <div class="brator-blog-listing-single-item-content">
-                                        <h3 class="brator-blog-listing-single-item-title"><a href="blog-single.html">Transmission for old car</a></h3>
+                                        <h3 class="brator-blog-listing-single-item-title"><a href="#_">Transmission for old car</a></h3>
                                         <div class="brator-blog-listing-single-item-excerpt">
                                             <p>The braking system of a vehicle is an important safety [...]</p>
                                         </div>
@@ -622,7 +624,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-06.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Brakepro</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Brakepro</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Evolution Sport Drilled and Slotted Brake Kit</a></h5>
                                         </div>
@@ -651,7 +653,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -662,7 +664,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-02.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Machelin</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Machelin</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Universal 12 V Mini Tire Air Compressor</a></h5>
                                         </div>
@@ -691,7 +693,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -702,7 +704,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-03.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">Brake oil</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">Brake oil</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Simple Leather Steering Wheel</a></h5>
                                         </div>
@@ -731,7 +733,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -742,7 +744,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-04.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">onwheel</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">onwheel</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Carnauba Wash and Wax 64 oz by Norer</a></h5>
                                         </div>
@@ -771,7 +773,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                                 <div class="brator-product-single-item-area splide__slide design-two">
@@ -782,7 +784,7 @@
                                     </div>
                                     <div class="brator-product-single-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/shop/product-05.jpg" alt="alt" /></a></div>
                                     <div class="brator-product-single-item-mini">
-                                        <div class="brator-product-single-item-cat"><a href="product-layout-01.html">onwheel</a></div>
+                                        <div class="brator-product-single-item-cat"><a href="#_">onwheel</a></div>
                                         <div class="brator-product-single-item-title">
                                             <h5><a href="#_"> Carnauba Wash and Wax 64 oz by Norer</a></h5>
                                         </div>
@@ -811,7 +813,7 @@
                                         <div class="brator-product-single-item-price">
                                             <p><sub>$172.96</sub><b class="pub">$100</b></p>
                                         </div>
-                                        <div class="brator-product-single-item-btn"><a href="product-layout-01.html">Add to cart</a></div>
+                                        <div class="brator-product-single-item-btn"><a href="#_">Add to cart</a></div>
                                     </div>
                                 </div>
                             </div>

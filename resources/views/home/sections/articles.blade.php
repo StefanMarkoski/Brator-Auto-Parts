@@ -20,7 +20,7 @@
                         <div class="type-post">
                             <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog-grid-01.jpg" alt="blog-post-blog-grid-01.jpg" /></a></div>
                             <div class="brator-blog-listing-single-item-content">
-                                <h3 class="brator-blog-listing-single-item-title"><a href="blog-single.html">Which countries use vehicles with a right-hand steering wheel, do you know?</a></h3>
+                                <h3 class="brator-blog-listing-single-item-title"><a href="#_">Which countries use vehicles with a right-hand steering wheel, do you know?</a></h3>
                                 <div class="brator-blog-listing-single-item-excerpt">
                                     <p>The braking system of a vehicle is an important safety aspect that should not be. From there, the pump forces the oil into the engine’s lubrication syste [...]</p>
                                 </div>
@@ -46,7 +46,7 @@
                             <div class="type-post">
                                 <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-01.jpg" alt="blog-post-blog-01.jpg" /></a></div>
                                 <div class="brator-blog-listing-single-item-content">
-                                    <h3 class="brator-blog-listing-single-item-title"><a href="blog-single.html">Replace Brakes Guide</a></h3>
+                                    <h3 class="brator-blog-listing-single-item-title"><a href="#_">Replace Brakes Guide</a></h3>
                                     <div class="brator-blog-listing-single-item-excerpt">
                                         <p>The braking system of a vehicle is an important safety aspect that should not be [...]</p>
                                     </div>
@@ -69,7 +69,7 @@
                             <div class="type-post">
                                 <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-07.jpg" alt="blog-post-blog-07.jpg" /></a></div>
                                 <div class="brator-blog-listing-single-item-content">
-                                    <h3 class="brator-blog-listing-single-item-title"><a href="blog-single.html">Clean the engine compartment should or not?</a></h3>
+                                    <h3 class="brator-blog-listing-single-item-title"><a href="#_">Clean the engine compartment should or not?</a></h3>
                                     <div class="brator-blog-listing-single-item-excerpt">
                                         <p>Whether you’re planning to buy a new or used Mercedes S450, you’re sure to get the [...]</p>
                                     </div>
@@ -92,7 +92,7 @@
                             <div class="type-post">
                                 <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="   data-src="/assets/images/blog/blog-08.jpg" alt="blog-post-blog-08.jpg" /></a></div>
                                 <div class="brator-blog-listing-single-item-content">
-                                    <h3 class="brator-blog-listing-single-item-title"><a href="blog-single.html">Auto Parts for Roll Royce</a></h3>
+                                    <h3 class="brator-blog-listing-single-item-title"><a href="#_">Auto Parts for Roll Royce</a></h3>
                                     <div class="brator-blog-listing-single-item-excerpt">
                                         <p>Contrary to popular belief, Lorem Ipsum is not simply random text [...]</p>
                                     </div>

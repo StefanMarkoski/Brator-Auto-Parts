@@ -11,7 +11,7 @@
                 </div>
                 @foreach ($section->items as $brand)
                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
-                        <div class="brator-brand-img"><a href="{{ route('shop.categories') }}?brand={{ $brand->slug }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $brand->logo_path }}" alt="{{ $brand->name }}" /></a></div>
+                        <div class="brator-brand-img"><a href="{{ route('shop.categories', [], false) }}?brand={{ $brand->slug }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $brand->logo_path }}" alt="{{ $brand->name }}" /></a></div>
                     </div>
                 @endforeach
             </div>
