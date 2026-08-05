@@ -56,3 +56,6 @@ Route::get('/vehicle/variants/{model}', [VehicleController::class, 'variants'])-
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact', [PageController::class, 'submitContact'])->name('contact.submit');
+Route::post('/newsletter', [PageController::class, 'subscribe'])
+    ->middleware('throttle:10,1')
+    ->name('newsletter.subscribe');

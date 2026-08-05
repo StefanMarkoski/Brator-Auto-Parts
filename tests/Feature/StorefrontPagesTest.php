@@ -151,6 +151,37 @@ final class StorefrontPagesTest extends TestCase
             ->firstOrFail();
     }
 
+    public function test_the_newsletter_signup_actually_subscribes(): void
+    {
+        // It was dead UI: a theme input with no form, no action and no route, and a
+        // NewsletterSubscriber model referenced nowhere outside its own file. The
+        // reviewer found it after I had claimed a clean sweep.
+        $this->post(route('newsletter.subscribe'), ['email' => 'shopper@example.com'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('newsletter_subscribers', ['email' => 'shopper@example.com']);
+    }
+
+    public function test_the_newsletter_signup_rejects_a_bad_address(): void
+    {
+        $this->post(route('newsletter.subscribe'), ['email' => 'not-an-email'])
+            ->assertSessionHasErrors('email');
+
+        $this->assertDatabaseCount('newsletter_subscribers', 0);
+    }
+
+    public function test_subscribing_twice_is_not_an_error(): void
+    {
+        // Pressing Subscribe twice should not produce a duplicate-key error; that tells
+        // the shopper nothing useful and reads as a bug.
+        $this->post(route('newsletter.subscribe'), ['email' => 'twice@example.com']);
+        $this->post(route('newsletter.subscribe'), ['email' => 'twice@example.com'])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('newsletter_subscribers', 1);
+    }
+
     public function test_an_unknown_product_slug_is_a_404_not_a_500(): void
     {
         $this->get('/product/no-such-part')->assertNotFound();

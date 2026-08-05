@@ -31,10 +31,13 @@
                         <div class="brator-footer-top-content">
                             <p>Register now to get latest updates on promotions and coupons. Don’t worries, we not spam !</p>
                             <div class="brator-sub-form">
-                                <div class="news-letter-form"><span class="wpcf7-form-control-wrap email">
+                                <form class="news-letter-form" method="post" action="{{ route('newsletter.subscribe', [], false) }}">
+                                    @csrf
+                                    @if (session('status'))<p>{{ session('status') }}</p>@endif
+                                    @error('email')<p>{{ $message }}</p>@enderror<span class="wpcf7-form-control-wrap email">
                                         <input class="wpcf7-form-control wpcf7-text wpcf7-email wpcf7-validates-as-required wpcf7-validates-as-email" type="email" name="email" value="" size="40" aria-required="true" aria-invalid="false" placeholder="Email Address" /></span>
                                     <button class="wpcf7-form-control wpcf7-submit" type="submit">Subscribe</button><span class="ajax-loader"></span>
-                                </div>
+                                </form>
                             </div>
                             <p>By subscribing, you accepted the our<a href="#_">Policy</a></p>
                         </div>
