@@ -49,6 +49,7 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - ./docker/mysql/my.cnf:/etc/mysql/conf.d/brator.cnf:ro
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # Everything waits on this — migrations against a half-started MySQL is the
       # classic first-run failure.
