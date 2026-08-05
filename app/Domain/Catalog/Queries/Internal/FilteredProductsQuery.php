@@ -8,6 +8,7 @@ use App\Domain\Catalog\DTOs\ProductCardData;
 use App\Domain\Catalog\DTOs\ProductFilter;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCrossReference;
+use App\Support\Database\LikePattern;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -169,11 +170,25 @@ final class FilteredProductsQuery
             $term = $filter->searchTerm;
 
             $query->where(function (Builder $outer) use ($normalised, $term): void {
-                $outer->whereIn('products.id', function (Builder $sub) use ($normalised): void {
-                    $sub->select('product_id')
-                        ->from('product_cross_references')
-                        ->where('number_normalized', 'like', $normalised.'%');
-                })->orWhere('products.name', 'like', '%'.$term.'%');
+                // Only join the part-number branch when there is a number left to match.
+                // normalise() strips everything but letters and digits, so a search for
+                // "%" or "_" reduced to an empty string — and "starts with nothing"
+                // matched all 5,000 products. Escaping the wildcard was necessary but
+                // not sufficient; the empty term was the real cause.
+                if ($normalised !== '') {
+                    $outer->whereIn('products.id', function (Builder $sub) use ($normalised): void {
+                        $sub->select('product_id')
+                            ->from('product_cross_references')
+                            ->where('number_normalized', 'like', LikePattern::startsWith($normalised));
+                    })
+                        ->orWhere('products.name', 'like', LikePattern::contains($term))
+                        ->orWhere('products.sku', 'like', LikePattern::contains($term));
+
+                    return;
+                }
+
+                $outer->where('products.name', 'like', LikePattern::contains($term))
+                    ->orWhere('products.sku', 'like', LikePattern::contains($term));
             });
         }
 

@@ -10,6 +10,7 @@ use App\Domain\Catalog\Models\Brand;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\CatalogImport\Actions\RecordFieldOverridesAction;
 use App\Domain\CatalogImport\Models\ProductFieldOverride;
+use App\Support\Database\LikePattern;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,8 +28,8 @@ final class ProductController
             'products' => Product::query()
                 ->with('brand')
                 ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")))
+                    ->where('name', 'like', LikePattern::contains($search))
+                    ->orWhere('sku', 'like', LikePattern::contains($search))))
                 ->when($request->query('stock') === 'out', fn ($q) => $q->where('stock_status', 'out_of_stock'))
                 ->when($request->query('stock') === 'low', fn ($q) => $q->where('stock_quantity', '<=', 5))
                 ->orderByDesc('updated_at')

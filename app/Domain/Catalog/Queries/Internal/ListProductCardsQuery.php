@@ -7,6 +7,7 @@ namespace App\Domain\Catalog\Queries\Internal;
 use App\Domain\Catalog\DTOs\ProductCardData;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCrossReference;
+use App\Support\Database\LikePattern;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -94,7 +95,7 @@ final class ListProductCardsQuery
         $normalised = ProductCrossReference::normalise($term);
 
         $byNumber = DB::table('product_cross_references')
-            ->where('number_normalized', 'like', $normalised.'%')
+            ->where('number_normalized', 'like', LikePattern::startsWith($normalised))
             ->distinct()->count('product_id');
 
         if ($byNumber > 0) {
@@ -114,7 +115,7 @@ final class ListProductCardsQuery
 
         if ($normalised !== '') {
             $byNumber = DB::table('product_cross_references')
-                ->where('number_normalized', 'like', $normalised.'%')
+                ->where('number_normalized', 'like', LikePattern::startsWith($normalised))
                 ->orderBy('product_id')
                 ->offset($offset)->limit($limit)
                 ->pluck('product_id')->unique()->values()->all();
