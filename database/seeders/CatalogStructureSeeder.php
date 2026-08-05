@@ -73,7 +73,19 @@ class CatalogStructureSeeder extends Seeder
 
     public function run(): void
     {
-        Brand::factory()->count(40)->create();
+        // Real aftermarket brands. Faker company names ("Bins-Legros") made the brand
+        // filter meaningless to look at — you could not tell a plausible result from a
+        // broken one.
+        foreach (VehicleData::brands() as $position => $name) {
+            Brand::create([
+                'name' => $name,
+                'slug' => Str::slug($name),
+                'logo_path' => sprintf('assets/images/brand/brand-%02d.png', ($position % 18) + 1),
+                'description' => "Genuine and aftermarket parts by {$name}.",
+                'is_active' => true,
+                'position' => $position,
+            ]);
+        }
 
         $position = 0;
         foreach (self::TREE as $parentName => $children) {

@@ -24,19 +24,22 @@ class ProductSeeder extends Seeder
 {
     private const CHUNK = 500;
 
+    /**
+     * Plausible distinguishing specs. ASCII only — an en-dash or a diameter symbol here
+     * buys nothing and risks an encoding surprise somewhere down the stack.
+     */
+    private const SPECS = [
+        'OE quality', 'Heavy Duty', '256mm', '288mm', '312mm',
+        'vented', 'coated', 'Sport', '2-pin', '3-pin',
+        'Left', 'Right', '12V', '24V', 'Long Life',
+        'Premium', 'Eco', '4-hole', '5-hole', 'reinforced',
+    ];
+
     /** Overridden by ProductSeederSmall so tests do not seed five thousand rows. */
     protected function productCount(): int
     {
         return 5_000;
     }
-
-    /** Real-ish part names, so seeded pages read like a parts shop. */
-    private const NOUNS = [
-        'Brake Disc', 'Brake Pad Set', 'Oil Filter', 'Air Filter', 'Timing Belt Kit',
-        'Shock Absorber', 'Alloy Wheel', 'Battery', 'Alternator', 'Headlight Assembly',
-        'Turbocharger', 'Water Pump', 'Clutch Kit', 'Radiator', 'Wheel Bearing',
-        'Spark Plug Set', 'Fuel Pump', 'Control Arm', 'Cabin Filter', 'Starter Motor',
-    ];
 
     /** Real filenames from the theme's own shop/ folder — invented ones 404. */
     private const IMAGES = [
@@ -46,13 +49,17 @@ class ProductSeeder extends Seeder
         'wheel-07.jpg', 'wheel-08.jpg', 'wheel-09.jpg', 'wheel-10.jpg',
     ];
 
-    private const QUALIFIERS = ['Sport', 'Heavy Duty', 'Premium', 'OE Spec', 'Drilled', 'Slotted', 'Performance', 'Eco'];
-
     public function run(): void
     {
         $brandIds = Brand::query()->pluck('id')->all();
         $brandNames = Brand::query()->pluck('name', 'id')->all();
         $leafCategoryIds = Category::query()->where('depth', 1)->pluck('id')->all();
+        $leafIdsBySlug = Category::query()->where('depth', 1)->pluck('id', 'slug')->all();
+        $partsByCategory = VehicleData::partsByCategory();
+        // Only the categories we have real part types for.
+        $leafSlugs = array_values(array_intersect(
+            array_keys($leafIdsBySlug), array_keys($partsByCategory)
+        ));
 
         $attributes = Attribute::query()->with('options')->get();
         $now = now();
@@ -74,11 +81,34 @@ class ProductSeeder extends Seeder
                 $id = (string) Str::ulid();
                 $productIds[] = $id;
 
-                $noun = self::NOUNS[$n % count(self::NOUNS)];
-                $brandId = $brandIds[array_rand($brandIds)];
-                $name = $brandNames[$brandId].' '.self::QUALIFIERS[$n % count(self::QUALIFIERS)].' '.$noun;
+                // Name, price band and category all come from the same real part list,
+                // so a listing reads like a parts catalogue and every price is plausible
+                // for what it is. A random 299–49.999 across every product made it
+                // impossible to tell a sane result from a broken filter.
+                $categorySlug = $leafSlugs[$n % count($leafSlugs)];
+                $parts = $partsByCategory[$categorySlug];
+                [$partType, $priceLow, $priceHigh] = $parts[$n % count($parts)];
 
-                $priceMinor = random_int(29_900, 4_999_900);
+                $brandId = $brandIds[$n % count($brandIds)];
+                $brandName = $brandNames[$brandId];
+
+                // A distinguishing spec in the name, so two products are never
+                // identical on a listing. Cycling brand and part type alone produced
+                // pairs of "Pierburg Brake Disc Front" with nothing to tell them apart,
+                // which defeats the point of readable data.
+                // The spec advances only after a full pass through the brands, so brand
+                // and spec do not cycle in lockstep. Sharing a stride is what left 1,440
+                // products with an identical name to another.
+                // Spec is driven by the product's index WITHIN its category, so within a
+                // category the spec advances by one each time while the brand advances by
+                // a different stride. Their periods (20 and 9) multiply to 180, which is
+                // more products than any one category holds — so no two products in a
+                // category share a name. Earlier attempts had brand and spec cycling in
+                // lockstep, which left thousands of identical names.
+                $spec = self::SPECS[intdiv($n, count($leafSlugs)) % count(self::SPECS)];
+                $name = "{$brandName} {$partType} {$spec}";
+
+                $priceMinor = random_int($priceLow, $priceHigh);
                 $onSale = random_int(1, 100) <= 20;
                 $stock = random_int(0, 120);
 
@@ -98,8 +128,10 @@ class ProductSeeder extends Seeder
                     'reviews_count' => random_int(0, 40),
                     'is_active' => true,
                     'published_at' => $now->copy()->subDays(random_int(0, 540)),
-                    'short_description' => "Direct-fit {$noun} built to OE tolerances. Sold as pictured.",
-                    'description' => "<p>{$name}</p><p>Precision-engineered replacement part, tested to the manufacturer's specification. Check fitment against your vehicle before ordering.</p>",
+                    'short_description' => "Direct-fit {$partType} by {$brandName}, built to OE tolerances.",
+                    'description' => "<p><strong>{$name}</strong> &mdash; built to the manufacturer's specification.</p>"
+                        .'<p>Use the vehicle filter to confirm this part fits your car before ordering. '
+                        .'Cross-reference numbers are listed in the specification tab.</p>',
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -117,7 +149,8 @@ class ProductSeeder extends Seeder
 
                 // One primary category, and sometimes a genuine second home — a brake
                 // disc belongs under Braking AND Wheels & Hubs.
-                $primary = $leafCategoryIds[array_rand($leafCategoryIds)];
+                // The part lands in the category its type actually belongs to.
+                $primary = $leafIdsBySlug[$categorySlug];
                 $pivots[] = ['product_id' => $id, 'category_id' => $primary, 'is_primary' => true, 'position' => 0];
                 if (random_int(1, 100) <= 30) {
                     $secondary = $leafCategoryIds[array_rand($leafCategoryIds)];

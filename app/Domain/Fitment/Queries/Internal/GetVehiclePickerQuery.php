@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Fitment\Queries\Internal;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,19 +15,31 @@ use Illuminate\Support\Facades\DB;
  */
 final class GetVehiclePickerQuery
 {
-    /** @return list<int> */
+    /**
+     * The years the catalogue actually covers.
+     *
+     * NOT cached. It was cached for a day, which meant that after a reseed — or after an
+     * import added vehicles — the picker offered years no vehicle existed in, and a
+     * shopper who chose one got a nearly-empty Make list with no explanation. It is a
+     * MIN/MAX over a small table; caching it bought nothing and cost correctness.
+     *
+     * @return list<int>
+     */
     public function years(): array
     {
-        return Cache::remember('fitment.years', now()->addDay(), function (): array {
-            $row = DB::table('vehicle_variants')
-                ->selectRaw('MIN(year_from) as lo, MAX(COALESCE(year_to, year_from)) as hi')
-                ->first();
+        $row = DB::table('vehicle_variants')
+            ->where('is_active', true)
+            ->selectRaw('MIN(year_from) as lo, MAX(COALESCE(year_to, year_from)) as hi')
+            ->first();
 
-            $hi = min((int) ($row->hi ?? 0), (int) date('Y') + 1);
-            $lo = (int) ($row->lo ?? $hi);
+        $lo = (int) ($row->lo ?? 0);
+        $hi = (int) ($row->hi ?? 0);
 
-            return $lo === 0 ? [] : range($hi, $lo);
-        });
+        if ($lo === 0 || $hi < $lo) {
+            return [];
+        }
+
+        return range($hi, $lo);
     }
 
     /** @return list<array{id: int, name: string}> */

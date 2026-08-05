@@ -4,21 +4,17 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-/** The fitment seeder at test scale — enough rows to exercise the joins, not 150k. */
+/**
+ * The fitment seeder at test scale.
+ *
+ * The vehicle tree is real data and cheap, so it is seeded in full — tests benefit from
+ * recognisable makes and models too. Only the fitment table is scaled down, because that
+ * is the one that reaches six figures.
+ */
 class FitmentSeederSmall extends FitmentSeeder
 {
-    protected function modelsPerMake(): int
+    protected function fitmentSpanFraction(): float
     {
-        return 1;
-    }
-
-    protected function variantsPerModel(): int
-    {
-        return 2;
-    }
-
-    protected function fitmentsPerProduct(): int
-    {
-        return 3;
+        return 0.05;
     }
 }

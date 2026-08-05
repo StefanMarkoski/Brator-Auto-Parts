@@ -16,38 +16,28 @@ use Illuminate\Support\Str;
  */
 class FitmentSeeder extends Seeder
 {
-    /** Real marques, because "Make 01" tells you nothing when you click through. */
-    private const MAKES = [
-        'Volkswagen', 'BMW', 'Mercedes-Benz', 'Audi', 'Opel', 'Renault', 'Peugeot',
-        'Citroen', 'Ford', 'Toyota', 'Nissan', 'Honda', 'Mazda', 'Hyundai', 'Kia',
-        'Skoda', 'Seat', 'Fiat', 'Alfa Romeo', 'Volvo', 'Saab', 'Mitsubishi',
-        'Subaru', 'Suzuki', 'Dacia', 'Lada', 'Chevrolet', 'Jeep', 'Land Rover',
-        'Jaguar', 'Mini', 'Smart', 'Porsche', 'Lancia', 'SsangYong', 'Chrysler',
-        'Iveco', 'Man', 'Isuzu', 'Tesla',
-    ];
-
-    /** Overridable so FitmentSeederSmall can seed test-scale volume. */
-    protected function modelsPerMake(): int
+    /**
+     * How many variants each product fits, as a fraction of the whole tree.
+     *
+     * The vehicle tree itself is fixed real data, so the only thing worth scaling for
+     * tests is the fitment table — which is the one that gets large.
+     */
+    protected function fitmentSpanFraction(): float
     {
-        return 10;
-    }
-
-    protected function variantsPerModel(): int
-    {
-        return 5;
-    }
-
-    protected function fitmentsPerProduct(): int
-    {
-        return 30;
+        return 0.25;
     }
 
     public function run(): void
     {
         $now = now();
+        $tree = VehicleData::tree();
 
+        // Real marques, models and engines. The generated version produced "Series 1"
+        // through "Series 10" per make with random engine names, which made every filter
+        // result indistinguishable from every other — you could not tell by looking
+        // whether a filter had worked at all.
         $makeRows = [];
-        foreach (self::MAKES as $i => $name) {
+        foreach (array_keys($tree) as $i => $name) {
             $makeRows[] = [
                 'name' => $name,
                 'slug' => Str::slug($name),
@@ -59,16 +49,15 @@ class FitmentSeeder extends Seeder
             ];
         }
         DB::table('vehicle_makes')->insert($makeRows);
-        $makeIds = DB::table('vehicle_makes')->pluck('id')->all();
+        $makeIds = DB::table('vehicle_makes')->pluck('id', 'name')->all();
 
         $modelRows = [];
-        foreach ($makeIds as $makeId) {
-            for ($m = 1; $m <= $this->modelsPerMake(); $m++) {
-                $name = 'Series '.$m;
+        foreach ($tree as $makeName => $models) {
+            foreach (array_keys($models) as $modelName) {
                 $modelRows[] = [
-                    'make_id' => $makeId,
-                    'name' => $name,
-                    'slug' => Str::slug($name).'-'.$makeId,
+                    'make_id' => $makeIds[$makeName],
+                    'name' => $modelName,
+                    'slug' => Str::slug($makeName.'-'.$modelName),
                     'is_active' => true,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -76,80 +65,80 @@ class FitmentSeeder extends Seeder
             }
         }
         DB::table('vehicle_models')->insert($modelRows);
-        $modelIds = DB::table('vehicle_models')->pluck('id')->all();
 
-        $engines = ['1.6 TDI', '2.0 TDI', '1.4 TSI', '2.0 TSI', '1.5 dCi', '2.2 HDi', '3.0 CDI'];
-        $fuels = ['petrol', 'diesel', 'hybrid', 'electric', 'lpg'];
-        $bodies = ['Hatchback', 'Saloon', 'Estate', 'SUV', 'Coupe'];
+        $modelIds = [];
+        foreach (DB::table('vehicle_models')->get(['id', 'make_id', 'name']) as $row) {
+            $modelIds[$row->make_id.'|'.$row->name] = $row->id;
+        }
 
         $variantRows = [];
-        foreach ($modelIds as $modelId) {
-            for ($v = 0; $v < $this->variantsPerModel(); $v++) {
-                $from = random_int(1998, 2021);
-                $variantRows[] = [
-                    'model_id' => $modelId,
-                    'name' => $engines[array_rand($engines)],
-                    'year_from' => $from,
-                    // Null = still in production. A real state, not missing data.
-                    'year_to' => random_int(1, 100) <= 75 ? $from + random_int(3, 8) : null,
-                    'engine_code' => strtoupper(Str::random(3)).random_int(100, 999),
-                    'fuel_type' => $fuels[array_rand($fuels)],
-                    'power_kw' => random_int(50, 300),
-                    'engine_cc' => random_int(1000, 4000),
-                    'body_type' => $bodies[array_rand($bodies)],
-                    'is_active' => true,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
+        foreach ($tree as $makeName => $models) {
+            foreach ($models as $modelName => $variants) {
+                $modelId = $modelIds[$makeIds[$makeName].'|'.$modelName];
+
+                foreach ($variants as [$subModel, $engineCode, $powerKw, $from, $to, $fuel]) {
+                    $variantRows[] = [
+                        'model_id' => $modelId,
+                        'name' => $subModel,
+                        'year_from' => $from,
+                        'year_to' => $to,
+                        'engine_code' => $engineCode,
+                        'fuel_type' => $fuel,
+                        'power_kw' => $powerKw,
+                        'engine_cc' => (int) round($powerKw * 18 / 100) * 100,
+                        'body_type' => 'Hatchback',
+                        'is_active' => true,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
             }
         }
-        foreach (array_chunk($variantRows, 1_000) as $slice) {
-            DB::table('vehicle_models')->getConnection()->table('vehicle_variants')->insert($slice);
-        }
+        DB::table('vehicle_variants')->insert($variantRows);
+
         $variantIds = DB::table('vehicle_variants')->pluck('id')->all();
         $variantCount = count($variantIds);
 
-        // The big one. Each product fits a spread of variants; the unique key is
-        // (vehicle_variant_id, product_id) so duplicates must be avoided per product.
+        // Fitment. Products fit a contiguous SLICE of the variant list rather than a
+        // random scatter, so "parts for my car" returns a coherent set a human can sanity
+        // check — random fitment made every vehicle look the same.
         $productIds = DB::table('products')->pluck('id')->all();
         $fitments = [];
         $total = 0;
+        $span = max(1, (int) round($variantCount * $this->fitmentSpanFraction()));
 
-        foreach ($productIds as $productId) {
-            $picked = [];
-            for ($f = 0; $f < $this->fitmentsPerProduct(); $f++) {
-                $variantId = $variantIds[random_int(0, $variantCount - 1)];
-                if (isset($picked[$variantId])) {
-                    continue;
-                }
-                $picked[$variantId] = true;
+        foreach ($productIds as $i => $productId) {
+            $start = ($i * 7) % $variantCount;
 
-                // Per-fitment years: a part often fits a variant for only part of its
-                // production run, because a facelift changed a bracket. About a fifth
-                // of real fitments are narrowed like this.
-                $narrow = random_int(1, 100) <= 20;
+            for ($n = 0; $n < $span; $n++) {
+                $variantId = $variantIds[($start + $n) % $variantCount];
+                $narrow = ($i + $n) % 9 === 0;
 
                 $fitments[] = [
                     'vehicle_variant_id' => $variantId,
                     'product_id' => $productId,
-                    'year_from' => $narrow ? random_int(2005, 2015) : null,
-                    'year_to' => $narrow ? random_int(2016, 2024) : null,
+                    // A part often fits a variant for only part of its production run.
+                    'year_from' => $narrow ? 2010 : null,
+                    'year_to' => $narrow ? 2016 : null,
                     'note' => $narrow ? 'Facelift models only' : null,
                 ];
             }
 
             if (count($fitments) >= 5_000) {
-                DB::table('product_vehicle_fitments')->insert($fitments);
+                DB::table('product_vehicle_fitments')->insertOrIgnore($fitments);
                 $total += count($fitments);
                 $fitments = [];
             }
         }
 
         if ($fitments !== []) {
-            DB::table('product_vehicle_fitments')->insert($fitments);
+            DB::table('product_vehicle_fitments')->insertOrIgnore($fitments);
             $total += count($fitments);
         }
 
-        $this->command->info("  seeded {$variantCount} vehicle variants and {$total} fitment rows");
+        $this->command->info(
+            '  seeded '.count($makeRows).' makes, '.count($modelRows).' models, '
+            .$variantCount.' variants and '.$total.' fitment rows'
+        );
     }
 }
