@@ -6,6 +6,10 @@ namespace Tests\Feature;
 
 use App\Domain\Catalog\Models\ProductCrossReference;
 use Database\Seeders\CatalogStructureSeeder;
+use Database\Seeders\ContentSeeder;
+use Database\Seeders\FitmentSeederSmall;
+use Database\Seeders\HomepageSeeder;
+use Database\Seeders\MerchandisingSeeder;
 use Database\Seeders\ProductSeederSmall;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +50,34 @@ final class SeededDataIntegrityTest extends TestCase
         $this->assertSame([], $offenders,
             'is_primary drives the canonical URL and breadcrumb, so exactly one per '
             .'product — zero means no breadcrumb, two means two canonical URLs.');
+    }
+
+    public function test_every_seeded_image_path_points_at_a_file_that_exists(): void
+    {
+        $this->seed(CatalogStructureSeeder::class);
+        $this->seed(ProductSeederSmall::class);
+        $this->seed(FitmentSeederSmall::class);
+        $this->seed(MerchandisingSeeder::class);
+        $this->seed(HomepageSeeder::class);
+        $this->seed(ContentSeeder::class);
+
+        $paths = collect()
+            ->merge(DB::table('product_images')->distinct()->pluck('path'))
+            ->merge(DB::table('brands')->whereNotNull('logo_path')->distinct()->pluck('logo_path'))
+            ->merge(DB::table('vehicle_makes')->whereNotNull('logo_path')->distinct()->pluck('logo_path'))
+            ->merge(DB::table('categories')->whereNotNull('image_path')->distinct()->pluck('image_path'))
+            ->merge(DB::table('banners')->distinct()->pluck('image_path'))
+            ->merge(DB::table('posts')->whereNotNull('cover_path')->distinct()->pluck('cover_path'))
+            ->unique();
+
+        $missing = $paths->reject(fn (string $path) => is_file(public_path($path)))->values()->all();
+
+        // Seeded paths were originally invented from a count ("brand-1.png" when the
+        // theme ships "brand-01.png", "shop-1.png" when it ships "product-01.jpg"), and
+        // the result was a shop full of broken images that still returned 200. Guessing
+        // a filename range is the bug this test exists to stop.
+        $this->assertSame([], $missing,
+            "These seeded image paths do not exist in public/:\n  ".implode("\n  ", $missing));
     }
 
     public function test_cached_stock_quantity_matches_the_movement_ledger(): void
