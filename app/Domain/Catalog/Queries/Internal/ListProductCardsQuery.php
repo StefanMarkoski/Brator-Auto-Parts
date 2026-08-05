@@ -7,6 +7,7 @@ namespace App\Domain\Catalog\Queries\Internal;
 use App\Domain\Catalog\DTOs\ProductCardData;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCrossReference;
+use App\Domain\Ordering\Queries\Public\GetBestSellingProductIdsQuery;
 use App\Support\Database\LikePattern;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class ListProductCardsQuery
 {
+    public function __construct(private GetBestSellingProductIdsQuery $bestSellers) {}
+
     /** @return Collection<int, ProductCardData> */
     public function forIds(array $productIds): Collection
     {
@@ -63,16 +66,10 @@ final class ListProductCardsQuery
      */
     public function bestSelling(int $limit): Collection
     {
-        $ids = DB::table('receipt_lines')
-            ->whereNotNull('product_id')
-            ->select('product_id', DB::raw('SUM(quantity) AS units'))
-            ->groupBy('product_id')
-            ->orderByDesc('units')
-            ->limit($limit)
-            ->pluck('product_id')
-            ->all();
-
-        return $this->forIds($ids);
+        // Through Ordering's public read API, not its tables: what counts as a sale is
+        // Ordering's business, not ours. A cancelled receipt is no longer a sale, and
+        // that rule now lives in one place.
+        return $this->forIds($this->bestSellers->execute($limit));
     }
 
     /**

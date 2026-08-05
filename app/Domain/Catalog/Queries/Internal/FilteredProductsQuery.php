@@ -8,6 +8,7 @@ use App\Domain\Catalog\DTOs\ProductCardData;
 use App\Domain\Catalog\DTOs\ProductFilter;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCrossReference;
+use App\Domain\Fitment\Queries\Public\GetProductIdsForVehicleQuery;
 use App\Support\Database\LikePattern;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -25,7 +26,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class FilteredProductsQuery
 {
-    public function __construct(private ListProductCardsQuery $cards) {}
+    public function __construct(
+        private ListProductCardsQuery $cards,
+        private GetProductIdsForVehicleQuery $vehicleFitment,
+    ) {}
 
     /** @return Collection<int, ProductCardData> */
     public function page(ProductFilter $filter, int $perPage): Collection
@@ -168,12 +172,13 @@ final class FilteredProductsQuery
         }
 
         if ($filter->vehicleVariantId !== null) {
-            // The clustered range scan on product_vehicle_fitments — vehicle first.
-            $query->whereIn('products.id', function (Builder $sub) use ($filter): void {
-                $sub->select('product_id')
-                    ->from('product_vehicle_fitments')
-                    ->where('vehicle_variant_id', $filter->vehicleVariantId);
-            });
+            // Fitment owns what "fits" means, so the shape of this question comes from
+            // Fitment's public read API rather than being re-derived here. It is still a
+            // subquery, so the clustered range scan on the vehicle-first key is intact.
+            $query->whereIn(
+                'products.id',
+                $this->vehicleFitment->subqueryFor($filter->vehicleVariantId)
+            );
         }
 
         if ($filter->searchTerm !== null) {
