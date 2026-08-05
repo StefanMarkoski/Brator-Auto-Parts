@@ -45,7 +45,7 @@
                     <input type="checkbox"
                            name="attr[{{ $group['code'] }}][]"
                            value="{{ $option['value'] }}"
-                           x-on:change="$el.form.requestSubmit()"
+                           data-auto-submit
                            @checked($filter->hasAttribute($group['code'], $option['value']))
                            @disabled($count === 0 && ! $filter->hasAttribute($group['code'], $option['value'])) />
                     <div class="brator-filter-item-check-box-content">

@@ -7,7 +7,7 @@
     The search box filters the visible list client-side with Alpine; it does not hit
     the server, because the full brand list is already on the page.
 --}}
-<div class="brator-filter-item-area brand-item" x-data="{ brandQuery: '' }">
+<div class="brator-filter-item-area brand-item" data-filter-scope>
     <div class="brator-filter-item-title current">
         <h4>Brands</h4>
         <button class="ac-trigger" type="button">
@@ -18,15 +18,14 @@
     </div>
     <div class="brator-filter-item-content-area">
         <div class="brator-filter-item-content">
-            <input type="search" placeholder="Search brand" x-model="brandQuery" />
+            <input type="search" placeholder="Search brand" data-filter-input />
         </div>
         @foreach ($brands as $brand)
             @php($count = $facets['brands'][$brand->slug] ?? 0)
             @continue($count === 0 && ! $filter->hasBrand($brand->slug))
-            <div class="brator-filter-item-content"
-                 x-show="brandQuery === '' || '{{ Str::lower($brand->name) }}'.includes(brandQuery.toLowerCase())">
+            <div class="brator-filter-item-content" data-filter-label="{{ $brand->name }}">
                 <input type="checkbox" name="brand[]" value="{{ $brand->slug }}"
-                       x-on:change="$el.form.requestSubmit()"
+                       data-auto-submit
                        @checked($filter->hasBrand($brand->slug)) />
                 <div class="brator-filter-item-check-box-content">
                     <span class="brator-name">{{ $brand->name }}</span>

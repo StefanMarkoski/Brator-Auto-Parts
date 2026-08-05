@@ -200,7 +200,7 @@
                             <div class="brator-filter-short-by">
                                 <p>Sort by</p>
                                 <div class="brator-filter-show-items-count">
-                                    <select x-on:change="window.location = $el.value">
+                                    <select data-auto-submit="navigate">
                                         @foreach ([
                                             'newest' => 'Newest first',
                                             'price_asc' => 'Price: low to high',

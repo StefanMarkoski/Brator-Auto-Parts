@@ -8,7 +8,7 @@
         @foreach ([4, 3, 2, 1] as $stars)
             <div class="brator-filter-item-content">
                 <input type="radio" name="rating" value="{{ $stars }}"
-                       x-on:change="$el.form.requestSubmit()"
+                       data-auto-submit
                        @checked($filter->minRating === $stars) />
                 <div class="brator-filter-item-check-box-content">
                     <span class="brator-name">{{ $stars }} stars &amp; up</span>

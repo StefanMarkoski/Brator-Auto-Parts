@@ -188,32 +188,16 @@
                              checked — and posts them all to the basket in one go. --}}
                         <form method="post" action="{{ route('cart.add-many', [], false) }}"
                             class="brator-product-single-frequently-list"
-                            x-data="{
-                                prices: {},
-                                get total() {
-                                    return Object.values(this.prices)
-                                        .filter(p => p.checked)
-                                        .reduce((sum, p) => sum + p.minor, 0);
-                                },
-                                format(minor) {
-                                    return (minor / 100).toLocaleString('mk-MK', {
-                                        minimumFractionDigits: 2, maximumFractionDigits: 2
-                                    }) + ' {{ config('shop.currency_symbol') }}';
-                                }
-                            }">
+                            data-bundle data-currency="{{ config('shop.currency_symbol') }}">
                             @csrf
                             <div class="product-list-items check-box-product">
                                 <label class="brator-product-single-item-checkbox">
-                                    <input type="checkbox" name="product_ids[]" value="{{ $product->id }}" checked
-                                        x-init="prices['{{ $product->id }}'] = { minor: {{ ($product->sale_price_minor ?? $product->price_minor)->toPrimitive() }}, checked: true }"
-                                        x-on:change="prices['{{ $product->id }}'].checked = $el.checked" />
+                                    <input type="checkbox" name="product_ids[]" value="{{ $product->id }}" checked data-bundle-price="{{ ($product->sale_price_minor ?? $product->price_minor)->toPrimitive() }}" />
                                     <span>This item: {{ $product->name }}</span>
                                 </label>
                                 @foreach ($boughtTogether as $related)
                                     <label class="brator-product-single-item-checkbox">
-                                        <input type="checkbox" name="product_ids[]" value="{{ $related->id }}" checked
-                                            x-init="prices['{{ $related->id }}'] = { minor: {{ $related->price->toPrimitive() }}, checked: true }"
-                                            x-on:change="prices['{{ $related->id }}'].checked = $el.checked"
+                                        <input type="checkbox" name="product_ids[]" value="{{ $related->id }}" checked data-bundle-price="{{ $related->price->toPrimitive() }}"
                                             @disabled(! $related->inStock) />
                                         <span>{{ $related->name }}</span>
                                     </label>
@@ -221,7 +205,7 @@
                                 @endforeach
                             </div>
                             <div class="brator-product-single-frequently-total">
-                                <h6>Total:</h6><span x-text="format(total)">{{ $boughtTogetherTotal->format() }}</span>
+                                <h6>Total:</h6><span data-bundle-total>{{ $boughtTogetherTotal->format() }}</span>
                                 <button type="submit">Add All To Cart</button>
                             </div>
                         </form>
