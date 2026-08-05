@@ -47,12 +47,28 @@
         <div class="container-xxxl container-xxl container">
             <div class="row">
                 <div class="col-12">
+                    {{-- The vehicle is a FILTER, never a gate: with none chosen this
+                         invites one, and clearing it restores the whole catalogue. --}}
                     <div class="brator-current-vehicle">
-                        <div class="brator-current-vehicle-content">
-                            <p>Your current vehicle</p>
-                            <h4>Customwheels for<span> 2018 Mercedes GLC Class </span></h4>
-                        </div>
-                        <div class="brator-current-vehicle-content"><a href="#_">Search</a></div>
+                        @if ($vehicle)
+                            <div class="brator-current-vehicle-content">
+                                <p>Your current vehicle</p>
+                                <h4>Parts for<span> {{ $vehicle['label'] }} ({{ $vehicle['years'] }}) </span></h4>
+                            </div>
+                            <div class="brator-current-vehicle-content">
+                                <form method="post" action="{{ route('vehicle.clear', [], false) }}">
+                                    @csrf
+                                    <input type="hidden" name="redirect_to" value="{{ request()->fullUrl() }}" />
+                                    <button type="submit">Show all vehicles</button>
+                                </form>
+                            </div>
+                        @else
+                            <div class="brator-current-vehicle-content">
+                                <p>Showing parts for every vehicle</p>
+                                <h4>Narrow it down<span> pick your car to see only parts that fit </span></h4>
+                            </div>
+                            <div class="brator-current-vehicle-content"><a href="{{ route('shop.categories', [], false) }}">Choose vehicle</a></div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -120,390 +136,14 @@
                                     </svg>Reset All
                                 </button>
                             </div>
-                            <div class="shop-sidebar-content">
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Origins</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">All</span><span class="brator-count">(1.532)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">OEM</span><span class="brator-count">(1.132)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Aftermarkets</span><span class="brator-count">(400)</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Diameter</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">19</span><span class="brator-count">(1.532)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">20</span><span class="brator-count">(1.132)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">21</span><span class="brator-count">(400)</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Width</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">5.5”</span><span class="brator-count">(1.532)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6”</span><span class="brator-count">(1.132)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6.5</span><span class="brator-count">(400)</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Color/Finish</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">5.5”</span><span class="brator-count">(1.532)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6”</span><span class="brator-count">(1.132)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6.5</span><span class="brator-count">(400)</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Offset</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">5.5”</span><span class="brator-count">(1.532)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6”</span><span class="brator-count">(1.132)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6.5</span><span class="brator-count">(400)</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Materials</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">5.5”</span><span class="brator-count">(1.532)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6”</span><span class="brator-count">(1.132)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6.5</span><span class="brator-count">(400)</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Price</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">5.5”</span><span class="brator-count">(1.532)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6”</span><span class="brator-count">(1.132)</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">6.5</span><span class="brator-count">(400)</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Price</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-rang-item-input">
-                                            <div class="brator-rang-item-input-single">
-                                                <input type="number" name="min" value="" />
-                                                <div class="brator-rang-item-input-single-text">$ min</div>
-                                            </div>
-                                            <div class="brator-rang-item-input-single">
-                                                <input type="number" name="max" value="" />
-                                                <div class="brator-rang-item-input-single-text">$ max</div>
-                                            </div>
-                                            <div class="brator-rang-item-input-single-btn">
-                                                <button class="ac-trigger">Go</button>
-                                            </div>
-                                        </div>
-                                        <div class="brator-rang-item-slider">
-                                            <div id="brator-rang-item-slider-nou"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area brand-item">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Brands</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                        <div class="brator-form">
-                                            <input type="search" placeholder="Search brand">
-                                            <svg fill="#000000" width="15" height="15" version="1.1" id="lni_lni-search-alt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
-                                                 y="0px" viewBox="0 0 64 64" style="enable-background:new 0 0 64 64;" xml:space="preserve">
-                                            <path d="M62.1,57L44.6,42.8c3.2-4.2,5-9.3,5-14.7c0-6.5-2.5-12.5-7.1-17.1v0c-9.4-9.4-24.7-9.4-34.2,0C3.8,15.5,1.3,21.6,1.3,28
-                                                c0,6.5,2.5,12.5,7.1,17.1c4.7,4.7,10.9,7.1,17.1,7.1c6.1,0,12.1-2.3,16.8-6.8l17.7,14.3c0.3,0.3,0.7,0.4,1.1,0.4
-                                                c0.5,0,1-0.2,1.4-0.6C63,58.7,62.9,57.6,62.1,57z M10.8,42.7C6.9,38.8,4.8,33.6,4.8,28s2.1-10.7,6.1-14.6c4-4,9.3-6,14.6-6
-                                                c5.3,0,10.6,2,14.6,6c3.9,3.9,6.1,9.1,6.1,14.6S43.9,38.8,40,42.7C32,50.7,18.9,50.7,10.8,42.7z"/>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Wruth</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Bosch</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Varta</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Dorman</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Brigdestone</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Michelin</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Castrol</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Wruth</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Bosch</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Varta</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Dorman</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Brigdestone</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Michelin</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Castrol</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title">
-                                        <h4>Ratings</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Wruth</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Bosch</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Varta</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Dorman</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Brigdestone</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Michelin</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Castrol</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Wruth</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Bosch</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Varta</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Dorman</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Brigdestone</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Michelin</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Castrol</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-filter-item-area">
-                                    <div class="brator-filter-item-title current">
-                                        <h4>Manufactures</h4>
-                                        <button class="ac-trigger">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="brator-filter-item-content-area">
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Wruth</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Bosch</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Varta</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Dorman</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Brigdestone</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Michelin</span></div>
-                                        </div>
-                                        <div class="brator-filter-item-content">
-                                            <input type="checkbox" name="origin" />
-                                            <div class="brator-filter-item-check-box-content"><span class="brator-name">Castrol</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <form method="get" class="shop-sidebar-content">
+                                @if ($searchTerm)<input type="hidden" name="s" value="{{ $searchTerm }}" />@endif
+                                @if ($filter->listView)<input type="hidden" name="view" value="list" />@endif
+                                @if ($filter->sort !== 'newest')<input type="hidden" name="sort" value="{{ $filter->sort }}" />@endif
+                                @include('partials.filter-sidebar')
+                                @include('partials.filter-brands')
+                                @include('partials.filter-sidebar-lower')
+                            </form>
                         </div>
                     </div>
                 </div>

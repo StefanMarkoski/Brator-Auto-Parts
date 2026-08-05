@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Storefront;
 
+use App\Domain\Catalog\DTOs\ProductFilter;
 use App\Domain\Catalog\Models\Category;
-use App\Domain\Catalog\Queries\Internal\ListProductCardsQuery;
+use App\Domain\Fitment\Services\VehicleSelection;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class CategoryController
 {
-    private const PER_PAGE = 12;
-
-    public function __construct(private ListProductCardsQuery $cards) {}
+    public function __construct(
+        private ListingPayload $listing,
+        private VehicleSelection $vehicle,
+    ) {}
 
     /** The top-level category grid — the theme's shop-categories page. */
     public function index(): View
@@ -25,6 +27,25 @@ final class CategoryController
                 ->with('children')
                 ->orderBy('position')
                 ->get(),
+        ]);
+    }
+
+    /** A category listing. `view=list` switches to the theme's list layout. */
+    public function show(Request $request, string $slug): View
+    {
+        $category = Category::query()
+            ->where('slug', $slug)->where('is_active', true)
+            ->with('parent')
+            ->firstOrFail();
+
+        $filter = ProductFilter::fromRequest($request, $this->vehicle->current())
+            ->forCategory($category->slug, $category->path);
+
+        return view($filter->listView ? 'shop.listing-list' : 'shop.listing-grid', [
+            ...$this->listing->build($filter, $category->id),
+            'category' => $category,
+            'searchTerm' => null,
+            'breadcrumbs' => $this->breadcrumbsFor($category),
         ]);
     }
 
@@ -45,33 +66,5 @@ final class CategoryController
         $crumbs[$category->name] = null;
 
         return $crumbs;
-    }
-
-    /** A category listing. `view=list` switches to the theme's list layout. */
-    public function show(Request $request, string $slug): View
-    {
-        $category = Category::query()
-            ->where('slug', $slug)->where('is_active', true)
-            ->with('parent')
-            ->firstOrFail();
-
-        $page = max(1, (int) $request->query('page', 1));
-        $listView = $request->query('view') === 'list';
-
-        $total = $this->cards->countInCategorySubtree($category->path);
-
-        return view($listView ? 'shop.listing-list' : 'shop.listing-grid', [
-            'category' => $category,
-            'breadcrumbs' => $this->breadcrumbsFor($category),
-            'products' => $this->cards->inCategorySubtree(
-                $category->path,
-                self::PER_PAGE,
-                ($page - 1) * self::PER_PAGE
-            ),
-            'total' => $total,
-            'page' => $page,
-            'lastPage' => max(1, (int) ceil($total / self::PER_PAGE)),
-            'listView' => $listView,
-        ]);
     }
 }

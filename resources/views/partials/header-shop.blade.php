@@ -52,21 +52,7 @@
                                 </div><b>Add Vehicle</b>
                             </a>
                             <div class="vehicle-list-wapper">
-                                <form method="post" id="advanced-searchform" class="brator-parts-search-box-form">
-                                    <select class="select-year-parts brator-select-active" id="makeyear" name="makeyear">
-                                        <option value="">Year</option>
-                                        <option value="2000">2000</option><option value="2001">2001</option><option value="2002">2002</option><option value="2003">2003</option><option value="2004">2004</option><option value="2005">2005</option>		</select>
-                                    <select class="select-make-parts brator-select-active" id="makebrand" name="brand" disabled="">
-                                        <option value="">Make</option>
-                                        <option value="bosch">Bosch</option><option value="brigdestone">Brigdestone</option><option value="castrol">Castrol</option><option value="dorman">Dorman</option><option value="michelin">Michelin</option><option value="varta">Varta</option><option value="wruth">Wruth</option>		</select>
-                                    <select class="select-model-parts brator-select-active" id="makemodel" name="model" disabled="">
-                                        <option value="">Model</option>
-                                        <option value="a4-prestige">A4 Prestige</option><option value="a6-quattro-premium">A6 Quattro Premium</option><option value="cherokee">Cherokee</option><option value="city-express">City Express</option><option value="civic">Civic</option><option value="colorado">Colorado</option><option value="convertible">Convertible</option><option value="q7-premium">Q7 Premium</option>		</select>
-                                    <select class="select-engine-parts brator-select-active" id="makeengine" name="engine" disabled="">
-                                        <option value="">Engine</option>
-                                        <option value="camshaft">Camshaft</option><option value="crankshaft">Crankshaft</option><option value="gigabite">gigabite</option><option value="msi">Msi</option><option value="valves">Valves</option>		</select>
-                                    <button name="adv_brator_form" type="submit">Add Vehicle</button>
-                                </form>
+                                @include('partials.vehicle-picker')
                             </div>
                         </div>
                         <div class="brator-user-link"><a href="#_">

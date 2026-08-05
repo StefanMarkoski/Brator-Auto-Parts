@@ -4,36 +4,30 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Storefront;
 
-use App\Domain\Catalog\Queries\Internal\ListProductCardsQuery;
+use App\Domain\Catalog\DTOs\ProductFilter;
+use App\Domain\Fitment\Services\VehicleSelection;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class SearchController
 {
-    private const PER_PAGE = 12;
-
-    public function __construct(private ListProductCardsQuery $cards) {}
+    public function __construct(
+        private ListingPayload $listing,
+        private VehicleSelection $vehicle,
+    ) {}
 
     public function __invoke(Request $request): View
     {
         // The theme's search input is named "s"; keep that so its markup is untouched.
-        $term = trim((string) ($request->query('s') ?? $request->query('q') ?? ''));
-        $page = max(1, (int) $request->query('page', 1));
-        $listView = $request->query('view') === 'list';
+        $filter = ProductFilter::fromRequest($request, $this->vehicle->current());
 
-        $total = $term === '' ? 0 : $this->cards->countSearch($term);
-
-        return view($listView ? 'shop.listing-list' : 'shop.listing-grid', [
+        return view($filter->listView ? 'shop.listing-list' : 'shop.listing-grid', [
+            ...$this->listing->build($filter),
             'category' => null,
-            'searchTerm' => $term,
-            'breadcrumbs' => ['Search'.($term === '' ? '' : ': '.$term) => null],
-            'products' => $term === ''
-                ? collect()
-                : $this->cards->search($term, self::PER_PAGE, ($page - 1) * self::PER_PAGE),
-            'total' => $total,
-            'page' => $page,
-            'lastPage' => max(1, (int) ceil($total / self::PER_PAGE)),
-            'listView' => $listView,
+            'searchTerm' => $filter->searchTerm,
+            'breadcrumbs' => [
+                'Search'.($filter->searchTerm === null ? '' : ': '.$filter->searchTerm) => null,
+            ],
         ]);
     }
 }

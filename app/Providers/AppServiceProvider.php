@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Catalog\Queries\Public\GetNavigationQuery;
+use App\Domain\Fitment\Queries\Internal\GetVehiclePickerQuery;
+use App\Domain\Fitment\Services\VehicleSelection;
 use App\Domain\Ordering\Events\ReceiptPlaced;
 use App\Domain\Ordering\Listeners\Internal\SendReceiptEmail;
 use App\Domain\Ordering\Queries\Internal\GetBasketSummaryQuery;
@@ -55,6 +57,24 @@ class AppServiceProvider extends ServiceProvider
             ['partials.header', 'partials.header-shop', 'partials.footer-top'],
             fn ($view) => $view->with('navCategories', app(GetNavigationQuery::class)->execute())
         );
+
+        // The vehicle picker builds its own cascade state, so any page can include it.
+        View::composer('partials.vehicle-picker', function ($view): void {
+            $picker = app(GetVehiclePickerQuery::class);
+            $selection = app(VehicleSelection::class);
+            $state = $selection->picker();
+
+            $view->with('vehiclePicker', [
+                'state' => $state,
+                'years' => $picker->years(),
+                'makes' => $picker->makes($state['year']),
+                'models' => $state['make'] === null ? [] : $picker->models($state['make'], $state['year']),
+                'names' => $state['model'] === null ? [] : $picker->variantNames($state['model'], $state['year']),
+                'engines' => ($state['model'] === null || $state['name'] === null)
+                    ? []
+                    : $picker->engines($state['model'], $state['name'], $state['year']),
+            ]);
+        });
 
         // The cart badge in the header, on every page — same reasoning as the nav.
         View::composer(['partials.header', 'partials.header-shop'], function ($view): void {
