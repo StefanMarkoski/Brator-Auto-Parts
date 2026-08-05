@@ -42,6 +42,21 @@ class Product extends Model
         'stock_status', 'rating_avg', 'reviews_count', 'condition',
     ];
 
+    /**
+     * The same rule as scopeVisible(), for the query-builder reads that cannot use an
+     * Eloquent scope. Kept beside the scope so the two cannot drift.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  string  $table  table or alias holding the product columns
+     */
+    public static function scopeVisibleRaw($query, string $table = 'products'): void
+    {
+        $query->where("{$table}.is_active", true)
+            ->whereNull("{$table}.deleted_at")
+            ->whereNotNull("{$table}.published_at")
+            ->where("{$table}.published_at", '<=', now());
+    }
+
     protected $fillable = [
         'sku', 'name', 'slug', 'brand_id', 'price_minor', 'sale_price_minor',
         'stock_quantity', 'stock_status', 'condition', 'weight_grams',
@@ -131,9 +146,50 @@ class Product extends Model
         return $this->categories->firstWhere('pivot.is_primary', true);
     }
 
-    /** @param  Builder<Product>  $query */
-    public function scopeActive(Builder $query): void
+    /**
+     * THE definition of "a shopper may see this product". One place, deliberately.
+     *
+     * There used to be four disagreeing definitions scattered across queries and this
+     * scope — which was the only correct one and was called by nothing. The result was
+     * that a product could 404 on the storefront and still be added to a basket and
+     * sold, and a product dated a year in the future sold today.
+     *
+     * Every read that a shopper can reach must go through this scope, and every write
+     * that takes money must go through isPurchasable(). If you find yourself writing
+     * `where('is_active', true)` on products again, use this instead.
+     *
+     * @param  Builder<Product>  $query
+     */
+    public function scopeVisible(Builder $query): void
     {
-        $query->where('is_active', true)->whereNotNull('published_at');
+        $query->where('is_active', true)
+            ->whereNotNull('published_at')
+            // Scheduled products are not visible until their date arrives.
+            ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Can this specific product be bought right now?
+     *
+     * The write-side counterpart of scopeVisible. Checked when adding to a basket AND
+     * again at placement, because the two are minutes or days apart.
+     */
+    public function isPurchasable(): bool
+    {
+        return $this->is_active
+            && ! $this->trashed()
+            && $this->published_at !== null
+            && $this->published_at->isPast()
+            && $this->stock_status->isBuyable();
+    }
+
+    /** Why not, in words a shopper can act on. Null when it is purchasable. */
+    public function unpurchasableReason(): ?string
+    {
+        return match (true) {
+            $this->isPurchasable() => null,
+            ! $this->stock_status->isBuyable() => 'is out of stock',
+            default => 'is not available',
+        };
     }
 }

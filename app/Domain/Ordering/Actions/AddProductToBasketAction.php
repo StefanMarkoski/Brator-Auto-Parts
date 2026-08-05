@@ -19,8 +19,12 @@ final class AddProductToBasketAction
             throw new RuntimeException('Quantity must be at least 1.');
         }
 
-        if (! $product->stock_status->isBuyable()) {
-            throw new RuntimeException("Product [{$product->sku}] is not available to buy.");
+        // One definition, checked here and again at placement. A product that 404s on
+        // the storefront must not be sellable through a posted form.
+        if (! $product->isPurchasable()) {
+            throw new RuntimeException(
+                "{$product->name} {$product->unpurchasableReason()}."
+            );
         }
 
         $line = DB::transaction(function () use ($basket, $product, $quantity): BasketLine {

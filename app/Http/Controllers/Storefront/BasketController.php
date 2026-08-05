@@ -36,7 +36,9 @@ final class BasketController
 
     public function add(AddToBasketRequest $request): RedirectResponse
     {
-        $product = Product::query()->findOrFail($request->validated()['product_id']);
+        // Not a bare findOrFail: an inactive, unpublished or scheduled product used
+        // to 404 on the storefront and still sell through this endpoint.
+        $product = Product::query()->visible()->findOrFail($request->validated()['product_id']);
 
         try {
             $this->addAction->execute(
@@ -64,7 +66,7 @@ final class BasketController
         $basket = $this->baskets->currentOrCreate();
         $added = 0;
 
-        foreach (Product::query()->whereIn('id', $validated['product_ids'])->get() as $product) {
+        foreach (Product::query()->visible()->whereIn('id', $validated['product_ids'])->get() as $product) {
             try {
                 $this->addAction->execute($basket, $product);
                 $added++;

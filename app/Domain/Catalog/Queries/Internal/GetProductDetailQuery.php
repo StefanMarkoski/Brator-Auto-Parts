@@ -28,7 +28,7 @@ final class GetProductDetailQuery
                 'reviews' => fn ($q) => $q->approved()->latest()->limit(10),
             ])
             ->where('slug', $slug)
-            ->where('is_active', true)
+            ->visible()
             ->first();
     }
 

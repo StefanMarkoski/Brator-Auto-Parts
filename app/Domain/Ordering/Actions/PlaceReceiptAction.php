@@ -45,8 +45,12 @@ final class PlaceReceiptAction
                 /** @var Product $product */
                 $product = $line->product;
 
-                if (! $product->stock_status->isBuyable()) {
-                    throw new RuntimeException("Product [{$product->sku}] went out of stock.");
+                if ($product === null || ! $product->isPurchasable()) {
+                    throw new RuntimeException(
+                        ($product?->name ?? 'One of the parts in your cart')
+                        .' '.($product?->unpurchasableReason() ?? 'is no longer available')
+                        .'. Please remove it and try again.'
+                    );
                 }
 
                 // Re-read the price from the product rather than trusting the basket

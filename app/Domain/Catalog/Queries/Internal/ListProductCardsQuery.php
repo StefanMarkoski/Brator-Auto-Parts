@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Catalog\Queries\Internal;
 
 use App\Domain\Catalog\DTOs\ProductCardData;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCrossReference;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -101,7 +102,7 @@ final class ListProductCardsQuery
         }
 
         return DB::table('products')
-            ->where('is_active', true)->whereNull('deleted_at')
+            ->tap(fn ($q) => Product::scopeVisibleRaw($q))
             ->whereFullText(['name', 'sku'], $term)
             ->count();
     }
@@ -124,7 +125,7 @@ final class ListProductCardsQuery
         }
 
         return DB::table('products')
-            ->where('is_active', true)->whereNull('deleted_at')
+            ->tap(fn ($q) => Product::scopeVisibleRaw($q))
             ->whereFullText(['name', 'sku'], $term)
             ->offset($offset)->limit($limit)
             ->pluck('id')->all();
@@ -150,8 +151,7 @@ final class ListProductCardsQuery
         return DB::table('products')
             ->join('product_categories as pc', 'pc.product_id', '=', 'products.id')
             ->join('categories as cat', 'cat.id', '=', 'pc.category_id')
-            ->where('products.is_active', true)
-            ->whereNull('products.deleted_at')
+            ->tap(fn ($q) => Product::scopeVisibleRaw($q))
             ->where('cat.path', 'like', $categoryPath.'%')
             ->distinct()
             ->count('products.id');
@@ -169,8 +169,7 @@ final class ListProductCardsQuery
                 $join->on('product_images.product_id', '=', 'products.id')
                     ->where('product_images.is_primary', true);
             })
-            ->where('products.is_active', true)
-            ->whereNull('products.deleted_at')
+            ->tap(fn ($q) => Product::scopeVisibleRaw($q))
             ->select([
                 'products.id', 'products.slug', 'products.name',
                 'products.price_minor', 'products.sale_price_minor',

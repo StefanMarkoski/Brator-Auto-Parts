@@ -6,6 +6,7 @@ namespace App\Domain\Catalog\Queries\Internal;
 
 use App\Domain\Catalog\DTOs\ProductCardData;
 use App\Domain\Catalog\DTOs\ProductFilter;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCrossReference;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -105,9 +106,8 @@ final class FilteredProductsQuery
 
     private function base(ProductFilter $filter, bool $sorted = true): Builder
     {
-        $query = DB::table('products')
-            ->where('products.is_active', true)
-            ->whereNull('products.deleted_at');
+        $query = DB::table('products');
+        Product::scopeVisibleRaw($query);
 
         if ($filter->categoryPath !== null) {
             $query->whereIn('products.id', function (Builder $sub) use ($filter): void {
