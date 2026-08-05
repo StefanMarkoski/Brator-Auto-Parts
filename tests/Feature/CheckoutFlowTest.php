@@ -158,6 +158,50 @@ final class CheckoutFlowTest extends TestCase
         Mail::assertSent(ReceiptPlacedMail::class, fn ($mail) => $mail->hasTo('stefan.m@xgate.io'));
     }
 
+    public function test_a_price_change_stops_checkout_instead_of_charging_the_new_price(): void
+    {
+        $product = $this->buyable();
+        $product->update(['sale_price_minor' => null, 'price_minor' => 100_000]);
+
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 1]);
+
+        // The shop triples the price while it sits in the cart.
+        $product->update(['price_minor' => 300_000]);
+
+        $this->post('/checkout', [
+            'customer_name' => 'Ana',
+            'customer_email' => 'ana@example.com',
+            'shipping_address' => 'Skopje',
+        ])->assertRedirect(route('cart'));
+
+        // Nothing is sold, and nobody is charged a price they never saw. The first
+        // version of this code silently substituted the new price — cart showed 1.000,
+        // receipt charged 3.000.
+        $this->assertSame(0, Receipt::query()->count());
+        $this->assertStringContainsString('changed from', (string) session('error'));
+
+        // The cart is brought up to the live price, so a retry is not the same wall.
+        $this->assertSame(300_000, (int) DB::table('basket_lines')->value('unit_price_minor'));
+    }
+
+    public function test_an_unchanged_price_checks_out_at_the_price_shown(): void
+    {
+        $product = $this->buyable();
+        $product->update(['sale_price_minor' => null, 'price_minor' => 100_000]);
+
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 2]);
+        $this->post('/checkout', [
+            'customer_name' => 'Ana',
+            'customer_email' => 'ana@example.com',
+            'shipping_address' => 'Skopje',
+        ]);
+
+        $line = Receipt::query()->with('lines')->firstOrFail()->lines->first();
+
+        $this->assertSame(100_000, $line->unit_price_minor->minor);
+        $this->assertSame(200_000, $line->line_total_minor->minor);
+    }
+
     public function test_checkout_rejects_an_empty_basket(): void
     {
         $this->post('/checkout', [
@@ -219,10 +263,28 @@ final class CheckoutFlowTest extends TestCase
             ->assertSee('Ana', false);
     }
 
-    private function buyable(): Product
+    /**
+     * A product with pinned, known values.
+     *
+     * Every fixture here used to be "whatever came back first", which made several of
+     * these tests pass or fail depending on the random seed — sale price present or not,
+     * stock high or low. A test that depends on the seed is a test you cannot trust, and
+     * the reviewer was right to say so.
+     */
+    private function buyable(int $stock = 50): Product
     {
-        return Product::query()
+        $product = Product::query()
             ->where('stock_status', StockStatus::InStock)
             ->firstOrFail();
+
+        $product->update([
+            'sale_price_minor' => null,
+            'price_minor' => 100_000,
+            'stock_quantity' => $stock,
+            'published_at' => now()->subDay(),
+            'is_active' => true,
+        ]);
+
+        return $product->refresh();
     }
 }

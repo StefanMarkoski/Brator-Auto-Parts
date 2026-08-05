@@ -10,6 +10,7 @@ use App\Domain\Catalog\Models\StockMovement;
 use App\Domain\Ordering\DTOs\CheckoutDetails;
 use App\Domain\Ordering\Enums\ReceiptStatus;
 use App\Domain\Ordering\Events\ReceiptPlaced;
+use App\Domain\Ordering\Exceptions\PriceChangedException;
 use App\Domain\Ordering\Models\Basket;
 use App\Domain\Ordering\Models\BasketLine;
 use App\Domain\Ordering\Models\Receipt;
@@ -64,9 +65,6 @@ final class PlaceReceiptAction
                     );
                 }
 
-                // Re-read the price from the product rather than trusting the basket
-                // snapshot: between adding and checking out, the price may have moved,
-                // and the receipt must record what was actually charged.
                 if ($line->quantity > (int) $product->stock_quantity) {
                     throw new RuntimeException(
                         "Only {$product->stock_quantity} of {$product->name} remain. "
@@ -74,7 +72,25 @@ final class PlaceReceiptAction
                     );
                 }
 
-                $unit = $product->sale_price_minor ?? $product->price_minor;
+                // The price the shopper agreed to is the one on the basket line. If the
+                // live price has moved since they added it, STOP and tell them — do not
+                // silently substitute.
+                //
+                // The first version of this re-read the live price and called that
+                // "re-validation". It is not: re-reading is not re-validating. The cart
+                // showed 1.000 and the receipt charged 3.000, which is charging someone
+                // a price they never saw and never agreed to.
+                $live = $product->sale_price_minor ?? $product->price_minor;
+
+                if (! $live->equals($line->unit_price_minor)) {
+                    throw new PriceChangedException(
+                        "The price of {$product->name} changed from "
+                        ."{$line->unit_price_minor->format()} to {$live->format()} while it was "
+                        .'in your cart. Please review your cart and place the order again.'
+                    );
+                }
+
+                $unit = $line->unit_price_minor;
                 $lineTotal = $unit->timesQuantity($line->quantity);
                 $lineVat = $lineTotal->vatAt($vatRate);
 

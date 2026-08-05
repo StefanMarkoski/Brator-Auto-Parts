@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Storefront;
 
 use App\Domain\Ordering\Actions\PlaceReceiptAction;
+use App\Domain\Ordering\Actions\RefreshBasketPricesAction;
+use App\Domain\Ordering\Exceptions\PriceChangedException;
 use App\Domain\Ordering\Http\Requests\PlaceReceiptRequest;
 use App\Domain\Ordering\Models\Receipt;
 use App\Domain\Ordering\Services\BasketResolver;
@@ -18,6 +20,7 @@ final class CheckoutController
     public function __construct(
         private BasketResolver $baskets,
         private PlaceReceiptAction $placeAction,
+        private RefreshBasketPricesAction $refreshPrices,
     ) {}
 
     /**
@@ -33,6 +36,12 @@ final class CheckoutController
 
         try {
             $receipt = $this->placeAction->execute($basket, $request->toDTO());
+        } catch (PriceChangedException $e) {
+            // Bring the cart up to the live prices, then send them back to look. Without
+            // this they would hit the same wall on every retry.
+            $this->refreshPrices->execute($basket);
+
+            return redirect()->route('cart')->with('error', $e->getMessage());
         } catch (RuntimeException $e) {
             return redirect()->route('cart')->with('error', $e->getMessage());
         }
