@@ -22,7 +22,7 @@ class PostFactory extends Factory
             'slug' => Str::slug($title).'-'.Str::lower(Str::random(4)),
             'excerpt' => fake()->sentence(18),
             'body' => fake()->paragraphs(6, true),
-            'cover_path' => 'assets/images/blog/blog-'.fake()->numberBetween(1, 9).'.png',
+            'cover_path' => sprintf('assets/images/blog/blog-%02d.jpg', fake()->numberBetween(1, 9)),
             'author_id' => null,
             'post_category_id' => null,
             'is_published' => true,

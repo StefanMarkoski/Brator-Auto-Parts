@@ -18,7 +18,7 @@ class ProductImageFactory extends Factory
         return [
             'product_id' => Product::factory(),
             // Points at the theme's own placeholder images so seeded pages look real.
-            'path' => 'assets/images/shop/shop-'.fake()->numberBetween(1, 12).'.png',
+            'path' => sprintf('assets/images/shop/product-%02d.jpg', fake()->numberBetween(1, 6)),
             'alt' => fake()->words(3, true),
             'position' => 0,
             'is_primary' => true,

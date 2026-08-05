@@ -38,6 +38,14 @@ class ProductSeeder extends Seeder
         'Spark Plug Set', 'Fuel Pump', 'Control Arm', 'Cabin Filter', 'Starter Motor',
     ];
 
+    /** Real filenames from the theme's own shop/ folder — invented ones 404. */
+    private const IMAGES = [
+        'product-01.jpg', 'product-02.jpg', 'product-03.jpg', 'product-04.jpg',
+        'product-05.jpg', 'product-06.jpg', 'wheel-01.jpg', 'wheel-02.jpg',
+        'wheel-03.jpg', 'wheel-04.jpg', 'wheel-05.jpg', 'wheel-06.jpg',
+        'wheel-07.jpg', 'wheel-08.jpg', 'wheel-09.jpg', 'wheel-10.jpg',
+    ];
+
     private const QUALIFIERS = ['Sport', 'Heavy Duty', 'Premium', 'OE Spec', 'Drilled', 'Slotted', 'Performance', 'Eco'];
 
     public function run(): void
@@ -99,7 +107,7 @@ class ProductSeeder extends Seeder
                 $images[] = [
                     'id' => (string) Str::ulid(),
                     'product_id' => $id,
-                    'path' => 'assets/images/shop/shop-'.random_int(1, 12).'.png',
+                    'path' => 'assets/images/shop/'.self::IMAGES[$n % count(self::IMAGES)],
                     'alt' => $name,
                     'position' => 0,
                     'is_primary' => true,

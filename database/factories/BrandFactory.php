@@ -20,7 +20,7 @@ class BrandFactory extends Factory
         return [
             'name' => $name,
             'slug' => Str::slug($name).'-'.Str::lower(Str::random(4)),
-            'logo_path' => 'assets/images/brand/brand-'.fake()->numberBetween(1, 18).'.png',
+            'logo_path' => sprintf('assets/images/brand/brand-%02d.png', fake()->numberBetween(1, 18)),
             'description' => fake()->sentence(12),
             'is_active' => true,
             'position' => fake()->numberBetween(0, 50),

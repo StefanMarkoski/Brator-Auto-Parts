@@ -26,11 +26,21 @@ class FitmentSeeder extends Seeder
         'Iveco', 'Man', 'Isuzu', 'Tesla',
     ];
 
-    private const MODELS_PER_MAKE = 10;
+    /** Overridable so FitmentSeederSmall can seed test-scale volume. */
+    protected function modelsPerMake(): int
+    {
+        return 10;
+    }
 
-    private const VARIANTS_PER_MODEL = 5;
+    protected function variantsPerModel(): int
+    {
+        return 5;
+    }
 
-    private const FITMENTS_PER_PRODUCT = 30;
+    protected function fitmentsPerProduct(): int
+    {
+        return 30;
+    }
 
     public function run(): void
     {
@@ -41,7 +51,7 @@ class FitmentSeeder extends Seeder
             $makeRows[] = [
                 'name' => $name,
                 'slug' => Str::slug($name),
-                'logo_path' => 'assets/images/brand/brand-'.(($i % 18) + 1).'.png',
+                'logo_path' => sprintf('assets/images/brand/brand-%02d.png', ($i % 18) + 1),
                 'position' => $i,
                 'is_active' => true,
                 'created_at' => $now,
@@ -53,7 +63,7 @@ class FitmentSeeder extends Seeder
 
         $modelRows = [];
         foreach ($makeIds as $makeId) {
-            for ($m = 1; $m <= self::MODELS_PER_MAKE; $m++) {
+            for ($m = 1; $m <= $this->modelsPerMake(); $m++) {
                 $name = 'Series '.$m;
                 $modelRows[] = [
                     'make_id' => $makeId,
@@ -74,7 +84,7 @@ class FitmentSeeder extends Seeder
 
         $variantRows = [];
         foreach ($modelIds as $modelId) {
-            for ($v = 0; $v < self::VARIANTS_PER_MODEL; $v++) {
+            for ($v = 0; $v < $this->variantsPerModel(); $v++) {
                 $from = random_int(1998, 2021);
                 $variantRows[] = [
                     'model_id' => $modelId,
@@ -107,7 +117,7 @@ class FitmentSeeder extends Seeder
 
         foreach ($productIds as $productId) {
             $picked = [];
-            for ($f = 0; $f < self::FITMENTS_PER_PRODUCT; $f++) {
+            for ($f = 0; $f < $this->fitmentsPerProduct(); $f++) {
                 $variantId = $variantIds[random_int(0, $variantCount - 1)];
                 if (isset($picked[$variantId])) {
                     continue;
