@@ -97,19 +97,32 @@ final class CheckoutFlowTest extends TestCase
 
     public function test_a_visitor_cannot_touch_a_line_that_is_not_in_their_basket(): void
     {
-        $product = $this->buyable();
-        $this->post('/cart/add', ['product_id' => $product->id]);
-        $lineId = DB::table('basket_lines')->value('id');
+        // REWRITTEN after review. The old version called flushSession(), which meant the
+        // request exited at the "no basket at all" guard and never reached the
+        // basket_id comparison — delete the ownership check and it stayed green.
+        //
+        // This gives the second visitor a basket of their OWN, so the only thing that
+        // can stop them touching someone else's line is the ownership check itself.
+        $productA = $this->buyable();
+        $this->post('/cart/add', ['product_id' => $productA->id]);
+        $victimLineId = DB::table('basket_lines')->value('id');
+        $victimBasketId = DB::table('baskets')->value('id');
 
-        // A different visitor — new session, so no basket. Posting someone else's line
-        // id must not edit or delete their cart.
+        // A different visitor, with their own basket.
         $this->flushSession();
+        $this->post('/cart/add', ['product_id' => $productA->id]);
 
-        $this->post("/cart/{$lineId}", ['quantity' => 99])->assertNotFound();
-        $this->delete("/cart/{$lineId}")->assertNotFound();
+        $attackerBasketId = DB::table('baskets')
+            ->where('id', '!=', $victimBasketId)->value('id');
+        $this->assertNotNull($attackerBasketId, 'The second visitor should have their own basket.');
 
-        $this->assertSame(1, DB::table('basket_lines')->count());
-        $this->assertSame(1, (int) DB::table('basket_lines')->value('quantity'));
+        // Now posting the victim's line id must 404 rather than edit or delete it.
+        $this->post("/cart/{$victimLineId}", ['quantity' => 99])->assertNotFound();
+        $this->delete("/cart/{$victimLineId}")->assertNotFound();
+
+        $victimLine = DB::table('basket_lines')->where('id', $victimLineId)->first();
+        $this->assertNotNull($victimLine, "The victim's line was deleted by another visitor.");
+        $this->assertSame(1, (int) $victimLine->quantity, "The victim's quantity was changed.");
     }
 
     public function test_checkout_produces_a_correct_receipt_and_emails_it(): void
