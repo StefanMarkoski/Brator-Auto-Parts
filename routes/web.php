@@ -31,6 +31,7 @@ Route::get('/product/{slug}', [ProductController::class, 'show'])->name('shop.pr
 Route::get('/search', SearchController::class)->name('search');
 Route::get('/cart', [BasketController::class, 'show'])->name('cart');
 Route::post('/cart/add', [BasketController::class, 'add'])->name('cart.add');
+Route::post('/cart/add-many', [BasketController::class, 'addMany'])->name('cart.add-many');
 Route::post('/cart/{line}', [BasketController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{line}', [BasketController::class, 'remove'])->name('cart.remove');
 

@@ -75,7 +75,7 @@
                                             <path d="M57.8,1.3h-6.4c-1.5,0-2.8,1.1-3,2.6l-1.8,13.2H7.3c-0.9,0-1.7,0.4-2.2,1.1c-0.5,0.7-0.7,1.6-0.5,2.4c0,0,0,0.1,0,0.1                                        l6.1,18.9c0.3,1.2,1.4,2.1,2.8,2.1h29.5c2.2,0,4-1.6,4.3-3.8l4.6-33.2h6c1,0,1.8-0.8,1.8-1.8S58.8,1.3,57.8,1.3z M43.7,37.4                                        c-0.1,0.4-0.4,0.8-0.9,0.8h-29L8.1,20.6h37.9L43.7,37.4z"></path>
                                         </g>
                                     </svg><span>{{ $basketCount ?? 0 }}</span>
-                                </div><b>$225.00</b>
+                                </div><b>{{ $miniCart->total->format() }}</b>
                             </a>
                             <div class="brator-cart-item-list">
                                 <div class="brator-cart-item-list-header">
@@ -86,69 +86,13 @@
                                         </svg>
                                     </button>
                                 </div>
-                                <div class="brator-cart-item-list-item">
-                                    <div class="brator-cart-item-list-item-img"><a href="#_"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/cart-01.jpg" alt="alt" /></a></div>
-                                    <div class="brator-cart-item-list-item-title">
-                                        <div class="brator-cart-item-list-item-title-one"><a href="#_">
-                                                <h2>Silver with Mirror Cut<br>Face Wheels</h2>
-                                            </a>
-                                            <div class="price-pdo">
-                                                <h4>4</h4>
-                                                <h5>x</h5>
-                                                <h6><span>$21.99</span><span>$26.99</span></h6>
-                                            </div>
-                                        </div>
-                                        <div class="brator-cart-item-list-item-title-accetion">
-                                            <p>19” DIAMETER, White/Sliver</p>
-                                            <div class="brator-cart-item-list-item-title-accetion-part"><a href="#_">
-                                                    <svg class="bi bi-pencil-square" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"></path>
-                                                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"></path>
-                                                    </svg></a>
-                                                <button class="cart-item-close">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="brator-cart-item-list-item">
-                                    <div class="brator-cart-item-list-item-img"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/cart-02.jpg" alt="alt" /></div>
-                                    <div class="brator-cart-item-list-item-title">
-                                        <div class="brator-cart-item-list-item-title-one"><a href="#_">
-                                                <h2>Automatic Proshift<br>Shift Knob</h2>
-                                            </a>
-                                            <div class="price-pdo">
-                                                <h4>4</h4>
-                                                <h5>x</h5>
-                                                <h6><span>$21.99</span><span>$26.99</span></h6>
-                                            </div>
-                                        </div>
-                                        <div class="brator-cart-item-list-item-title-accetion">
-                                            <p>19” DIAMETER, White/Sliver</p>
-                                            <div class="brator-cart-item-list-item-title-accetion-part"><a href="#_">
-                                                    <svg class="bi bi-pencil-square" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"></path>
-                                                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"></path>
-                                                    </svg></a>
-                                                <button class="cart-item-close">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                @include('partials.mini-cart-items')
                                 <div class="brator-cart-item-list-money-area">
-                                    <div class="brator-cart-item-money"><span>Total before discount</span><span>$843.19</span></div>
-                                    <div class="brator-cart-item-money discount-me"><span>Discount</span><span>- $5.00</span></div>
-                                    <div class="brator-cart-item-money"><span>Subtotal</span><span>$838.19</span></div>
+                                    <div class="brator-cart-item-money"><span>Subtotal (excl. VAT)</span><span>{{ $miniCart->subtotal->format() }}</span></div>
+                                    <div class="brator-cart-item-money"><span>VAT ({{ (int) config('shop.vat_rate') }}%)</span><span>{{ $miniCart->vat->format() }}</span></div>
                                 </div>
                                 <div class="brator-cart-total-money">
-                                    <div class="brator-cart-total-header"><span>total</span><span>$838.19</span></div>
+                                    <div class="brator-cart-total-header"><span>total</span><span>{{ $miniCart->total->format() }}</span></div>
                                     <div class="brator-cart-total-action"><a href="{{ route('cart', [], false) }}">View Cart</a><a href="{{ route('cart', [], false) }}">Checkout</a></div>
                                 </div>
                             </div>

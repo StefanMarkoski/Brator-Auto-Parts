@@ -53,6 +53,35 @@ final class BasketController
             ->with('status', "{$product->name} was added to your cart.");
     }
 
+    /** "Add All To Cart" from the Frequently Bought Together block. */
+    public function addMany(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'product_ids' => ['required', 'array', 'min:1', 'max:10'],
+            'product_ids.*' => ['string', 'exists:products,id'],
+        ]);
+
+        $basket = $this->baskets->currentOrCreate();
+        $added = 0;
+
+        foreach (Product::query()->whereIn('id', $validated['product_ids'])->get() as $product) {
+            try {
+                $this->addAction->execute($basket, $product);
+                $added++;
+            } catch (RuntimeException) {
+                // One unavailable companion part must not lose the rest of the basket.
+                continue;
+            }
+        }
+
+        return redirect()->route('cart')->with(
+            $added > 0 ? 'status' : 'error',
+            $added > 0
+                ? "{$added} item(s) added to your cart."
+                : 'None of those parts are available right now.'
+        );
+    }
+
     public function update(Request $request, string $line): RedirectResponse
     {
         $this->updateAction->execute(

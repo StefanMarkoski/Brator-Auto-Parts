@@ -31,10 +31,14 @@ final readonly class ProductFilter
         public ?string $searchTerm = null,
         public string $sort = 'newest',
         public int $page = 1,
+        public int $perPage = 12,
         public bool $listView = false,
     ) {}
 
     public const SORTS = ['newest', 'price_asc', 'price_desc', 'rating', 'name'];
+
+    /** The page sizes the theme's "Show item" control offers. */
+    public const PER_PAGE_OPTIONS = [12, 24, 48];
 
     /**
      * Rebuild with named values. Used to lift one filter group when counting that
@@ -56,6 +60,7 @@ final readonly class ProductFilter
             searchTerm: $values['searchTerm'] ?? null,
             sort: $values['sort'] ?? 'newest',
             page: $values['page'] ?? 1,
+            perPage: $values['perPage'] ?? 12,
             listView: $values['listView'] ?? false,
         );
     }
@@ -86,6 +91,9 @@ final readonly class ProductFilter
             searchTerm: ($term = trim((string) $request->query('s', ''))) === '' ? null : $term,
             sort: in_array($sort, self::SORTS, true) ? $sort : 'newest',
             page: max(1, (int) $request->query('page', 1)),
+            perPage: in_array((int) $request->query('per_page'), self::PER_PAGE_OPTIONS, true)
+                ? (int) $request->query('per_page')
+                : 12,
             listView: $request->query('view') === 'list',
         );
     }
@@ -104,6 +112,7 @@ final readonly class ProductFilter
             searchTerm: $this->searchTerm,
             sort: $this->sort,
             page: $this->page,
+            perPage: $this->perPage,
             listView: $this->listView,
         );
     }
@@ -144,6 +153,7 @@ final readonly class ProductFilter
             'rating' => $this->minRating,
             's' => $this->searchTerm,
             'sort' => $this->sort === 'newest' ? null : $this->sort,
+            'per_page' => $this->perPage === 12 ? null : $this->perPage,
             'view' => $this->listView ? 'list' : null,
         ], fn ($value) => $value !== null);
 

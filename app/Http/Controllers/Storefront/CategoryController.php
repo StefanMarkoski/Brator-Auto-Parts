@@ -6,8 +6,10 @@ namespace App\Http\Controllers\Storefront;
 
 use App\Domain\Catalog\DTOs\ProductFilter;
 use App\Domain\Catalog\Models\Category;
+use App\Domain\Catalog\Queries\Internal\ListProductCardsQuery;
 use App\Domain\Fitment\Services\VehicleSelection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 final class CategoryController
@@ -15,6 +17,7 @@ final class CategoryController
     public function __construct(
         private ListingPayload $listing,
         private VehicleSelection $vehicle,
+        private ListProductCardsQuery $cards,
     ) {}
 
     /** The top-level category grid — the theme's shop-categories page. */
@@ -22,6 +25,11 @@ final class CategoryController
     {
         return view('shop.categories', [
             'breadcrumbs' => [],
+            // The theme's featured strip on this page was hardcoded demo products.
+            'featured' => $this->cards->bestSelling(5),
+            'makes' => $this->vehicleMakes(),
+            'totalProducts' => DB::table('products')
+                ->where('is_active', true)->whereNull('deleted_at')->count(),
             'categories' => Category::query()
                 ->where('depth', 0)->where('is_active', true)
                 ->with('children')
@@ -47,6 +55,22 @@ final class CategoryController
             'searchTerm' => null,
             'breadcrumbs' => $this->breadcrumbsFor($category),
         ]);
+    }
+
+    /**
+     * Vehicle makes for this page's "shop by make" list, which shipped as a wall of
+     * "Accura" placeholders.
+     *
+     * @return list<array{slug: string, name: string}>
+     */
+    private function vehicleMakes(): array
+    {
+        return DB::table('vehicle_makes')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['slug', 'name'])
+            ->map(fn ($row) => ['slug' => $row->slug, 'name' => $row->name])
+            ->all();
     }
 
     /**

@@ -8,6 +8,8 @@ use App\Domain\Catalog\DTOs\ProductFilter;
 use App\Domain\Catalog\Models\Brand;
 use App\Domain\Catalog\Queries\Internal\FilteredProductsQuery;
 use App\Domain\Catalog\Queries\Internal\GetCategoryFiltersQuery;
+use App\Domain\Catalog\Queries\Internal\ListProductCardsQuery;
+use App\Domain\Catalog\Services\RecentlyViewed;
 use App\Domain\Fitment\Queries\Internal\GetVehiclePickerQuery;
 
 /**
@@ -17,12 +19,12 @@ use App\Domain\Fitment\Queries\Internal\GetVehiclePickerQuery;
  */
 final class ListingPayload
 {
-    public const PER_PAGE = 12;
-
     public function __construct(
         private FilteredProductsQuery $products,
         private GetCategoryFiltersQuery $categoryFilters,
         private GetVehiclePickerQuery $vehiclePicker,
+        private ListProductCardsQuery $cards,
+        private RecentlyViewed $recentlyViewed,
     ) {}
 
     /** @return array<string, mixed> */
@@ -32,13 +34,19 @@ final class ListingPayload
         $codes = array_column($filters, 'code');
 
         $total = $this->products->count($filter);
+        $perPage = $filter->perPage;
 
         return [
             'filter' => $filter,
-            'products' => $this->products->page($filter, self::PER_PAGE),
+            'products' => $this->products->page($filter, $perPage),
             'total' => $total,
             'page' => $filter->page,
-            'lastPage' => max(1, (int) ceil($total / self::PER_PAGE)),
+            'perPage' => $perPage,
+            'lastPage' => max(1, (int) ceil($total / $perPage)),
+            // The range actually shown, for the theme's results line — which shipped
+            // hardcoded as "1 - 40 of 1,652 results".
+            'shownFrom' => $total === 0 ? 0 : (($filter->page - 1) * $perPage) + 1,
+            'shownTo' => min($total, $filter->page * $perPage),
             'listView' => $filter->listView,
             'filterGroups' => $filters,
             'facets' => $this->products->facets($filter, $codes),
@@ -46,6 +54,10 @@ final class ListingPayload
             'brands' => Brand::query()->where('is_active', true)
                 ->orderBy('name')->get(['name', 'slug']),
             'vehicle' => $this->vehiclePicker->selection($filter->vehicleVariantId),
+            // The theme's sidebar 'Best Seller' widget and its 'Recently Viewed'
+            // strip, both of which shipped as hardcoded demo products.
+            'bestSellers' => $this->cards->bestSelling(4),
+            'recentlyViewed' => $this->cards->forIds($this->recentlyViewed->all()),
         ];
     }
 }

@@ -76,14 +76,17 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        // The cart badge in the header, on every page — same reasoning as the nav.
-        View::composer(['partials.header', 'partials.header-shop'], function ($view): void {
-            $resolver = app(BasketResolver::class);
-            $view->with(
-                'basketCount',
-                app(GetBasketSummaryQuery::class)
-                    ->itemCount($resolver->current())
-            );
-        });
+        // The cart badge AND the mini-cart panel, on every page. The theme shipped the
+        // panel with two hardcoded wheels in it, so every visitor was told they had a
+        // basket they had never touched.
+        View::composer(
+            ['partials.header', 'partials.header-shop', 'partials.mini-cart-items'],
+            function ($view): void {
+                $basket = app(BasketResolver::class)->current();
+                $summary = app(GetBasketSummaryQuery::class)->execute($basket);
+
+                $view->with('basketCount', $summary->itemCount)->with('miniCart', $summary);
+            }
+        );
     }
 }
