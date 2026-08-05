@@ -48,6 +48,11 @@
                                 <p>{{ session('status') }}</p>
                             </div>
                         @endif
+                        @if (session('error'))
+                            <div class="brator-contact-form-field-info">
+                                <p>{{ session('error') }}</p>
+                            </div>
+                        @endif
                         <div class="brator-cart-list">
                             <div class="brator-cart-list-items title-me">
                                 <div class="brator-cart-list-items-title">

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Storefront;
 
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Ordering\Actions\AddProductToBasketAction;
+use App\Domain\Ordering\Actions\PruneOrphanedBasketLinesAction;
 use App\Domain\Ordering\Actions\UpdateBasketLineAction;
 use App\Domain\Ordering\Http\Requests\AddToBasketRequest;
 use App\Domain\Ordering\Models\BasketLine;
@@ -24,12 +25,26 @@ final class BasketController
         private GetBasketSummaryQuery $summary,
         private AddProductToBasketAction $addAction,
         private UpdateBasketLineAction $updateAction,
+        private PruneOrphanedBasketLinesAction $pruneOrphans,
     ) {}
 
     public function show(): View
     {
+        $basket = $this->baskets->current();
+
+        // Clear any line whose product has been deleted, and say so. Silently shrinking
+        // someone's cart is worse than telling them.
+        $pruned = $basket === null ? 0 : $this->pruneOrphans->execute($basket->id);
+
+        if ($pruned > 0) {
+            $basket = $this->baskets->current();
+            session()->flash('error', $pruned === 1
+                ? 'One item was removed from your cart because it is no longer sold.'
+                : "{$pruned} items were removed from your cart because they are no longer sold.");
+        }
+
         return view('shop.cart', [
-            'basket' => $this->summary->execute($this->baskets->current()),
+            'basket' => $this->summary->execute($basket),
             'breadcrumbs' => ['Your Cart' => null],
         ]);
     }

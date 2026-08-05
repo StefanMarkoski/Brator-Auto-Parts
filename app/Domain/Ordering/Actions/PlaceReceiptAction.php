@@ -11,6 +11,7 @@ use App\Domain\Ordering\DTOs\CheckoutDetails;
 use App\Domain\Ordering\Enums\ReceiptStatus;
 use App\Domain\Ordering\Events\ReceiptPlaced;
 use App\Domain\Ordering\Models\Basket;
+use App\Domain\Ordering\Models\BasketLine;
 use App\Domain\Ordering\Models\Receipt;
 use App\Support\ValueObjects\Money;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,16 @@ final class PlaceReceiptAction
     public function execute(Basket $basket, CheckoutDetails $details): Receipt
     {
         $basket->loadMissing(['lines.product.brand']);
+
+        // A soft-deleted product nulls the relation. Drop those lines before totalling
+        // rather than reading through them — the same fault family that used to 500 the
+        // cart page.
+        $orphaned = $basket->lines->filter(fn ($line): bool => $line->product === null);
+
+        if ($orphaned->isNotEmpty()) {
+            BasketLine::query()->whereIn('id', $orphaned->pluck('id'))->delete();
+            $basket->unsetRelation('lines')->load('lines.product.brand');
+        }
 
         if ($basket->lines->isEmpty()) {
             throw new RuntimeException('Cannot place a receipt for an empty basket.');
