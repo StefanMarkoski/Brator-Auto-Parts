@@ -39,8 +39,8 @@ final class CheckoutFlowTest extends TestCase
             ->assertRedirect(route('cart'));
 
         $this->get('/cart')->assertOk()
-            ->assertSee($product->name, false)
-            ->assertSee($product->sku, false);
+            ->assertSee($product->name)
+            ->assertSee($product->sku);
     }
 
     public function test_adding_the_same_part_twice_increases_the_quantity(): void
@@ -271,8 +271,8 @@ final class CheckoutFlowTest extends TestCase
 
         $this->get(route('receipt', $receipt->id))
             ->assertOk()
-            ->assertSee($receipt->receipt_number, false)
-            ->assertSee($product->name, false)
+            ->assertSee($receipt->receipt_number)
+            ->assertSee($product->name)
             ->assertSee('Ana', false);
     }
 

@@ -114,7 +114,7 @@ final class NoTemplatePlaceholdersTest extends TestCase
         $product = Product::query()->where('stock_status', 'in_stock')->firstOrFail();
         $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 2]);
 
-        $this->get('/')->assertOk()->assertSee($product->name, false);
+        $this->get('/')->assertOk()->assertSee($product->name);
     }
 
     public function test_the_product_page_specification_table_shows_that_products_attributes(): void
@@ -123,7 +123,7 @@ final class NoTemplatePlaceholdersTest extends TestCase
 
         $this->get(route('shop.product', $product->slug))
             ->assertOk()
-            ->assertSee($product->sku, false)
+            ->assertSee($product->sku)
             // Real attribute labels from category_attributes, not the theme's wheel specs.
             ->assertSee('Origins', false)
             ->assertSee('Materials', false);

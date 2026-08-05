@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Ordering\Actions;
 
-use App\Domain\Catalog\Enums\StockMovementReason;
+use App\Domain\Catalog\Actions\RecordStockSaleAction;
 use App\Domain\Catalog\Models\Product;
-use App\Domain\Catalog\Models\StockMovement;
 use App\Domain\Ordering\DTOs\CheckoutDetails;
 use App\Domain\Ordering\Enums\ReceiptStatus;
 use App\Domain\Ordering\Events\ReceiptPlaced;
@@ -29,6 +28,8 @@ use RuntimeException;
  */
 final class PlaceReceiptAction
 {
+    public function __construct(private RecordStockSaleAction $recordStockSale) {}
+
     public function execute(Basket $basket, CheckoutDetails $details): Receipt
     {
         $basket->loadMissing(['lines.product.brand']);
@@ -137,20 +138,17 @@ final class PlaceReceiptAction
 
             $receipt->lines()->createMany($lines);
 
-            // The stock ledger, and the cached quantity in the same transaction so the
-            // two cannot drift.
+            // Stock is Catalog's to change, so it goes through Catalog's own action —
+            // which is where the "never below zero" rule lives, under a row lock. This
+            // context used to write Product and StockMovement directly, and the rule had
+            // nowhere to live, so nobody wrote it.
             foreach ($basket->lines as $line) {
-                StockMovement::create([
-                    'product_id' => $line->product_id,
-                    'delta' => -$line->quantity,
-                    'reason' => StockMovementReason::Sale,
-                    'reference_type' => Receipt::class,
-                    'reference_id' => $receipt->id,
-                    'note' => 'Receipt '.$receipt->receipt_number,
-                ]);
-
-                Product::query()->whereKey($line->product_id)
-                    ->decrement('stock_quantity', $line->quantity);
+                $this->recordStockSale->execute(
+                    productId: $line->product_id,
+                    quantity: $line->quantity,
+                    reference: $receipt->id,
+                    note: 'Receipt '.$receipt->receipt_number,
+                );
             }
 
             $basket->lines()->delete();

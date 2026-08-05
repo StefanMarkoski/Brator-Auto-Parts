@@ -136,8 +136,8 @@ final class StorefrontPagesTest extends TestCase
 
         $this->get(route('shop.product', $product->slug))
             ->assertOk()
-            ->assertSee($product->name, false)
-            ->assertSee($product->sku, false)
+            ->assertSee($product->name)
+            ->assertSee($product->sku)
             // And not the theme's demo part, which is the failure that returns 200.
             ->assertDontSee('Silver with Mirror Cut Facewheels', false);
     }
