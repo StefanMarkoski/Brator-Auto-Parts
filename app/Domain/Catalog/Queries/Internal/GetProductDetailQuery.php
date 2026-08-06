@@ -20,7 +20,21 @@ final class GetProductDetailQuery
             // preventLazyLoading turns a missing one into an error rather than an N+1.
             ->with([
                 'brand',
-                'images',
+                /*
+                 | Primary FIRST, then position.
+                 |
+                 | The listing cards join on is_primary, but this page reads images[0], so
+                 | the main image chosen in the panel governed every card in the shop and
+                 | not the product's own page — which is the one place a shopper looks
+                 | hardest. The two now agree.
+                 |
+                 | reorder() is required, not decoration. The images() relation already
+                 | carries ->orderBy('position'), and an eager-load closure APPENDS to the
+                 | relation's own ordering rather than replacing it: without reorder() the
+                 | query asks for "ORDER BY position, is_primary DESC", position wins every
+                 | tie, and the sort silently does nothing.
+                */
+                'images' => fn ($q) => $q->reorder()->orderByDesc('is_primary')->orderBy('position'),
                 'categories',
                 'attributeValues.attribute',
                 'attributeValues.option',

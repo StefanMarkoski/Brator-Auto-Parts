@@ -49,6 +49,83 @@
                 </div>
             </x-admin.component-card>
 
+            <x-admin.component-card title="Images"
+                desc="The first image is what the shop shows on cards and listings. Up to four appear on the product page.">
+                {{-- Its own form, and it needs the multipart encoding — a file input inside
+                     the details form would post as urlencoded and arrive empty. --}}
+                <form method="post" enctype="multipart/form-data"
+                    action="{{ route('admin.products.images.store', $product->id, false) }}" class="space-y-3">
+                    @csrf
+                    <x-admin.field label="Add images" name="images"
+                        hint="JPG, PNG or WebP, up to 4MB each. Eight at a time.">
+                        <input type="file" name="images[]" multiple accept="image/jpeg,image/png,image/webp"
+                            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-600 file:mr-3 file:rounded file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white dark:border-gray-700 dark:text-gray-400" />
+                    </x-admin.field>
+
+                    <x-admin.button type="submit" variant="outline" size="sm">Upload</x-admin.button>
+                </form>
+
+                @if ($images->isNotEmpty())
+                    <ul class="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-800">
+                        @foreach ($images as $image)
+                            <li class="flex items-center gap-3">
+                                {{-- Origin-relative, single leading slash: seeded rows hold a
+                                     theme asset path and uploads hold storage/…, and both are
+                                     relative to the document root. --}}
+                                <img src="/{{ $image->path }}" alt="{{ $image->alt }}"
+                                    class="h-14 w-14 shrink-0 rounded-lg object-cover" />
+
+                                <div class="min-w-0 flex-1">
+                                    @if ($image->is_primary)
+                                        <x-admin.badge color="success" size="sm">Main image</x-admin.badge>
+                                    @else
+                                        <form method="post"
+                                            action="{{ route('admin.products.images.update', [$product->id, $image->id], false) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="action" value="primary" />
+                                            <button type="submit"
+                                                class="text-xs font-medium text-brand-500 hover:underline">Make main</button>
+                                        </form>
+                                    @endif
+
+                                    <span class="mt-1 block truncate text-xs text-gray-400">{{ $image->path }}</span>
+                                </div>
+
+                                <div class="flex shrink-0 items-center gap-2">
+                                    @foreach (['up' => '↑', 'down' => '↓'] as $direction => $glyph)
+                                        <form method="post"
+                                            action="{{ route('admin.products.images.update', [$product->id, $image->id], false) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="action" value="{{ $direction }}" />
+                                            <button type="submit"
+                                                @disabled($direction === 'up' ? $loop->parent->first : $loop->parent->last)
+                                                class="px-1 text-sm text-gray-400 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:text-white">{{ $glyph }}</button>
+                                        </form>
+                                    @endforeach
+
+                                    <x-admin.confirm-action
+                                        :action="route('admin.products.images.destroy', [$product->id, $image->id], false)"
+                                        method="DELETE"
+                                        label="Remove"
+                                        trigger-class="text-xs font-medium text-error-600 hover:underline dark:text-error-400"
+                                        title="Remove this image?"
+                                        :message="str_starts_with($image->path, 'storage/')
+                                            ? 'The file is deleted from disk as well. This cannot be undone.'
+                                            : 'This is one of the theme\'s own images, shared with other products, so only the link to it is removed — the file stays.'"
+                                        confirm="Yes, remove it" />
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="border-t border-gray-100 pt-4 text-sm text-gray-400 dark:border-gray-800">
+                        No images yet, so the shop shows a placeholder for this product.
+                    </p>
+                @endif
+            </x-admin.component-card>
+
             <x-admin.component-card title="Fields you own"
                 desc="Imports skip these. Release one to let the supplier feed update it again.">
                 @forelse ($overridden as $field)

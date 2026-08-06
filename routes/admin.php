@@ -55,6 +55,13 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::delete('products/{product}/override', [ProductController::class, 'releaseOverride'])
             ->name('products.override.release');
 
+        Route::post('products/{product}/images', [ProductController::class, 'storeImages'])
+            ->name('products.images.store');
+        Route::put('products/{product}/images/{image}', [ProductController::class, 'updateImage'])
+            ->name('products.images.update');
+        Route::delete('products/{product}/images/{image}', [ProductController::class, 'destroyImage'])
+            ->name('products.images.destroy');
+
         Route::get('categories', [CatalogController::class, 'categories'])->name('categories.index');
         Route::post('categories', [CatalogController::class, 'storeCategory'])->name('categories.store');
         Route::put('categories/{category}', [CatalogController::class, 'updateCategory'])

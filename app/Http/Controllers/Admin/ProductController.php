@@ -7,16 +7,19 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Catalog\Actions\AdjustStockAction;
 use App\Domain\Catalog\Actions\CreateProductAction;
 use App\Domain\Catalog\Actions\DeleteProductAction;
+use App\Domain\Catalog\Actions\SaveProductImagesAction;
 use App\Domain\Catalog\Enums\ProductCondition;
 use App\Domain\Catalog\Enums\StockStatus;
 use App\Domain\Catalog\Models\Brand;
 use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\CatalogImport\Actions\RecordFieldOverridesAction;
 use App\Domain\CatalogImport\Models\ProductFieldOverride;
 use App\Support\Database\LikePattern;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\View\View;
 
 final class ProductController
@@ -26,6 +29,7 @@ final class ProductController
         private CreateProductAction $createProduct,
         private DeleteProductAction $deleteProduct,
         private AdjustStockAction $adjustStock,
+        private SaveProductImagesAction $saveImages,
     ) {}
 
     public function index(Request $request): View
@@ -108,6 +112,7 @@ final class ProductController
             // what the importer will leave alone.
             'overridden' => ProductFieldOverride::lockedFieldsFor($model->id),
             'selectedCategories' => $model->categories()->pluck('categories.id')->all(),
+            'images' => $model->images()->orderBy('position')->orderBy('id')->get(),
         ]);
     }
 
@@ -261,6 +266,61 @@ final class ProductController
                 ->orderBy('path')
                 ->get(['id', 'name', 'parent_id', 'path']),
         ];
+    }
+
+    public function storeImages(Request $request, string $product): RedirectResponse
+    {
+        $model = Product::withTrashed()->findOrFail($product);
+
+        $request->validate([
+            'images' => ['required', 'array', 'max:8'],
+            // `image` checks the actual file contents, not the extension — a .jpg that is
+            // really a PHP script gets past a name check and lands in a web-served directory.
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ], [], ['images.*' => 'image']);
+
+        /** @var list<UploadedFile> $files */
+        $files = $request->file('images', []);
+
+        $stored = $this->saveImages->upload($model, $files);
+
+        return redirect()
+            ->route('admin.products.edit', $model->id)
+            ->with('status', $stored === 1
+                ? 'One image was added.'
+                : "{$stored} images were added.");
+    }
+
+    public function destroyImage(string $product, string $image): RedirectResponse
+    {
+        // Scoped to the product in the URL, not just looked up by id: without this, any
+        // image id could be deleted through any product's route.
+        $model = ProductImage::query()
+            ->where('product_id', $product)
+            ->findOrFail($image);
+
+        $this->saveImages->delete($model);
+
+        return redirect()->route('admin.products.edit', $product)->with('status', 'The image was removed.');
+    }
+
+    public function updateImage(Request $request, string $product, string $image): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => ['required', 'string', 'in:primary,up,down'],
+        ]);
+
+        $model = ProductImage::query()->where('product_id', $product)->findOrFail($image);
+
+        if ($validated['action'] === 'primary') {
+            $this->saveImages->makePrimary($model);
+            $message = 'That image is now the main one.';
+        } else {
+            $this->saveImages->move($model, $validated['action']);
+            $message = 'The image order was changed.';
+        }
+
+        return redirect()->route('admin.products.edit', $product)->with('status', $message);
     }
 
     /** Hand a field back to the importer. */
