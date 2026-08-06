@@ -38,6 +38,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
         Route::get('receipts', [ReceiptController::class, 'index'])->name('receipts.index');
         Route::get('receipts/{receipt}', [ReceiptController::class, 'show'])->name('receipts.show');
+        Route::put('receipts/{receipt}/status', [ReceiptController::class, 'updateStatus'])
+            ->name('receipts.status');
+        Route::put('receipts/{receipt}/notes', [ReceiptController::class, 'updateNotes'])
+            ->name('receipts.notes');
 
         Route::get('products', [ProductController::class, 'index'])->name('products.index');
         // Declared before products/{product}/edit, or "create" is matched as a product id.

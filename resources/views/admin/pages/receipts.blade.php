@@ -3,20 +3,20 @@
 @section('heading', 'Receipts')
 
 @section('content')
+    @use('App\Domain\Ordering\Enums\ReceiptStatus')
+
     <x-admin.page-breadcrumb pageTitle="Receipts" />
 
     <x-admin.component-card title="All receipts" desc="Behind the staff login — these rows carry customer names, emails and addresses.">
         <form method="get" class="mb-5 flex flex-wrap gap-3">
-            <input type="search" name="q" value="{{ $search }}" placeholder="Receipt number, name or email"
-                class="h-11 flex-1 min-w-64 rounded-lg border border-gray-300 bg-transparent px-4 text-sm dark:border-gray-700 dark:text-white/90" />
-            <select name="status" x-on:change="$el.form.requestSubmit()"
-                class="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm dark:border-gray-700 dark:text-white/90">
-                <option value="">Any status</option>
-                @foreach (['paid' => 'Paid', 'pending' => 'Pending', 'cancelled' => 'Cancelled'] as $value => $label)
-                    <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="h-11 rounded-lg bg-brand-500 px-5 text-sm font-medium text-white hover:bg-brand-600">Search</button>
+            <x-admin.input type="search" name="q" :value="$search"
+                placeholder="Receipt number, name or email" class="flex-1 min-w-64" />
+
+            <x-admin.select name="status" x-on:change="$el.form.requestSubmit()"
+                :options="['paid' => 'Paid', 'pending' => 'Pending', 'cancelled' => 'Cancelled']"
+                :selected="$status" placeholder="Any status" class="w-44" />
+
+            <x-admin.button type="submit" size="sm">Search</x-admin.button>
         </form>
 
         <div class="overflow-x-auto">
@@ -42,11 +42,14 @@
                             <td class="py-3 pr-4 text-gray-700 dark:text-gray-300">{{ $receipt->customer_name }}
                                 <span class="block text-xs text-gray-400">{{ $receipt->customer_email }}</span></td>
                             <td class="py-3 pr-4 text-gray-500">{{ $receipt->lines_count }}</td>
+                            {{-- Cancelled reads as error, not as the same grey as pending:
+                                 those two mean opposite things to whoever is looking. --}}
                             <td class="py-3 pr-4">
-                                <span class="rounded-full px-2 py-0.5 text-xs font-medium
-                                    {{ $receipt->status->value === 'paid' ? 'bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-400' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300' }}">
-                                    {{ $receipt->status->label() }}
-                                </span>
+                                <x-admin.badge size="sm" :color="match ($receipt->status) {
+                                    ReceiptStatus::Paid => 'success',
+                                    ReceiptStatus::Cancelled => 'error',
+                                    default => 'warning',
+                                }">{{ $receipt->status->label() }}</x-admin.badge>
                             </td>
                             <td class="py-3 pr-4 text-right font-medium text-gray-800 dark:text-white/90">{{ $receipt->total_minor->format() }}</td>
                         </tr>
