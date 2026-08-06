@@ -97,7 +97,19 @@
                                     </svg>Reset All
                                 </button>
                             </div>
-                            <form method="get" class="shop-sidebar-content">
+                            {{--
+                                    The clear-filters form, declared OUTSIDE the filter form below.
+                                    The button that submits it sits inside the sidebar and reaches
+                                    it by id, because a form inside a form is invalid HTML and gets
+                                    silently dropped.
+                                --}}
+                                <form method="post" id="clear-filters"
+                                    action="{{ route('filters.clear', [], false) }}" hidden>
+                                    @csrf
+                                    <input type="hidden" name="redirect_to"
+                                        value="{{ $category ? route('shop.category', $category->slug, false) : route('search', ['s' => $filter->searchTerm], false) }}" />
+                                </form>
+                                <form method="get" class="shop-sidebar-content">
                                 @if ($searchTerm)<input type="hidden" name="s" value="{{ $searchTerm }}" />@endif
                                 @if ($filter->listView)<input type="hidden" name="view" value="list" />@endif
                                 @if ($filter->sort !== 'newest')<input type="hidden" name="sort" value="{{ $filter->sort }}" />@endif

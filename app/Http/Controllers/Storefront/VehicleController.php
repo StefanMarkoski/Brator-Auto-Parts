@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Storefront;
 
 use App\Domain\Fitment\Queries\Internal\GetVehiclePickerQuery;
 use App\Domain\Fitment\Services\VehicleSelection;
+use App\Support\Http\SafeRedirect;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -119,7 +120,37 @@ final class VehicleController
     {
         $this->selection->clear();
 
-        return redirect()->to($request->input('redirect_to') ?: route('shop.categories', [], false));
+        // Through SafeRedirect: redirect_to is posted by the page, so it is user input, and
+        // reflecting it unchecked made this an open redirect — a link on this shop's domain
+        // that lands on somebody else's site.
+        return redirect()->to(SafeRedirect::path(
+            $request->input('redirect_to'),
+            route('shop.categories', [], false),
+        ));
+    }
+
+    /**
+     * "Clear all filters".
+     *
+     * Separate from clear() above only in what it means to a shopper, but it has to exist:
+     * every other filter lives in the URL, so a plain link to the bare listing clears them
+     * all — EXCEPT the vehicle, which lives in the session. That was the open finding from
+     * the frontend review. The sidebar came back with nothing ticked while the results stayed
+     * narrowed to the chosen car, and the "Clear all filters" link stayed on screen, so it
+     * looked like clicking it had done nothing.
+     *
+     * The label says "all", so it clears the car too. The basket is untouched: it also lives
+     * in the session, and losing somebody's shopping to a filter control would be worse than
+     * the bug this fixes.
+     */
+    public function clearFilters(Request $request): RedirectResponse
+    {
+        $this->selection->clear();
+
+        return redirect()->to(SafeRedirect::path(
+            $request->input('redirect_to'),
+            route('shop.categories', [], false),
+        ));
     }
 
     private function year(Request $request): ?int

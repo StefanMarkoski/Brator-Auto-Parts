@@ -17,9 +17,39 @@
             </div>
         @endforeach
         @if ($filter->hasAnyNarrowing())
+            {{--
+                A POST, not a link, and this is the fix for the review's last open finding.
+
+                It used to be a link to the bare listing URL. That clears every filter held in
+                the URL — and silently keeps the chosen VEHICLE, which lives in the session. So
+                the sidebar came back with nothing ticked while the results stayed narrowed to
+                the car, and this control stayed on screen afterwards, making it look as though
+                the click had done nothing. The label says "all", so it now clears the car too,
+                and says so when there is one.
+
+                The basket is deliberately untouched: it lives in the session as well, and
+                losing somebody's shopping to a filter control would be worse than the bug.
+            --}}
             <div class="brator-filter-item-content">
                 <div class="brator-filter-item-check-box-content">
-                    <span class="brator-name"><a href="{{ $category ? route('shop.category', $category->slug, false) : route('search', ['s' => $filter->searchTerm], false) }}">Clear all filters</a></span>
+                    <span class="brator-name">
+                        {{--
+                            A BUTTON, targeting a form that lives outside the filter form via
+                            form="clear-filters". It was a nested <form> at first, which is invalid
+                            HTML: the browser dropped the inner one and this button submitted the
+                            OUTER filter form as a GET instead — so the page came back with the
+                            CSRF token in the query string and the car still selected. Exactly the
+                            trap I had already commented on in the admin product editor.
+
+                            The label is built in PHP rather than with an inline @if: written as
+                            "filters@if (…)" it rendered VERBATIM, because Blade treats an @ that
+                            directly follows a word character as part of an email address.
+                        --}}
+                        @php($clearLabel = $filter->vehicleVariantId !== null
+                            ? 'Clear all filters, including your car'
+                            : 'Clear all filters')
+                        <button type="submit" form="clear-filters">{{ $clearLabel }}</button>
+                    </span>
                 </div>
             </div>
         @endif

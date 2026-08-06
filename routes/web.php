@@ -50,6 +50,14 @@ Route::post('/vehicle', [VehicleController::class, 'select'])->name('vehicle.sel
 Route::post('/vehicle/pick', [VehicleController::class, 'pick'])->name('vehicle.pick');
 Route::get('/vehicle/make/{slug}', [VehicleController::class, 'byMake'])->name('vehicle.by-make');
 Route::post('/vehicle/clear', [VehicleController::class, 'clear'])->name('vehicle.clear');
+
+/*
+ | "Clear all filters" is a POST, not a link.
+ |
+ | It has to clear the chosen vehicle, which lives in the session, and a GET that mutates
+ | session state is both wrong and liable to be fired by a link prefetcher.
+ */
+Route::post('/filters/clear', [VehicleController::class, 'clearFilters'])->name('filters.clear');
 Route::get('/vehicle/makes', [VehicleController::class, 'makes'])->name('vehicle.makes');
 Route::get('/vehicle/models/{make}', [VehicleController::class, 'models'])->name('vehicle.models');
 Route::get('/vehicle/variants/{model}', [VehicleController::class, 'variants'])->name('vehicle.variants');
