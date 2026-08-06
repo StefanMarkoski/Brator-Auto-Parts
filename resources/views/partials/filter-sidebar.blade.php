@@ -61,24 +61,50 @@
 <div class="brator-filter-item-area">
     <div class="brator-filter-item-title current">
         <h4>Price</h4>
+        <button class="ac-trigger" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
+            </svg>
+        </button>
     </div>
     <div class="brator-filter-item-content-area">
-        <div class="brator-filter-item-content">
-            <div class="brator-filter-item-check-box-content">
-                <span class="brator-name">
-                    <input type="number" name="price_min" value="{{ $filter->priceMinMinor === null ? '' : (int) ($filter->priceMinMinor / 100) }}"
-                           min="{{ $priceBounds['min'] }}" max="{{ $priceBounds['max'] }}" placeholder="{{ $priceBounds['min'] }}" />
-                </span>
-                <span class="brator-count">
-                    <input type="number" name="price_max" value="{{ $filter->priceMaxMinor === null ? '' : (int) ($filter->priceMaxMinor / 100) }}"
-                           min="{{ $priceBounds['min'] }}" max="{{ $priceBounds['max'] }}" placeholder="{{ $priceBounds['max'] }}" />
-                </span>
+        {{--
+            The theme's OWN price markup: two inputs in brator-rang-item-input, and the
+            noUiSlider mount it already styles and already initialises.
+
+            The first attempt put bare number inputs in this block. The theme's CSS expects
+            a slider here, so the two inputs rendered stacked on the identical rectangle and
+            the control could not be operated with a mouse at all. Driving the real slider
+            needs no new CSS and looks exactly as designed.
+
+            The inputs still carry the values, so the form submits a usable range with
+            JavaScript off.
+        --}}
+        <div class="brator-rang-item-input">
+            <div class="brator-rang-item-input-single">
+                <input type="number" name="price_min" data-price-min
+                       value="{{ $filter->priceMinMinor === null ? $priceBounds['min'] : (int) ($filter->priceMinMinor / 100) }}"
+                       min="{{ $priceBounds['min'] }}" max="{{ $priceBounds['max'] }}" />
+                <div class="brator-rang-item-input-single-text">{{ config('shop.currency_symbol') }} min</div>
+            </div>
+            <div class="brator-rang-item-input-single">
+                <input type="number" name="price_max" data-price-max
+                       value="{{ $filter->priceMaxMinor === null ? $priceBounds['max'] : (int) ($filter->priceMaxMinor / 100) }}"
+                       min="{{ $priceBounds['min'] }}" max="{{ $priceBounds['max'] }}" />
+                <div class="brator-rang-item-input-single-text">{{ config('shop.currency_symbol') }} max</div>
+            </div>
+            <div class="brator-rang-item-input-single-btn">
+                <button type="submit">Go</button>
             </div>
         </div>
-        <div class="brator-filter-item-content">
+        <div class="brator-rang-item-slider">
+            <div id="brator-rang-item-slider-nou"
+                 data-price-slider
+                 data-price-floor="{{ $priceBounds['min'] }}"
+                 data-price-ceiling="{{ $priceBounds['max'] }}"
+                 data-currency="{{ config('shop.currency_symbol') }}"></div>
             <div class="brator-filter-item-check-box-content">
-                <span class="brator-name">{{ $priceBounds['min'] }} – {{ $priceBounds['max'] }} ден</span>
-                <span class="brator-count"><button type="submit">Apply</button></span>
+                <span class="brator-name" data-price-readout>{{ number_format($priceBounds['min']) }} - {{ number_format($priceBounds['max']) }} {{ config('shop.currency_symbol') }}</span>
             </div>
         </div>
     </div>
