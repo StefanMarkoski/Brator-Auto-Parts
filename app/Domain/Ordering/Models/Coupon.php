@@ -7,6 +7,7 @@ namespace App\Domain\Ordering\Models;
 use App\Support\Casts\MoneyCast;
 use App\Support\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,15 +24,13 @@ class Coupon extends Model
     use HasUlids;
 
     protected $fillable = [
-        'code', 'discount_percent', 'minimum_order_minor', 'is_active',
-        'show_as_promotion', 'times_used',
+        'code', 'discount_percent', 'minimum_order_minor', 'is_active', 'times_used',
     ];
 
     protected $casts = [
         'discount_percent' => 'integer',
         'minimum_order_minor' => MoneyCast::class,
         'is_active' => 'boolean',
-        'show_as_promotion' => 'boolean',
         'times_used' => 'integer',
     ];
 
@@ -42,27 +41,29 @@ class Coupon extends Model
     }
 
     /**
-     * The code advertised in the storefront's top bar, if any.
+     * Every code advertised in the storefront's top bar, newest first.
      *
-     * ONE, not all of them. That bar is a single line of the purchased theme's markup, and
-     * cramming three offers into it would need new layout. The newest promoted code wins,
-     * because that is how a promo bar is actually managed — you tick the current campaign and
-     * it takes over. The admin list says which one is showing so the choice is never a
-     * mystery.
+     * All of the live ones, each on its own line. There is no separate "advertise" flag: a
+     * code that is switched on is a code the shop wants used, and a code it wants used is one
+     * it wants seen. Switching off is therefore the only control, which also means a code can
+     * never be advertised after it has stopped working — the exact lie the theme shipped with
+     * its "use code Brator50" for a code that never existed.
      *
-     * Requires is_active too: advertising a code that has been switched off is the same class
-     * of lie as the theme's "use code Brator50" for a code that never existed.
+     * Deliberately uncapped. The bar grows a line per live code, so how tall it gets is a
+     * consequence of how many codes are switched on, and that is staff's call rather than a
+     * limit hidden in here.
+     *
+     * @return Collection<int, Coupon>
      */
-    public static function promoted(): ?self
+    public static function advertised(): Collection
     {
         return self::query()
-            ->where('show_as_promotion', true)
-            ->where('is_active', true)
+            ->usable()
             ->latest('created_at')
-            // A tiebreaker, because two codes made in the same second would otherwise swap
-            // places between requests and the bar would flicker between offers.
+            // A tiebreaker, because created_at is not unique on a fast machine and two codes
+            // made in the same second would otherwise swap lines between requests.
             ->orderByDesc('id')
-            ->first();
+            ->get();
     }
 
     /** Codes are stored and compared uppercase, so what a customer types always matches. */

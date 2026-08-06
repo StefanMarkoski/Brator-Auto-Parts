@@ -27,9 +27,9 @@ final class CouponController
     public function index(): View
     {
         return view('admin.pages.coupons', [
-            // Which one the top bar is actually showing. Ticking three and seeing one is
-            // confusing unless the screen says which.
-            'promoted' => Coupon::promoted(),
+            // How many lines the shop's top bar is currently showing, so the count on this
+            // screen and the bar itself can never disagree.
+            'advertisedCount' => Coupon::advertised()->count(),
             'coupons' => Coupon::query()
                 ->orderByDesc('is_active')
                 ->orderByDesc('created_at')
@@ -48,7 +48,6 @@ final class CouponController
             // than defaulting to 0: "no minimum" is the absence of a value, and 0 is a real
             // amount that would read as one.
             'minimum_order_major' => ['nullable', 'numeric', 'min:0'],
-            'show_as_promotion' => ['nullable', 'boolean'],
         ]);
 
         $minimum = ($validated['minimum_order_major'] ?? null) === null
@@ -67,47 +66,31 @@ final class CouponController
             return redirect()->route('admin.coupons.index')->with('error', $e->getMessage());
         }
 
-        if ($request->boolean('show_as_promotion')) {
-            $coupon->update(['show_as_promotion' => true]);
-        }
-
         return redirect()
             ->route('admin.coupons.index')
-            ->with('status', "{$coupon->code} created — {$coupon->describe()}."
-                .($coupon->show_as_promotion
-                    ? ' It is now the offer in the shop\'s top bar.'
-                    : ''));
+            ->with('status', "{$coupon->code} created — {$coupon->describe()}. "
+                .'It is live, so it is now a line in the shop\'s top bar.');
     }
 
     /**
-     * Flip one switch — live, or promoted.
+     * Switch a code on or off — the only switch there is.
      *
-     * Which one is decided by the field posted, so a row's two buttons cannot fight over the
-     * other's value. Sending both from a single button was the alternative and it means every
-     * click rewrites a setting somebody did not touch.
+     * On means usable AND advertised; there is no third state. An "advertise separately" flag
+     * existed here briefly and it was a distinction without a difference: a code you want used
+     * is a code you want seen, and the second switch only created ways to get it wrong.
      */
     public function update(Request $request, string $coupon): RedirectResponse
     {
         $model = Coupon::query()->findOrFail($coupon);
-
-        if ($request->has('show_as_promotion')) {
-            $model->update(['show_as_promotion' => $request->boolean('show_as_promotion')]);
-
-            return redirect()
-                ->route('admin.coupons.index')
-                ->with('status', $model->show_as_promotion
-                    ? "{$model->code} is now the offer in the shop's top bar."
-                    : "{$model->code} is no longer advertised. It still works if somebody types it.");
-        }
 
         $model->update(['is_active' => $request->boolean('is_active')]);
 
         return redirect()
             ->route('admin.coupons.index')
             ->with('status', $model->is_active
-                ? "{$model->code} is live again."
-                : "{$model->code} is switched off. Baskets already holding it stop discounting now, "
-                    .'and it is no longer advertised.');
+                ? "{$model->code} is live again, and back in the shop's top bar."
+                : "{$model->code} is switched off. It has left the top bar, and baskets already "
+                    .'holding it stop discounting now.');
     }
 
     public function destroy(string $coupon): RedirectResponse

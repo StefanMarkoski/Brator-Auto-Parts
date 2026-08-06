@@ -364,23 +364,35 @@ final class CouponTest extends TestCase
         $this->assertSame(0, Coupon::query()->count());
     }
 
-    public function test_the_top_bar_shows_the_free_delivery_threshold_when_nothing_is_promoted(): void
+    public function test_the_coupon_admin_renders_and_counts_what_the_bar_is_showing(): void
     {
-        app(GenerateCouponAction::class)->execute(10);
+        $live = app(GenerateCouponAction::class)->execute(10);
+        $off = app(GenerateCouponAction::class)->execute(30);
+        $off->update(['is_active' => false]);
 
-        // A live code that has NOT been ticked must not appear. Conflating "usable" with
-        // "advertised" would put every code you create on the homepage.
+        // Nothing else rendered this page while logged in, so a broken column or a variable the
+        // controller stopped passing would have shipped unnoticed.
+        $response = $this->actingAs($this->admin())->get('/admin/coupons')->assertOk();
+
+        $response->assertSee($live->code, false)->assertSee($off->code, false);
+        // The count must agree with the bar itself, not with how many codes exist.
+        $response->assertSee('Showing 1 offer', false);
+    }
+
+    public function test_the_top_bar_shows_the_free_delivery_threshold_when_no_code_is_live(): void
+    {
+        // An empty promo bar is a hole in the theme's design, so there is always a fallback.
         $html = $this->get('/')->assertOk()->getContent();
 
         $this->assertStringContainsString('FREE DELIVERY', $html);
         $this->assertStringContainsString('3.000,00 ден', $html);
     }
 
-    public function test_a_promoted_coupon_replaces_the_free_delivery_message(): void
+    public function test_a_live_coupon_replaces_the_free_delivery_message(): void
     {
         $coupon = app(GenerateCouponAction::class)->execute(20, Money::fromMajor(5_000));
-        $coupon->update(['show_as_promotion' => true]);
 
+        // No second switch to flip: generating it live is enough to advertise it.
         $html = $this->get('/')->assertOk()->getContent();
 
         $this->assertStringContainsString('20% OFF', $html);
@@ -390,18 +402,16 @@ final class CouponTest extends TestCase
         $this->assertStringNotContainsString('FREE DELIVERY', $html);
     }
 
-    public function test_a_promoted_coupon_with_no_minimum_says_any_order(): void
+    public function test_a_coupon_with_no_minimum_says_any_order(): void
     {
-        $coupon = app(GenerateCouponAction::class)->execute(10);
-        $coupon->update(['show_as_promotion' => true]);
+        app(GenerateCouponAction::class)->execute(10);
 
         $this->get('/')->assertOk()->assertSee('on any order with code', false);
     }
 
-    public function test_switching_a_promoted_coupon_off_stops_advertising_it(): void
+    public function test_switching_a_coupon_off_removes_it_from_the_bar(): void
     {
         $coupon = app(GenerateCouponAction::class)->execute(20);
-        $coupon->update(['show_as_promotion' => true]);
 
         $this->get('/')->assertOk()->assertSee($coupon->code, false);
 
@@ -410,82 +420,97 @@ final class CouponTest extends TestCase
         /*
          | Advertising a code that has been switched off is the same class of lie as the theme's
          | "use code Brator50" for a code that never existed — worse, because a shopper would
-         | type it and be told it is invalid.
+         | type it and be told it is invalid. Off is the only control, so it has to be complete.
         */
         $this->get('/')->assertOk()
             ->assertDontSee($coupon->code, false)
             ->assertSee('FREE DELIVERY', false);
     }
 
-    public function test_the_newest_promoted_coupon_is_the_one_shown(): void
+    public function test_every_live_coupon_gets_its_own_line_newest_first(): void
     {
-        $old = app(GenerateCouponAction::class)->execute(5);
-        $old->update(['show_as_promotion' => true]);
+        $oldest = app(GenerateCouponAction::class)->execute(5);
         // Set directly, not mass-assigned: created_at is deliberately not fillable, and it
         // should stay that way — a timestamp somebody can post is a timestamp that lies.
-        $old->created_at = now()->subDay();
-        $old->save();
+        $oldest->created_at = now()->subDays(2);
+        $oldest->save();
 
-        $new = app(GenerateCouponAction::class)->execute(25);
-        $new->update(['show_as_promotion' => true]);
+        $middle = app(GenerateCouponAction::class)->execute(15);
+        $middle->created_at = now()->subDay();
+        $middle->save();
 
-        // The bar is one line of the theme's markup, so ticking a second code takes over rather
-        // than stacking. Predictable beats clever: the campaign you just set is the one running.
-        $this->get('/')->assertOk()
-            ->assertSee($new->code, false)
-            ->assertDontSee($old->code, false);
+        $newest = app(GenerateCouponAction::class)->execute(25);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // All three, not just the latest campaign.
+        foreach ([$oldest, $middle, $newest] as $coupon) {
+            $this->assertStringContainsString($coupon->code, $html, "{$coupon->code} is missing from the bar.");
+        }
+
+        // Newest at the top, because the campaign you just started is the one you want read
+        // first — and because an arbitrary order would reshuffle itself between requests.
+        $this->assertLessThan(
+            strpos($html, $middle->code),
+            strpos($html, $newest->code),
+            'The newest code must be the first line.'
+        );
+        $this->assertLessThan(
+            strpos($html, $oldest->code),
+            strpos($html, $middle->code),
+            'Lines must run newest to oldest.'
+        );
+
+        $this->assertStringNotContainsString('FREE DELIVERY', $html);
     }
 
-    public function test_staff_can_generate_a_coupon_already_promoted(): void
+    public function test_the_bar_carries_one_call_to_action_however_many_offers(): void
     {
-        $this->actingAs($this->admin())->post('/admin/coupons', [
-            'discount_percent' => 20,
-            'show_as_promotion' => 1,
-        ])->assertRedirect(route('admin.coupons.index'));
+        app(GenerateCouponAction::class)->execute(5);
+        app(GenerateCouponAction::class)->execute(15);
+        app(GenerateCouponAction::class)->execute(25);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // Three offers, one "Start shopping". Repeating the link per line is noise, and the
+        // theme's design has exactly one link in this bar.
+        $this->assertSame(1, substr_count($html, 'Start shopping'));
+    }
+
+    public function test_a_generated_code_is_advertised_immediately(): void
+    {
+        $this->actingAs($this->admin())
+            ->post('/admin/coupons', ['discount_percent' => 20])
+            ->assertRedirect(route('admin.coupons.index'));
 
         $coupon = Coupon::query()->firstOrFail();
 
-        $this->assertTrue($coupon->show_as_promotion);
+        $this->assertTrue($coupon->is_active);
         $this->get('/')->assertOk()->assertSee($coupon->code, false);
     }
 
-    public function test_toggling_the_top_bar_does_not_disturb_whether_the_code_is_live(): void
+    public function test_switching_a_code_back_on_returns_it_to_the_bar(): void
     {
         $coupon = app(GenerateCouponAction::class)->execute(10);
-
-        $this->actingAs($this->admin())
-            ->put("/admin/coupons/{$coupon->id}", ['show_as_promotion' => 1])
-            ->assertRedirect();
-
-        $coupon->refresh();
-
-        // The two switches are independent. A promote click that silently deactivated the code
-        // would be a nasty surprise.
-        $this->assertTrue($coupon->show_as_promotion);
-        $this->assertTrue($coupon->is_active, 'Promoting a code must not change whether it is live.');
-    }
-
-    public function test_toggling_live_does_not_disturb_the_top_bar_flag(): void
-    {
-        $coupon = app(GenerateCouponAction::class)->execute(10);
-        $coupon->update(['show_as_promotion' => true]);
 
         $this->actingAs($this->admin())
             ->put("/admin/coupons/{$coupon->id}", ['is_active' => 0])
             ->assertRedirect();
 
-        $coupon->refresh();
+        $this->get('/')->assertOk()->assertDontSee($coupon->code, false);
 
-        $this->assertFalse($coupon->is_active);
-        // Still ticked, so switching it back on resumes advertising without a second click.
-        $this->assertTrue($coupon->show_as_promotion);
+        $this->actingAs($this->admin())
+            ->put("/admin/coupons/{$coupon->id}", ['is_active' => 1])
+            ->assertRedirect();
+
+        // One switch, both directions. Nothing else has to be remembered to get it back.
+        $this->get('/')->assertOk()->assertSee($coupon->code, false);
     }
 
-    public function test_the_promoted_code_in_the_bar_actually_works(): void
+    public function test_a_code_read_off_the_bar_actually_works(): void
     {
         $product = $this->product(priceMajor: 1_000, stock: 10);
-        $coupon = app(GenerateCouponAction::class)->execute(10);
-        $coupon->update(['show_as_promotion' => true]);
+        app(GenerateCouponAction::class)->execute(10);
 
         // Read the code off the page the way a shopper would, then spend it. The bar promising a
         // code that does not work is the failure this whole feature exists to avoid.

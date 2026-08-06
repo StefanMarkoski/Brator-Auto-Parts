@@ -61,11 +61,11 @@ class AppServiceProvider extends ServiceProvider
         );
 
         /*
-         | The promo bar's coupon. A composer rather than a query inside the Blade file, for the
+         | The promo bar's coupons. A composer rather than a query inside the Blade file, for the
          | same reason the nav is one: a partial that fetches its own data works only on pages
          | whose controller remembered to pass it, and this bar is on every storefront page.
         */
-        View::composer('partials.header', fn ($view) => $view->with('promotedCoupon', Coupon::promoted()));
+        View::composer('partials.header', fn ($view) => $view->with('advertisedCoupons', Coupon::advertised()));
 
         // The vehicle picker builds its own cascade state, so any page can include it.
         View::composer('partials.vehicle-picker', function ($view): void {

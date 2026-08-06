@@ -4,27 +4,40 @@
         <div class="container-xxxl container-xxl container">
             <div class="row">
                 <div class="col-lg-6 col-12">
-                    <div class="brator-header-top-bar-info-left">
-                        {{--
-                            THE PROMO BAR, driven by coupons.
+                    {{--
+                        THE PROMO BAR, driven by coupons.
 
-                            The theme shipped "BLACK FRIDAY: Discount up to 50% use code Brator50"
-                            here — a code that never existed, promised on every page. It was
-                            replaced with the free-delivery threshold, which at least was true.
+                        The theme shipped "BLACK FRIDAY: Discount up to 50% use code Brator50"
+                        here — a code that never existed, promised on every page. It was replaced
+                        with the free-delivery threshold, which at least was true.
 
-                            Now it advertises whichever coupon staff have ticked as a promotion,
-                            and falls back to the delivery threshold when none is. The fallback
-                            matters: an empty promo bar is a hole in the design, and a hardcoded
-                            offer is how the theme got it wrong in the first place. Both branches
-                            state something the shop will actually honour.
-                        --}}
-                        @if ($promotedCoupon !== null)
-                            @php($parts = $promotedCoupon->promotionParts())
-                            <p><span class="c-ts">{{ $parts['headline'] }}</span><span>{{ $parts['condition'] }}</span><span class="c-ts">{{ $parts['code'] }}</span></p><a href="{{ route('shop.categories', [], false) }}">Start shopping</a>
-                        @else
+                        Now it lists every live coupon, one line each, and falls back to the
+                        delivery threshold when there are none. The fallback matters: an empty
+                        promo bar is a hole in the design, and a hardcoded offer is how the theme
+                        got it wrong in the first place. Every branch states something the shop
+                        will actually honour.
+
+                        Each line is its own copy of the theme's OWN top-bar block rather than
+                        extra <p> tags inside one. That block is a plain div, so repeating it
+                        stacks the offers vertically for free; the theme styles its container
+                        `display: flex; flex-wrap: wrap`, so putting several <p> in one would lay
+                        them out side by side instead of below one another. No new CSS either way.
+                    --}}
+                    @php($offers = $advertisedCoupons)
+                    @foreach ($offers as $offer)
+                        @php($parts = $offer->promotionParts())
+                        <div class="brator-header-top-bar-info-left">
+                            {{-- "Start shopping" only on the last line: it is one call to action
+                                 for the bar, not one per offer. --}}
+                            <p><span class="c-ts">{{ $parts['headline'] }}</span><span>{{ $parts['condition'] }}</span><span class="c-ts">{{ $parts['code'] }}</span></p>@if ($loop->last)<a href="{{ route('shop.categories', [], false) }}">Start shopping</a>@endif
+                        </div>
+                    @endforeach
+
+                    @if ($offers->isEmpty())
+                        <div class="brator-header-top-bar-info-left">
                             <p><span class="c-ts">FREE DELIVERY</span><span>on orders over</span><span class="c-ts">{{ DeliveryCharge::freeFrom()->format() }}</span></p><a href="{{ route('shop.categories', [], false) }}">Start shopping</a>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 </div>
                 <div class="col-lg-6 col-12">
                     <div class="brator-header-top-bar-info-right">
