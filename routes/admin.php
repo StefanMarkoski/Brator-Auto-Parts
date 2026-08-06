@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CatalogController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\HomepageController;
+use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -79,5 +80,13 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::put('homepage/{section}/move', [HomepageController::class, 'move'])->name('homepage.move');
 
         Route::get('imports', [CatalogController::class, 'imports'])->name('imports.index');
+
+        /*
+         | The import runner: upload stages the file, show previews it, apply commits it.
+         | Three URLs because they are three decisions, and the middle one is the point.
+         */
+        Route::post('imports', [ImportController::class, 'upload'])->name('imports.upload');
+        Route::get('imports/{run}', [ImportController::class, 'show'])->name('imports.show');
+        Route::post('imports/{run}/apply', [ImportController::class, 'apply'])->name('imports.apply');
     });
 });
