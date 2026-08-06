@@ -251,6 +251,54 @@ final class ProductFilteringTest extends TestCase
         $this->assertSame($sorted, $prices);
     }
 
+    public function test_the_listing_marks_the_regions_the_in_place_filter_swaps(): void
+    {
+        $category = $this->populatedCategory();
+
+        $html = $this->get('/shop/'.$category->slug)->assertOk()->getContent();
+
+        /*
+         | Filtering no longer reloads the page — storefront.js fetches the same URL and puts
+         | these regions in place, which is what keeps the shopper's scroll position. It finds
+         | them by these attributes and falls back to a full navigation if any is missing, so
+         | losing one degrades silently back to jumping to the top. Named here so that is a
+         | failing test rather than something nobody notices.
+        */
+        foreach (['data-listing-filters', 'data-listing-summary', 'data-listing-grid'] as $hook) {
+            $this->assertStringContainsString($hook, $html,
+                "The listing no longer marks '{$hook}', so filtering will fall back to reloading.");
+        }
+    }
+
+    public function test_both_the_grid_and_list_views_mark_the_same_regions(): void
+    {
+        $category = $this->populatedCategory();
+
+        $grid = $this->get('/shop/'.$category->slug)->assertOk()->getContent();
+        $list = $this->get('/shop/'.$category->slug.'?view=list')->assertOk()->getContent();
+
+        // Two near-identical templates, and the view toggle swaps between them in place. A
+        // hook added to one and forgotten in the other breaks filtering in exactly one view
+        // — the kind of thing a customer finds rather than we do.
+        foreach (['data-listing-filters', 'data-listing-summary', 'data-listing-grid'] as $hook) {
+            $this->assertStringContainsString($hook, $grid, "The grid view is missing '{$hook}'.");
+            $this->assertStringContainsString($hook, $list, "The list view is missing '{$hook}'.");
+        }
+    }
+
+    public function test_the_price_slider_is_marked_so_the_sidebar_sync_leaves_it_alone(): void
+    {
+        $category = $this->populatedCategory();
+
+        /*
+         | The in-place update patches every filter group EXCEPT the one holding this
+         | attribute, because noUiSlider throws "Slider was already initialized" if its markup
+         | is replaced under it. Without the marker the sync would reach the slider and the
+         | price filter would die the first time any other filter was ticked.
+        */
+        $this->get('/shop/'.$category->slug)->assertOk()->assertSee('data-price-slider', false);
+    }
+
     private function filtered(): FilteredProductsQuery
     {
         return app(FilteredProductsQuery::class);

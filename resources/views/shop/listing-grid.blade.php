@@ -109,7 +109,7 @@
                                     <input type="hidden" name="redirect_to"
                                         value="{{ $category ? route('shop.category', $category->slug, false) : route('search', ['s' => $filter->searchTerm], false) }}" />
                                 </form>
-                                <form method="get" class="shop-sidebar-content">
+                                <form method="get" class="shop-sidebar-content" data-listing-filters>
                                 @if ($searchTerm)<input type="hidden" name="s" value="{{ $searchTerm }}" />@endif
                                 @if ($filter->listView)<input type="hidden" name="view" value="list" />@endif
                                 @if ($filter->sort !== 'newest')<input type="hidden" name="sort" value="{{ $filter->sort }}" />@endif
@@ -154,7 +154,7 @@
                     <div class="brator-plan-pixel-area">
                         <div class="plan-pixel-area"></div>
                     </div>
-                    <div class="brator-inline-product-filter-area">
+                    <div class="brator-inline-product-filter-area" data-listing-summary>
                         <div class="brator-inline-product-filter-left">
                             <div class="brator-filter-show-result">
                                 <p><span>{{ number_format($shownFrom) }} - {{ number_format($shownTo) }} </span>of {{ number_format($total) }} result{{ $total === 1 ? '' : 's' }}</p>
@@ -200,7 +200,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="product-list-items">
+                    <div class="product-list-items" data-listing-grid>
                         @forelse ($products as $product)
                             @include('partials.product-card', ['variant' => 'design-two'])
                         @empty
@@ -208,7 +208,7 @@
                         @endforelse
                     </div>
                     @if ($lastPage > 1)
-                    <div class="brator-pagination-box brator-product-pagination">
+                    <div class="brator-pagination-box brator-product-pagination" data-listing-pagination>
                         <nav class="navigation pagination"  aria-label="Posts">
                     @endif
                             <h2 class="screen-reader-text">Posts navigation</h2>

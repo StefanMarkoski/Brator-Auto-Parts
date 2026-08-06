@@ -21,6 +21,13 @@
 (function () {
     'use strict';
 
+    /*
+     | Set by bindSmoothListing on a listing page, so the auto-submit binding above can
+     | hand a URL to the in-place update instead of reloading. Null everywhere else, and
+     | returns false for anything it will not handle — the caller then navigates normally.
+    */
+    var listingNavigate = null;
+
     /* ------------------------------------------------------------------ *
      | Auto-submit: a select or checkbox that applies itself on change.
      | Used by the vehicle cascade, the filter sidebar, and the sort select.
@@ -33,7 +40,13 @@
             function apply() {
                 // A select whose value is a URL navigates; anything else submits its form.
                 if (el.dataset.autoSubmit === 'navigate' && el.value) {
-                    window.location = el.value;
+                    // On a listing page the sort select changes the same result set, so it
+                    // goes through the in-place update rather than reloading the document.
+                    // Anywhere else — and if that update declines the URL — it is a plain
+                    // navigation, exactly as before.
+                    if (!listingNavigate || !listingNavigate(el.value)) {
+                        window.location = el.value;
+                    }
 
                     return;
                 }
@@ -461,12 +474,307 @@
         });
     }
 
+    /* ------------------------------------------------------------------ *
+     | Filtering without losing your place.
+     |
+     | Ticking a filter used to submit the form, load a new document and drop
+     | the shopper at the top of the page — so choosing a second filter meant
+     | scrolling back down to the sidebar every time. On a shop that is the
+     | difference between browsing and fighting the page.
+     |
+     | So the same URL is fetched and only the parts that actually differ are
+     | put in place: the result-count bar, the grid, and the pagination. The
+     | scroll position is never touched, because nothing above the results
+     | moves.
+     |
+     | NO ELEMENT THE THEME TOUCHED IS EVER REPLACED, and that is deliberate.
+     | The sidebar holds a noUiSlider whose initialiser throws if it is run over
+     | fresh markup — a trap this project has already paid for once — and the
+     | accordion headers are bound directly, not delegated, so a replaced header
+     | silently stops opening. So the sidebar is updated one option row at a
+     | time: counts and disabled states patched, rows moved, added or removed as
+     | the server's options change. Every widget keeps its identity, its state
+     | and its handlers.
+     |
+     | It is still enhancement. The form has a real submit button and a real
+     | GET action, the pagination is real links, and any failure — a network
+     | error, a response that does not contain the regions — falls through to
+     | an ordinary navigation. Nothing here is load-bearing.
+     * ------------------------------------------------------------------ */
+    function bindSmoothListing() {
+        var summary = document.querySelector('[data-listing-summary]');
+        var grid = document.querySelector('[data-listing-grid]');
+
+        // Not a listing page. The sort select on any other page keeps navigating.
+        if (!summary || !grid) return;
+
+        var filters = document.querySelector('[data-listing-filters]');
+        var busy = false;
+        var queued = null;
+
+        function fade(on) {
+            [summary, grid].forEach(function (el) {
+                el.style.transition = 'opacity 150ms linear';
+                el.style.opacity = on ? '0.45' : '';
+            });
+        }
+
+        /* The pagination block is absent entirely on a single-page result, so it cannot
+         | just be swapped — it has to be inserted or removed as the result count crosses
+         | that line. Getting this wrong strands a shopper on page 1 of 9 with no way on. */
+        function syncPagination(doc) {
+            var current = document.querySelector('[data-listing-pagination]');
+            var fresh = doc.querySelector('[data-listing-pagination]');
+
+            if (fresh && current) {
+                current.className = fresh.className;
+                current.innerHTML = fresh.innerHTML;
+            } else if (fresh && !current) {
+                grid.parentNode.insertBefore(fresh.cloneNode(true), grid.nextSibling);
+            } else if (!fresh && current) {
+                current.remove();
+            }
+        }
+
+        /*
+         | Bring the sidebar's options in line with the new results, ROW BY ROW.
+         |
+         | Row level rather than group level, and that distinction is the whole design.
+         | Replacing a group's markup was the obvious approach and it is wrong twice over:
+         | the theme binds its accordion with $('.brator-filter-item-title').on('click'),
+         | a direct binding, so a replaced header stops opening and closing; and the price
+         | group holds a noUiSlider whose initialiser throws if it is run over fresh markup.
+         |
+         | Individual option rows, by contrast, have nothing bound to them — checked, and
+         | the only handler near one is our own auto-submit on its checkbox. So rows are
+         | patched, moved, added and removed, while every element the theme touched keeps
+         | its identity. Existing rows are MOVED with appendChild rather than recreated,
+         | which reorders them without losing a thing.
+         |
+         | It has to handle appearing and disappearing options, not just changing numbers:
+         | a brand with no matches is not rendered at all, so filtering by origin genuinely
+         | shortens the brand list.
+        */
+        function syncFilterOptions(doc) {
+            if (!filters) return;
+
+            var freshFilters = doc.querySelector('[data-listing-filters]');
+            if (!freshFilters) return;
+
+            var groups = filters.querySelectorAll('.brator-filter-item-area');
+            var freshGroups = freshFilters.querySelectorAll('.brator-filter-item-area');
+
+            // A different number of groups means the pages are not the same shape, and
+            // pairing them by index would scramble the sidebar. Left alone instead: the
+            // counts go stale, which is survivable, unlike a shuffled filter list.
+            if (groups.length !== freshGroups.length) return;
+
+            var key = function (input) {
+                return input.name + ' ' + input.value;
+            };
+
+            groups.forEach(function (group, index) {
+                // Never the price group: that is where the slider lives.
+                if (group.querySelector('[data-price-slider]')) return;
+
+                var area = group.querySelector('.brator-filter-item-content-area');
+                var freshArea = freshGroups[index].querySelector('.brator-filter-item-content-area');
+                if (!area || !freshArea) return;
+
+                var rowOf = function (input) {
+                    return input.closest('.brator-filter-item-content');
+                };
+
+                var existing = {};
+                var seen = [];
+
+                area.querySelectorAll('input[type="checkbox"][name]').forEach(function (input) {
+                    var row = rowOf(input);
+                    if (row) existing[key(input)] = row;
+                });
+
+                freshArea.querySelectorAll('input[type="checkbox"][name]').forEach(function (input) {
+                    var id = key(input);
+                    var freshRow = rowOf(input);
+                    if (!freshRow) return;
+
+                    var row = existing[id];
+
+                    if (row) {
+                        var box = row.querySelector('input[type="checkbox"]');
+                        var freshBox = freshRow.querySelector('input[type="checkbox"]');
+                        var count = row.querySelector('.brator-count');
+                        var freshCount = freshRow.querySelector('.brator-count');
+
+                        if (box && freshBox) box.disabled = freshBox.disabled;
+                        if (count && freshCount) count.textContent = freshCount.textContent;
+
+                        // Moves the node into place. Its handlers, and the checkbox's own
+                        // state, come with it.
+                        area.appendChild(row);
+                    } else {
+                        area.appendChild(freshRow.cloneNode(true));
+                    }
+
+                    seen.push(id);
+                });
+
+                // Whatever the server no longer offers. Safe to drop: an option the shopper
+                // has ticked is always rendered, so a checked row is never in here.
+                area.querySelectorAll('input[type="checkbox"][name]').forEach(function (input) {
+                    if (seen.indexOf(key(input)) === -1) {
+                        var row = rowOf(input);
+                        if (row) row.remove();
+                    }
+                });
+            });
+
+            /*
+             | Re-apply whatever is typed in the brand search box. Rows that just arrived
+             | know nothing about it, and would otherwise show up in a list the shopper has
+             | narrowed to one word.
+            */
+            filters.querySelectorAll('[data-filter-input]').forEach(function (input) {
+                if (input.value.trim() !== '') {
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+        }
+
+        function apply(url, push) {
+            /*
+             | A request is already in flight, so this one is remembered and run when that
+             | finishes — only the LATEST, because the intermediate states of somebody
+             | ticking three boxes are of no interest and fetching each in turn would only
+             | make it slower. Returning true matters: the caller must still swallow the
+             | click, or ticking a second box quickly would trigger exactly the full reload
+             | this function exists to avoid.
+            */
+            if (busy) {
+                queued = { url: url, push: push };
+
+                return true;
+            }
+
+            busy = true;
+            fade(true);
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('status ' + response.status);
+
+                    return response.text();
+                })
+                .then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var freshSummary = doc.querySelector('[data-listing-summary]');
+                    var freshGrid = doc.querySelector('[data-listing-grid]');
+
+                    if (!freshSummary || !freshGrid) throw new Error('no listing in response');
+
+                    summary.innerHTML = freshSummary.innerHTML;
+
+                    // className too, not only the contents: switching between the grid and
+                    // list views renders a different template whose wrapper carries
+                    // "type-list", and the layout comes from that class.
+                    grid.className = freshGrid.className;
+                    grid.innerHTML = freshGrid.innerHTML;
+
+                    syncPagination(doc);
+                    syncFilterOptions(doc);
+
+                    if (doc.title) document.title = doc.title;
+
+                    if (push) window.history.pushState({ listing: true }, '', url);
+
+                    /*
+                     | The theme's lazysizes watches the DOM with a MutationObserver, so the
+                     | product images that just arrived load themselves — nothing to re-run.
+                     | Our own bindings are not observers, so the new sort select and any new
+                     | filter controls do need binding.
+                    */
+                    bindAutoSubmit();
+                    bindQuantitySteppers();
+
+                    busy = false;
+
+                    if (queued !== null) {
+                        var next = queued;
+                        queued = null;
+                        apply(next.url, next.push);
+
+                        return;
+                    }
+
+                    fade(false);
+                })
+                .catch(function () {
+                    // Whatever went wrong, the shopper still gets their results — just with
+                    // the reload they would have had before any of this existed.
+                    window.location = url;
+                });
+
+            return true;
+        }
+
+        // The filter form: intercepted rather than submitted. Its GET action and submit
+        // button are untouched, so with JavaScript off this is a normal form.
+        if (filters) {
+            filters.addEventListener('submit', function (event) {
+                var query = new URLSearchParams(new FormData(filters)).toString();
+                var url = window.location.pathname + (query ? '?' + query : '');
+
+                if (apply(url, true)) event.preventDefault();
+            });
+        }
+
+        /*
+         | Per-page, the view toggle and the pagination are real links, and they are only
+         | intercepted inside the two regions this code owns. A link anywhere else on the
+         | page — a product, a category, the header — is left completely alone.
+        */
+        document.addEventListener('click', function (event) {
+            var link = event.target.closest ? event.target.closest('a[href]') : null;
+
+            if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+            if (link.target === '_blank') return;
+            if (!link.closest('[data-listing-summary], [data-listing-pagination]')) return;
+
+            var here = new URL(link.href, window.location.href);
+
+            // Same document, different query. Anything that leaves this page must not be
+            // swallowed — otherwise a stray link in the toolbar would silently do nothing.
+            if (here.origin !== window.location.origin || here.pathname !== window.location.pathname) return;
+
+            if (apply(here.pathname + here.search, true)) event.preventDefault();
+        });
+
+        // Back and forward still work: the same swap, without pushing a new entry.
+        window.addEventListener('popstate', function () {
+            apply(window.location.pathname + window.location.search, false);
+        });
+
+        listingNavigate = function (url) {
+            var here = new URL(url, window.location.href);
+
+            if (here.origin !== window.location.origin || here.pathname !== window.location.pathname) {
+                return false;
+            }
+
+            return apply(here.pathname + here.search, true);
+        };
+    }
+
     function init() {
         bindAutoSubmit();
         bindListFilters();
         bindBundleTotals();
         bindQuantitySteppers();
         bindHeroRotation();
+        bindSmoothListing();
     }
 
     if (document.readyState === 'loading') {
