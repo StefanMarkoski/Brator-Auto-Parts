@@ -8,9 +8,15 @@
  |   - only layouts/admin.blade.php references @vite
  |   - the storefront layouts reference no bundler at all
  |   - the two layouts share nothing, not even a head partial
- |   - @source below scans only resources/views/admin, never the theme's markup
+ |   - @source below scans only the admin's own views, never the theme's markup
  |
  | AdminAssetIsolationTest asserts all of that.
+ |
+ | The components/admin glob below was missing at first, and the panel still LOOKED
+ | styled — because the compiled-Blade cache is also scanned, so a component's classes
+ | survived only if some page using it happened to be compiled before the CSS build.
+ | That is a coin flip, not a build. Every directory holding admin markup must be
+ | listed explicitly.
  */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap') layer(base);
 @import 'tailwindcss';
@@ -19,6 +25,7 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../views/admin/**/*.blade.php';
+@source '../views/components/admin/**/*.blade.php';
 @source '../js/admin.js';
 
 

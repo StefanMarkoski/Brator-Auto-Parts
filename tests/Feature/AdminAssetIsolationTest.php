@@ -182,9 +182,25 @@ final class AdminAssetIsolationTest extends TestCase
     {
         $css = (string) file_get_contents(resource_path('css/admin.css'));
 
-        $this->assertStringContainsString("@source '../views/admin/**/*.blade.php';", $css);
         $this->assertStringNotContainsString("@source '../**/*.blade.php';", $css,
             'Tailwind must not scan the theme markup.');
+
+        /*
+         | Both directions matter, so this is derived rather than hardcoded: EVERY
+         | directory that holds admin markup must have its own @source line.
+         |
+         | components/admin was missing and nobody noticed, because the compiled-Blade
+         | cache is scanned too — so a component's classes were generated only if some
+         | page using it happened to be compiled before the CSS build. The panel looked
+         | fine on a warm cache and would have lost its styling on a cold one.
+        */
+        foreach (['admin', 'components/admin'] as $dir) {
+            $this->assertDirectoryExists(resource_path("views/{$dir}"));
+
+            $this->assertStringContainsString("@source '../views/{$dir}/**/*.blade.php';", $css,
+                "resources/views/{$dir} holds admin markup but Tailwind does not scan it, so its "
+                .'classes are generated only when the Blade cache happens to be warm.');
+        }
     }
 
     public function test_the_admin_panel_does_load_its_own_bundle(): void
