@@ -2,7 +2,15 @@
     <div class="brator-footer-top-area">
         <div class="container-xxxl container-xxl container">
             <div class="row">
-                <div class="col-xl-4 col-lg-6">
+                {{--
+                    FOUR EQUAL QUARTERS. The theme laid this row out as 4 + 2 + 2 + 3 of twelve at
+                    the xl breakpoint, which adds to eleven, so the right-hand column stopped short
+                    of the container edge — and the widths bore no relation to the content, leaving
+                    "Contact Us" with a third of the row and half of it empty while "Customer
+                    Service" was squeezed into two units. Quarters put every heading on the same
+                    boundary as the row above.
+                --}}
+                <div class="col-xl-3 col-lg-6">
                     <div class="brator-footer-top-element brator-footer-top-address">
                         <h6 class="footer-top-title">Contact Us</h6>
                         <div class="brator-footer-top-content">
@@ -22,7 +30,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-2 col-lg-6">
+                <div class="col-xl-3 col-lg-6">
                     <div class="brator-footer-top-element">
                         <h6 class="footer-top-title">Customer Service</h6>
                         {{-- Was "Help Center / My Account / Track My Order / Return Policy /
@@ -33,7 +41,7 @@
                                     <div class="brator-footer-top-content brator-link-list-one"><a href="{{ route('contact', [], false) }}">Contact us</a><a href="{{ route('cart', [], false) }}">Your basket</a></div>
                     </div>
                 </div>
-                <div class="col-xxl-3 col-xl-2 col-lg-6">
+                <div class="col-xl-3 col-lg-6">
                     <div class="brator-footer-top-element">
                         <h6 class="footer-top-title">Information</h6>
                         {{-- Was "About Brator / Investors / Blog / …". Investors and the blog
@@ -45,7 +53,7 @@
                     <div class="brator-footer-top-element">
                         <h6 class="footer-top-title">Newsletter</h6>
                         <div class="brator-footer-top-content">
-                            <p>Register now to get latest updates on promotions and coupons. Don’t worries, we not spam !</p>
+                            <p>Get new arrivals and discount codes by email. No more than one message a week, and you can stop any time.</p>
                             <div class="brator-sub-form">
                                 <form class="news-letter-form" method="post" action="{{ route('newsletter.subscribe', [], false) }}">
                                     @csrf
@@ -55,7 +63,7 @@
                                     <button class="wpcf7-form-control wpcf7-submit" type="submit">Subscribe</button><span class="ajax-loader"></span>
                                 </form>
                             </div>
-                            <p>By subscribing, you accepted the our<a href="{{ route('about', [], false) }}">terms</a></p>
+                            <p>By subscribing you accept our<a href="{{ route('about', [], false) }}">terms</a></p>
                         </div>
                     </div>
                 </div>
@@ -66,10 +74,23 @@
     <!-- Footer one start-->
     <footer class="brator-footer-area">
         <div class="container-xxxl container-xxl container">
-            <div class="row">
+            {{--
+                align-items-center, because the middle column wraps to two lines while the other
+                two are one line each. Without it the row is top-aligned and the copyright and the
+                social icons sit level with the FIRST line of the payment note rather than with
+                the block as a whole, which reads as three things at three different heights.
+                The class is bootstrap-grid's own, already shipped with the theme.
+            --}}
+            <div class="row align-items-center">
                 <div class="col-lg-4 col-md-6 col-12">
                     <div class="brator-copyright-area">
-                        <p>© 2022Brator Auto PartsAll Rights Reserved</p>
+                        {{--
+                            Was "© 2022Brator Auto PartsAll Rights Reserved" — three phrases run
+                            together with no spaces, because the theme had the name inside an <a>
+                            that supplied the spacing and the link was removed without replacing
+                            it. The year was frozen at 2022 as well.
+                        --}}
+                        <p>© {{ now()->year }} {{ config('app.name') }}. All rights reserved.</p>
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6 col-12">
@@ -88,7 +109,7 @@
                 </div>
                 <div class="col-lg-4 col-12">
                     <div class="brator-social-link svg-link">
-                        <h6 class="brator-social-link">Follow Us</h6><a href="#-">
+                        <h6 class="brator-social-link">Follow Us</h6>{{-- The first icon pointed at a placeholder anchor and went nowhere; it now reaches a human like the other three. --}}<a href="{{ route('contact', [], false) }}">
                             <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
                                 <path d="M56.9,14.8l3.9-4.9C62,8.6,62.3,7.6,62.4,7c-3,1.9-5.9,2.5-7.9,2.5h-0.8L53.2,9c-2.5-2.2-5.5-3.4-8.9-3.4                            c-7.2,0-13,5.9-13,13c0,0.5,0,1,0.1,1.5l0.3,2.1l-2.2-0.1C16.3,21.8,5.5,10.5,3.7,8.5c-2.9,5.3-1.3,10.2,0.5,13.3l3.5,5.8l-5.5-3                            c0.1,4.3,1.8,7.7,4.9,10.2l2.7,2L7,37.9c1.8,5.3,5.6,7.4,8.6,8.3l3.8,1l-3.3,2.3c-5.7,4-13,3.8-16.1,3.5c6.6,4.5,14.2,5.5,19.7,5.5                            c4,0,7-0.5,7.7-0.7c29-6.8,30.3-32.6,30.2-37.8v-0.8l0.6-0.5c3.5-3.3,5-5.1,5.8-6.1c-0.3,0.2-0.7,0.3-1.2,0.4L56.9,14.8z"></path>
                             </svg></a><a href="{{ route('contact', [], false) }}">

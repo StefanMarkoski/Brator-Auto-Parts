@@ -49,6 +49,32 @@ final class NoTemplatePlaceholdersTest extends TestCase
         'Sub Model 01',
         'Best Match 2',
         '19” DIAMETER',
+
+        /*
+         | THE FOOTER, found the same way — by looking at it. It had been left untouched while
+         | the rest of the theme's fiction was stripped, so the homepage still carried:
+         |
+         | CARiD.com   a real competitor, named in the legal disclaimer as the seller of
+         |             everything in this shop. The template was built from their site.
+         | #1 US's     a claim to be the biggest US marketplace, by a single-seller shop in
+         |             North Macedonia.
+         | Investors / Career / Affiliate Program / Parnership
+         |             pages this business does not have, all pointed at the contact form —
+         |             a redirect standing in for a lie, plus the theme's own typo.
+         | Brator Inc. the company name as a dead link.
+         | 2022        a hardcoded year, wrong in the footer of a live shop.
+        */
+        'CARiD',
+        "#1 US's",
+        'Investors',
+        'Affiliate Program',
+        'Parnership',
+        'Brator Inc.',
+        '© 2022',
+
+        // The theme's broken English, in copy a shopper reads.
+        'not spam',
+        'accepted the our',
     ];
 
     public function test_no_storefront_page_shows_the_themes_demo_content(): void
@@ -68,6 +94,54 @@ final class NoTemplatePlaceholdersTest extends TestCase
         $this->assertSame([], $offenders,
             "Template demo content is being shown as if it were real data:\n  "
             .implode("\n  ", $offenders));
+    }
+
+    public function test_the_footer_states_the_current_year(): void
+    {
+        foreach (['/', '/shop'] as $page) {
+            $this->get($page)->assertOk()->assertSee('© '.now()->year, false);
+        }
+    }
+
+    public function test_the_footer_columns_add_up_to_a_full_row(): void
+    {
+        /*
+         | Both footers laid their columns out to ELEVEN of twelve — one of them by way of an
+         | empty spacer div — so the right-hand column stopped short of the container edge and
+         | the four headings sat at four unrelated widths. Counted rather than eyeballed,
+         | because a row that does not add to twelve is the specific defect, and it is invisible
+         | until somebody looks at the footer on a wide screen.
+        */
+        foreach ([
+            'resources/views/partials/footer-top.blade.php',
+            'resources/views/partials/footer-shop.blade.php',
+        ] as $file) {
+            $markup = (string) file_get_contents(base_path($file));
+
+            // Only the first row of each — the bottom bars are their own row of thirds.
+            preg_match_all('/class="col-xl-(\d+)/', $markup, $matches);
+
+            $units = array_map('intval', array_slice($matches[1], 0, 4));
+
+            $this->assertSame(12, array_sum($units),
+                "{$file}: its xl columns add to ".array_sum($units).' of 12, so one edge of the '
+                .'footer will not line up with the rest of the page.');
+        }
+    }
+
+    public function test_no_footer_link_goes_nowhere(): void
+    {
+        foreach (['/', '/shop'] as $page) {
+            $html = $this->get($page)->assertOk()->getContent();
+
+            $footer = substr($html, (int) strpos($html, 'brator-footer-top-area') ?: 0);
+
+            // Placeholder anchors: the theme's way of shipping a link it had no page for.
+            foreach (['href="#_"', 'href="#-"', 'href="#"'] as $dead) {
+                $this->assertStringNotContainsString($dead, $footer,
+                    "{$page}: the footer has a link that goes nowhere ({$dead}).");
+            }
+        }
     }
 
     public function test_configured_contact_details_are_shown_and_dialable(): void

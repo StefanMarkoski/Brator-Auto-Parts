@@ -5,7 +5,7 @@
                 <div class="col-lg-5">
                     <div class="brator-newsletter-content">
                         <h2>Subscribe To Our Newsletter</h2>
-                        <p>Register now to get latest updates on promotions & coupons. Don’t worry, we not spam!</p>
+                        <p>Get new arrivals and discount codes by email. No more than one message a week, and you can stop any time.</p>
                     </div>
                 </div>
                 <div class="col-lg-1"></div>
@@ -18,7 +18,7 @@
                                 <input class="wpcf7-form-control wpcf7-text wpcf7-email wpcf7-validates-as-required wpcf7-validates-as-email" type="email" name="email" value="" size="40" aria-required="true" aria-invalid="false" placeholder="Enter your email" /></span>
                             <button class="wpcf7-form-control wpcf7-submit" type="submit">Subscribe</button><span class="ajax-loader"></span>
                         </form>
-                        <p>By subscribing, you accepted the our<a href="{{ route('about', [], false) }}">terms</a></p>
+                        <p>By subscribing you accept our<a href="{{ route('about', [], false) }}">terms</a></p>
                     </div>
                 </div>
             </div>
