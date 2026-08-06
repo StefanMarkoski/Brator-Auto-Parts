@@ -118,5 +118,11 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('imports', [ImportController::class, 'upload'])->name('imports.upload');
         Route::get('imports/{run}', [ImportController::class, 'show'])->name('imports.show');
         Route::post('imports/{run}/apply', [ImportController::class, 'apply'])->name('imports.apply');
+
+        /*
+         | Undo an applied import. DELETE, because it destroys rows — and a GET that deleted
+         | products would be fired by any link prefetcher that wandered into the panel.
+         */
+        Route::delete('imports/{run}', [ImportController::class, 'destroy'])->name('imports.destroy');
     });
 });

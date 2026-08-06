@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\CatalogImport\Actions\RevertImportAction;
 use App\Domain\CatalogImport\Actions\RunImportAction;
 use App\Domain\CatalogImport\Actions\StageCsvImportAction;
 use App\Domain\CatalogImport\DTOs\ImportRow;
@@ -29,6 +30,7 @@ final class ImportController
     public function __construct(
         private StageCsvImportAction $stage,
         private RunImportAction $runner,
+        private RevertImportAction $revert,
     ) {}
 
     public function upload(Request $request): RedirectResponse
@@ -70,6 +72,9 @@ final class ImportController
         return view('admin.pages.import-run', [
             'run' => $model,
             'preview' => $preview,
+            // Why the undo button is unavailable, or null when it is available. Worked out here
+            // so the button can explain itself rather than being mysteriously greyed out.
+            'cannotRevert' => $this->revert->reasonItCannotRevert($model),
             'rows' => $model->stagingRows()->orderBy('id')->limit(50)->get(),
             'columns' => ImportRow::COLUMNS,
         ]);
@@ -107,5 +112,49 @@ final class ImportController
                 .'— publish them when you have had a look.',
                 $result['created'], $result['updated'], $result['skipped'], $result['failed'],
             ));
+    }
+
+    /**
+     * Undo an applied import — for testing a feed over and over without clearing it by hand.
+     *
+     * Deletes only what the run CREATED. A row that updated an existing product is left alone:
+     * the importer does not keep the values it overwrote, so there is nothing to restore, and
+     * deleting the product would remove something that predates the feed.
+     */
+    public function destroy(string $run): RedirectResponse
+    {
+        $model = ImportRun::query()->findOrFail($run);
+
+        try {
+            $result = $this->revert->execute($model);
+        } catch (RuntimeException $e) {
+            return redirect()->route('admin.imports.show', $model->id)->with('error', $e->getMessage());
+        }
+
+        $message = $result['deleted'] === 1
+            ? '1 imported product was removed.'
+            : "{$result['deleted']} imported products were removed.";
+
+        if ($result['kept'] > 0) {
+            // Named, because "undo" that leaves rows behind has to say which and why.
+            $message .= sprintf(' %d row%s updated a product that already existed and %s left '
+                .'untouched — the feed does not record what it overwrote, so there is nothing to '
+                .'put back.', $result['kept'], $result['kept'] === 1 ? '' : 's',
+                $result['kept'] === 1 ? 'was' : 'were');
+        }
+
+        if ($result['receiptsUnlinked'] > 0) {
+            $message .= sprintf(' %d receipt line%s no longer links to a product; %s own record '
+                .'of the name, price and VAT is untouched.', $result['receiptsUnlinked'],
+                $result['receiptsUnlinked'] === 1 ? '' : 's',
+                $result['receiptsUnlinked'] === 1 ? 'its' : 'their');
+        }
+
+        if ($result['brandsRemoved'] !== []) {
+            $message .= ' Empty brand'.(count($result['brandsRemoved']) === 1 ? '' : 's')
+                .' removed too: '.implode(', ', $result['brandsRemoved']).'.';
+        }
+
+        return redirect()->route('admin.imports.show', $model->id)->with('status', $message);
     }
 }

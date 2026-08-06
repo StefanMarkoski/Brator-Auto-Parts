@@ -16,7 +16,9 @@ use Database\Seeders\FitmentSeederSmall;
 use Database\Seeders\ProductSeederSmall;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 /**
@@ -528,6 +530,181 @@ final class ImportRunnerTest extends TestCase
 
         $this->assertSame([], $withoutFitment,
             'These rows of the shipped feed got no fitment: '.implode(', ', $withoutFitment));
+    }
+
+    public function test_undoing_an_import_removes_what_it_created_and_frees_the_skus(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $csv = <<<'CSV'
+            sku,name,brand,category,price_net,stock,fits
+            XG-U1,XGate Brake Disc,XGate,brake-discs,2450.00,24,Volkswagen Golf V 1.9 TDI
+            XG-U2,XGate Brake Pad Set,XGate,brake-pads,1450.00,40,Volkswagen Golf V 1.9 TDI
+            CSV;
+
+        $run = $this->apply($this->stage($csv));
+
+        $this->assertSame(2, Product::query()->where('sku', 'like', 'XG-U%')->count());
+
+        $this->actingAs($this->admin())->delete("/admin/imports/{$run->id}")->assertRedirect();
+
+        /*
+         | HARD deleted, not trashed. The admin's own product delete is soft, so receipts keep
+         | their link — but a soft delete leaves the SKU occupied, and re-importing the same file
+         | would then fail on a duplicate SKU. That would make this button useless for the one
+         | job it exists to do.
+        */
+        $this->assertSame(0, Product::withTrashed()->where('sku', 'like', 'XG-U%')->count());
+
+        // Fitment went with them: the pivot is ON DELETE CASCADE.
+        $this->assertSame(0, DB::table('product_vehicle_fitments as f')
+            ->join('products as p', 'p.id', '=', 'f.product_id')
+            ->where('p.sku', 'like', 'XG-U%')->count());
+
+        // And the same file imports again from scratch, which is the whole point.
+        $again = $this->apply($this->stage($csv));
+
+        $this->assertSame(2, (int) $again->rows_created);
+        $this->assertSame(2, Product::query()->where('sku', 'like', 'XG-U%')->count());
+    }
+
+    public function test_undoing_leaves_products_the_import_only_updated(): void
+    {
+        $existing = Product::query()->firstOrFail();
+
+        $run = $this->apply($this->stage(<<<CSV
+            sku,name,brand,category,price_net,stock
+            {$existing->sku},Renamed By Feed,XGate,brake-discs,9999.00,7
+            CSV));
+
+        $this->actingAs($this->admin())->delete("/admin/imports/{$run->id}")->assertRedirect();
+
+        /*
+         | The product existed before the feed ran, and the importer does not record the values it
+         | overwrote — so there is nothing to restore and deleting it would destroy something the
+         | import never created. An undo that removed it would be worse than no undo at all.
+        */
+        $this->assertSame(1, Product::query()->where('sku', $existing->sku)->count());
+
+        $this->assertStringContainsString('updated a product that already existed',
+            (string) session('status'));
+    }
+
+    public function test_an_import_cannot_be_undone_twice(): void
+    {
+        $run = $this->apply($this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-U3,XGate Oil Filter,XGate,oil-filters,410.00,85
+            CSV));
+
+        $this->actingAs($this->admin())->delete("/admin/imports/{$run->id}")->assertRedirect();
+        $this->actingAs($this->admin())->delete("/admin/imports/{$run->id}")->assertRedirect();
+
+        // The second press must not try to delete rows that are already gone.
+        $this->assertStringContainsString('already undone', (string) session('error'));
+    }
+
+    public function test_an_import_that_was_never_applied_cannot_be_undone(): void
+    {
+        $run = $this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-U4,XGate Bulb,XGate,bulbs,290.00,150
+            CSV);
+
+        $this->actingAs($this->admin())->delete("/admin/imports/{$run->id}")->assertRedirect();
+
+        $this->assertStringContainsString('never applied', (string) session('error'));
+        $this->assertNull($run->fresh()->reverted_at);
+    }
+
+    public function test_only_the_most_recent_import_can_be_undone(): void
+    {
+        $first = $this->apply($this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-U5,XGate Cabin Filter,XGate,cabin-filters,690.00,52
+            CSV));
+
+        $second = $this->apply($this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-U6,XGate Shock Absorber,XGate,shock-absorbers,4300.00,14
+            CSV));
+
+        /*
+         | Undo has to run backwards. A later feed may have changed the very products an earlier
+         | one created — a new price, new stock — and removing them would silently throw that away.
+        */
+        $this->actingAs($this->admin())->delete("/admin/imports/{$first->id}")->assertRedirect();
+
+        $this->assertStringContainsString('Undo the most recent import first', (string) session('error'));
+        $this->assertSame(1, Product::query()->where('sku', 'XG-U5')->count());
+
+        // Once the newer one is undone, the older one becomes available — so a chain of runs can
+        // be unwound in order rather than being stuck.
+        $this->actingAs($this->admin())->delete("/admin/imports/{$second->id}")->assertRedirect();
+        $this->actingAs($this->admin())->delete("/admin/imports/{$first->id}")->assertRedirect();
+
+        $this->assertSame(0, Product::withTrashed()->whereIn('sku', ['XG-U5', 'XG-U6'])->count());
+    }
+
+    public function test_undoing_keeps_a_receipt_able_to_explain_itself(): void
+    {
+        $run = $this->apply($this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-U7,XGate Brake Fluid,XGate,brake-fluid,320.00,120
+            CSV));
+
+        $product = Product::query()->where('sku', 'XG-U7')->firstOrFail();
+        $product->update(['published_at' => now()]);
+
+        Mail::fake();
+
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 2]);
+        $this->post('/checkout', [
+            'customer_name' => 'Test Buyer',
+            'customer_email' => 'buyer@example.com',
+            'customer_phone' => '+389 70 123456',
+            'shipping_address' => "ul. Partizanska 12\nSkopje",
+        ])->assertRedirect();
+
+        $line = DB::table('receipt_lines')->where('product_sku_snapshot', 'XG-U7')->first();
+        $this->assertNotNull($line, 'The order did not produce a receipt line.');
+
+        $this->actingAs($this->admin())->delete("/admin/imports/{$run->id}")->assertRedirect();
+
+        $after = DB::table('receipt_lines')->where('id', $line->id)->first();
+
+        /*
+         | product_id is nullable and ON DELETE SET NULL by design, because a receipt line keeps
+         | its OWN copy of the name, SKU, price, quantity and VAT — that is what makes a receipt
+         | sealed. So removing a sold product loses the link through to a product page and nothing
+         | else: the money still adds up and the line still says what was bought.
+        */
+        $this->assertNull($after->product_id);
+        $this->assertSame($line->product_name_snapshot, $after->product_name_snapshot);
+        $this->assertSame($line->line_total_minor, $after->line_total_minor);
+        $this->assertSame($line->vat_minor, $after->vat_minor);
+
+        // And the receipt still opens rather than 500ing on a missing relation.
+        $this->get('/receipt/'.$line->receipt_id)->assertOk()->assertSee('XGate Brake Fluid', false);
+    }
+
+    public function test_a_guest_cannot_undo_an_import(): void
+    {
+        $run = $this->apply($this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-U8,XGate Bulb H7,XGate,bulbs,290.00,150
+            CSV));
+
+        /*
+         | Logged out explicitly. The helper that applies the run authenticates as an admin, and
+         | actingAs persists for the rest of the test — so without this the "guest" request would
+         | still be the admin, and the test would pass while proving nothing.
+        */
+        Auth::logout();
+
+        $this->delete("/admin/imports/{$run->id}")->assertRedirect('/admin/login');
+
+        $this->assertSame(1, Product::query()->where('sku', 'XG-U8')->count());
     }
 
     private function variantNamed(string $make, string $model, string $variant): int

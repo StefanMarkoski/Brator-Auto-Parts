@@ -73,12 +73,60 @@
                         @endforeach
                     </div>
 
-                    @if ($run->rows_created > 0)
+                    @if ($run->rows_created > 0 && $run->reverted_at === null)
                         <x-admin.alert variant="info">
                             New products arrive <strong>unpublished</strong> — a feed can add hundreds
                             in one click, and a supplier's typo should not be live before anyone has
                             read it. Publish them from the product list when you have looked.
                         </x-admin.alert>
+                    @endif
+
+                    @if ($run->reverted_at !== null)
+                        <x-admin.alert variant="warning" title="Undone">
+                            The {{ number_format($run->rows_created) }} product{{ $run->rows_created === 1 ? '' : 's' }}
+                            this import created {{ $run->rows_created === 1 ? 'was' : 'were' }} removed
+                            {{ $run->reverted_at->diffForHumans() }}. The run itself is kept, because
+                            "we imported these and then took them back out" is a more useful history
+                            than a gap.
+                        </x-admin.alert>
+                    @endif
+                </x-admin.component-card>
+
+                {{--
+                    UNDO, for testing a feed repeatedly. Its own card rather than a link in the
+                    Result box: it destroys rows, and a destructive control should not sit where
+                    somebody's eye is already scanning numbers.
+                --}}
+                <x-admin.component-card class="mt-6" title="Undo this import"
+                    desc="Removes the products this import created, so the same file can be applied again from scratch.">
+                    @if ($cannotRevert !== null)
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ $cannotRevert }}</p>
+                    @else
+                        <ul class="mb-5 space-y-2 text-xs text-gray-500 dark:text-gray-400">
+                            <li>Deletes the <strong>{{ number_format($run->rows_created) }}</strong>
+                                product{{ $run->rows_created === 1 ? '' : 's' }} this run created, for
+                                good — not to the trash, so the SKUs are free to import again.</li>
+                            @if ($run->rows_updated > 0)
+                                <li>Leaves the <strong>{{ number_format($run->rows_updated) }}</strong>
+                                    product{{ $run->rows_updated === 1 ? '' : 's' }} it merely
+                                    <em>updated</em> completely alone. The feed does not record what it
+                                    overwrote, so there is nothing to put back — and those products
+                                    existed before it ran.</li>
+                            @endif
+                            <li>A brand the feed created is removed too, but only if nothing else is
+                                left in it.</li>
+                            <li>Receipts are safe. A receipt line keeps its own copy of the name,
+                                price and VAT; it simply stops linking through to a product.</li>
+                        </ul>
+
+                        <x-admin.confirm-action
+                            :action="route('admin.imports.destroy', $run->id, false)"
+                            method="DELETE"
+                            label="Undo this import"
+                            trigger-class="inline-flex h-11 items-center rounded-lg bg-error-600 px-4 text-sm font-medium text-white transition hover:bg-error-700"
+                            title="Undo this import?"
+                            :message="'This deletes '.number_format($run->rows_created).' product'.($run->rows_created === 1 ? '' : 's').' permanently. Products the import only updated are left as they are.'"
+                            confirm="Yes, undo it" />
                     @endif
                 </x-admin.component-card>
             @endif

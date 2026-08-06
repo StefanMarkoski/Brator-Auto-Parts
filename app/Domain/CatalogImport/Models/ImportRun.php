@@ -15,7 +15,7 @@ class ImportRun extends Model
     use HasUlids;
 
     protected $fillable = [
-        'source_id', 'status', 'started_at', 'finished_at', 'rows_total',
+        'source_id', 'status', 'started_at', 'finished_at', 'reverted_at', 'rows_total',
         'rows_created', 'rows_updated', 'rows_skipped', 'rows_failed', 'log_path',
     ];
 
@@ -23,6 +23,7 @@ class ImportRun extends Model
         'status' => ImportRunStatus::class,
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
+        'reverted_at' => 'datetime',
         'rows_total' => 'integer',
         'rows_created' => 'integer',
         'rows_updated' => 'integer',
