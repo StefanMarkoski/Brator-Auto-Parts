@@ -128,6 +128,56 @@ final class NavigationFlowTest extends TestCase
         }
     }
 
+    public function test_the_main_menu_row_fills_its_twelve_columns(): void
+    {
+        $markup = (string) file_get_contents(base_path('resources/views/partials/header.blade.php'));
+
+        /*
+         | The main menu's labels need about 737px on one line. The theme gave its column 5 of
+         | twelve and spent 4 more on a "Recently Viewed" link that pointed nowhere — so the menu
+         | got 609px, and because its <ul> is flex with nowrap the items could not spill out of
+         | the row: they shrank, and the text wrapped instead. "Auto Parts", "Wheels & Tires",
+         | "About us" and "Contact Us" each broke over two lines on a full-width screen.
+         |
+         | Counted rather than eyeballed, because a row that does not add to twelve is the actual
+         | defect, and it only shows above 1600px — which is not the width anyone tests at.
+        */
+        // Bounded by the next block rather than a character count: the first column holds the
+        // whole category tree, so a fixed window never reaches the menu's own column.
+        $start = strpos($markup, 'cat-header');
+        $end = strpos($markup, 'brator-slide-menu-area');
+
+        $this->assertNotFalse($start, 'Could not find the main menu area in the header.');
+        $this->assertNotFalse($end, 'Could not find the end of the main menu area.');
+
+        $row = substr($markup, $start, $end - $start);
+
+        preg_match_all('/col-xxl-(\d+)/', $row, $units);
+
+        $total = array_sum(array_map('intval', $units[1]));
+
+        $this->assertSame(12, $total,
+            "The main menu row's xxl columns add to {$total} of 12. Anything less and the menu is "
+            .'narrower than its own labels, so they wrap onto two lines.');
+    }
+
+    public function test_the_header_has_no_link_that_goes_nowhere(): void
+    {
+        $markup = (string) file_get_contents(base_path('resources/views/partials/header.blade.php'));
+
+        /*
+         | Placeholder anchors are how the theme shipped a link it had no page for, and
+         | test_every_internal_link_on_every_page_resolves cannot see them: it only collects
+         | hrefs beginning with "/". That gap is exactly how the dead "Recently Viewed" link
+         | survived every earlier sweep — while holding four of the menu row's twelve columns
+         | and squeezing the navigation onto two lines.
+        */
+        foreach (['href="#_"', 'href="#-"'] as $dead) {
+            $this->assertStringNotContainsString($dead, $markup,
+                "The header contains a link that goes nowhere ({$dead}).");
+        }
+    }
+
     public function test_search_finds_a_part_by_its_number_in_any_formatting(): void
     {
         $reference = DB::table('product_cross_references')->first();

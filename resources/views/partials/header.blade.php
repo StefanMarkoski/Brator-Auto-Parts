@@ -240,7 +240,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-xxl-5 col-xl-4 xxl-dextop-none">
+                <div class="col-xxl-9 col-xl-8 xxl-dextop-none">
                     <div class="brator-header-menu-with-info">
                         <div class="brator-header-menu">
                             <ul class="list-style-outside-none">
@@ -281,17 +281,20 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-4 xxl-dextop-none">
-                    {{-- "Track Order" and "Free Return" removed: neither exists. A receipt is
-                                 emailed, and returns are handled by talking to the shop. --}}
-                            <div class="cat-menu-info-s"><a class="cat-menu-info-s-item" href="#_">
-                            <svg id="lni_lni-reload" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" xml:space="preserve">
-                                <g>
-                                    <path d="M7.4,28.5c0.3,0,0.6,0,0.8-0.1l11.1-3.9c0.9-0.3,1.4-1.3,1.1-2.2c-0.3-0.9-1.3-1.4-2.2-1.1l-6.7,2.4                                c3.3-9.1,12-15.3,22.1-15.3c10.7,0,20.1,7.1,22.7,17.4c0.2,0.9,1.2,1.5,2.1,1.3c0.9-0.2,1.5-1.2,1.3-2.1c-3-11.8-13.8-20-26.1-20                                c-12,0-22.4,7.7-25.8,18.9l-3.1-8.7c-0.3-0.9-1.3-1.4-2.2-1.1c-0.9,0.3-1.4,1.3-1.1,2.2l3.8,10.9C5.5,27.9,6.5,28.5,7.4,28.5z"></path>
-                                    <path d="M62.6,49.9l-4.1-10.8c-0.2-0.6-0.7-1.1-1.3-1.3c-0.6-0.2-1.2-0.3-1.8,0l-11,4.2c-0.9,0.3-1.4,1.4-1,2.3                                c0.3,0.9,1.4,1.4,2.3,1l6.8-2.6c-3.8,7.9-11.9,13.1-21.1,13.1c-10.1,0-19-6.3-22.1-15.7C8.9,39.2,7.9,38.7,7,39                                c-0.9,0.3-1.4,1.3-1.1,2.2C9.5,52,19.7,59.3,31.3,59.3c11,0,20.8-6.5,24.8-16.4l3.2,8.3c0.3,0.7,0.9,1.1,1.6,1.1                                c0.2,0,0.4,0,0.6-0.1C62.5,51.8,63,50.8,62.6,49.9z"></path>
-                                </g>
-                            </svg><span>Recently Viewed</span></a></div>
-                </div>
+                {{--
+                    THE "RECENTLY VIEWED" HEADER LINK IS REMOVED, and this is why the menu now
+                    fits on one line.
+
+                    It pointed at a placeholder anchor and did nothing — there is no
+                    recently-viewed page, and the real Recently Viewed strip is further down the
+                    homepage. Dead, but it held four of the row's twelve columns for a label about
+                    150px wide, which squeezed the menu into 609px when its items need 737. That
+                    is what made "Auto Parts", "Wheels & Tires", "About us" and "Contact Us" each
+                    break over two lines: the <ul> is flex with nowrap, so the items cannot spill
+                    out of the row — they shrink, and the text wraps instead.
+
+                    Its space goes to the menu below, which is the whole fix.
+                --}}
             </div>
         </div>
     </div>
