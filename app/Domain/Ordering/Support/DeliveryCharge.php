@@ -33,6 +33,12 @@ final class DeliveryCharge
         return Money::fromMinor(self::FREE_FROM_MINOR);
     }
 
+    /** The flat charge below the threshold, for display beside it. */
+    public static function flatRate(): Money
+    {
+        return Money::fromMinor(self::FLAT_MINOR);
+    }
+
     public static function for(Money $netSubtotal): Money
     {
         if ($netSubtotal->isZero() || $netSubtotal->minor >= self::FREE_FROM_MINOR) {

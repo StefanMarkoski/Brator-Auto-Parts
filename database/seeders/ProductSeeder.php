@@ -53,8 +53,27 @@ class ProductSeeder extends Seeder
     {
         $brandIds = Brand::query()->pluck('id')->all();
         $brandNames = Brand::query()->pluck('name', 'id')->all();
-        $leafCategoryIds = Category::query()->where('depth', 1)->pluck('id')->all();
         $leafIdsBySlug = Category::query()->where('depth', 1)->pluck('id', 'slug')->all();
+
+        /*
+         | Sibling leaves, grouped by their parent department.
+         |
+         | The secondary category used to be picked from ALL leaves at random, which put a
+         | fog light in /braking/brake-calipers/ and an alloy wheel in /braking/brake-discs/.
+         | The listing query was right and the DATA was wrong: browsing Braking showed a
+         | cabin filter, which reads as a broken filter rather than bad seed data.
+         |
+         | A second home is only plausible within the same department — a disc under Discs and
+         | Pads, say — so the choice is constrained to siblings.
+        */
+        $siblingLeafIds = Category::query()
+            ->where('depth', 1)
+            ->get(['id', 'parent_id'])
+            ->groupBy('parent_id')
+            ->map(fn ($group) => $group->pluck('id')->all())
+            ->all();
+
+        $parentOfLeaf = Category::query()->where('depth', 1)->pluck('parent_id', 'id')->all();
         $partsByCategory = VehicleData::partsByCategory();
         // Only the categories we have real part types for.
         $leafSlugs = array_values(array_intersect(
@@ -147,15 +166,26 @@ class ProductSeeder extends Seeder
                     'updated_at' => $now,
                 ];
 
-                // One primary category, and sometimes a genuine second home — a brake
-                // disc belongs under Braking AND Wheels & Hubs.
-                // The part lands in the category its type actually belongs to.
+                // One primary category, and sometimes a second home WITHIN THE SAME
+                // DEPARTMENT — a disc that belongs under both Discs and Pads is plausible;
+                // a fog light under Brake Calipers is not, and that is what the previous
+                // random choice produced.
                 $primary = $leafIdsBySlug[$categorySlug];
                 $pivots[] = ['product_id' => $id, 'category_id' => $primary, 'is_primary' => true, 'position' => 0];
+
                 if (random_int(1, 100) <= 30) {
-                    $secondary = $leafCategoryIds[array_rand($leafCategoryIds)];
-                    if ($secondary !== $primary) {
-                        $pivots[] = ['product_id' => $id, 'category_id' => $secondary, 'is_primary' => false, 'position' => 1];
+                    $siblings = array_values(array_diff(
+                        $siblingLeafIds[$parentOfLeaf[$primary]] ?? [],
+                        [$primary],
+                    ));
+
+                    if ($siblings !== []) {
+                        $pivots[] = [
+                            'product_id' => $id,
+                            'category_id' => $siblings[array_rand($siblings)],
+                            'is_primary' => false,
+                            'position' => 1,
+                        ];
                     }
                 }
 

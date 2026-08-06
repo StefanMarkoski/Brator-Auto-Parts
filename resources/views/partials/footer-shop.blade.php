@@ -49,7 +49,7 @@
                             <div class="brator-sub-form">
                                 <form class="news-letter-form" method="post" action="{{ route('newsletter.subscribe', [], false) }}">
                                     @csrf
-                                    @if (session('status'))<p>{{ session('status') }}</p>@endif
+                                    @if (session('newsletter_status'))<p>{{ session('newsletter_status') }}</p>@endif
                                     @error('email')<p>{{ $message }}</p>@enderror<span class="wpcf7-form-control-wrap email">
                                         <input class="wpcf7-form-control wpcf7-text wpcf7-email wpcf7-validates-as-required wpcf7-validates-as-email" type="email" name="email" value="" size="40" aria-required="true" aria-invalid="false" placeholder="Email Address" /></span>
                                     <button class="wpcf7-form-control wpcf7-submit" type="submit">Subscribe</button><span class="ajax-loader"></span>
@@ -74,8 +74,17 @@
                 </div>
                 <div class="col-lg-4 col-md-6 col-12">
                     <div class="brator-payment-area svg-link">
-                        <h6 class="brator-payment-title">Payment Methods</h6><a href="{{ route('contact', [], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/footer/paypal.png" alt="logo" /></a><a href="{{ route('contact', [], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/footer/master.png" alt="logo" /></a><a href="{{ route('contact', [], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/footer/visa.png" alt="logo" /></a><a href="{{ route('contact', [], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/footer/stripe.png" alt="logo" /></a><a href="{{ route('contact', [], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/footer/klarna.png" alt="logo" /></a>
-                    </div>
+                        {{--
+                                Was five payment-brand logos — Visa, Mastercard, PayPal, Stripe and
+                                Klarna — on a shop that takes NO card payments at all. Checkout is
+                                deliberately a dummy: the receipt says "no card is charged, we will
+                                call you to arrange delivery and payment". Advertising five card
+                                schemes is a straight false claim about how you can pay, and the
+                                logos are those companies' registered marks besides.
+                            --}}
+                            <h6 class="brator-payment-title">How you pay</h6>
+                            <p>Cash or card on delivery. We call you to arrange it — no card details are taken online.</p>
+                        </div>
                 </div>
                 <div class="col-lg-4 col-12">
                     <div class="brator-social-link svg-link">

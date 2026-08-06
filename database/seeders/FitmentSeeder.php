@@ -41,7 +41,12 @@ class FitmentSeeder extends Seeder
             $makeRows[] = [
                 'name' => $name,
                 'slug' => Str::slug($name),
-                'logo_path' => sprintf('assets/images/brand/brand-%02d.png', ($i % 18) + 1),
+                // NO LOGO. The seeder used to point every brand at one of the theme's own
+                // brand images — which are other companies' actual logos, 18 of them shared
+                // across 36 brands, so a Gates part displayed an "otyres" mark. Showing a real
+                // third party's branding on somebody else's product is worse than showing
+                // nothing, and the views fall back to the brand NAME when this is null.
+                'logo_path' => null,
                 'position' => $i,
                 'is_active' => true,
                 'created_at' => $now,

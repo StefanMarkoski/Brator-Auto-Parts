@@ -34,7 +34,16 @@ final class PageController
     {
         $isNew = $this->subscribe->execute($request->validated()['email'], $request->ip());
 
-        return back()->with('status', $isNew
+        /*
+         | Its OWN flash key, not 'status'.
+         |
+         | The newsletter block sits in the footer of every page and rendered session('status'),
+         | which the cart also uses — so adding a part to the basket printed "Gates Brake Caliper
+         | was added to your cart" a second time down beside the newsletter sign-up, and a
+         | subscription would equally have appeared up in the cart. One shared key, two unrelated
+         | messages.
+        */
+        return back()->with('newsletter_status', $isNew
             ? 'Thanks — you are on the list.'
             : 'You are already subscribed with that address.');
     }

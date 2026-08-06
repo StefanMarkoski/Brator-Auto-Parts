@@ -52,6 +52,42 @@ final class SeededDataIntegrityTest extends TestCase
             .'product — zero means no breadcrumb, two means two canonical URLs.');
     }
 
+    public function test_no_product_is_filed_outside_its_own_department(): void
+    {
+        $this->seed(CatalogStructureSeeder::class);
+        $this->seed(ProductSeederSmall::class);
+
+        /*
+         | FOUND BY BROWSING, not by reading code.
+         |
+         | The Braking listing was showing a fog light, a cabin filter and an alloy wheel. The
+         | query was correct and the DATA was wrong: the seeder gave 30% of products a second
+         | category picked at random from EVERY leaf in the tree, so "INA Fog Light Front
+         | Premium" genuinely lived at /braking/brake-calipers/.
+         |
+         | Fabricated data has to be a state the business could actually be in. A shopper
+         | cannot tell bad seed data from a broken filter — both look like the shop is wrong.
+        */
+        $offenders = DB::select("
+            SELECT p.name, GROUP_CONCAT(c.path ORDER BY c.path) AS paths
+            FROM products p
+            JOIN product_categories pc ON pc.product_id = p.id
+            JOIN categories c ON c.id = pc.category_id
+            GROUP BY p.id, p.name
+            HAVING COUNT(DISTINCT SUBSTRING_INDEX(SUBSTRING_INDEX(c.path, '/', 2), '/', -1)) > 1
+            LIMIT 10
+        ");
+
+        $described = array_map(
+            fn (object $row): string => "{$row->name} => {$row->paths}",
+            $offenders,
+        );
+
+        $this->assertSame([], $described,
+            'These products are filed in more than one department, so they show up in listings '
+            ."they have no business being in:\n  ".implode("\n  ", $described));
+    }
+
     public function test_every_seeded_image_path_points_at_a_file_that_exists(): void
     {
         $this->seed(CatalogStructureSeeder::class);

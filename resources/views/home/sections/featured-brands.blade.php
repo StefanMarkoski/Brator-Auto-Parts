@@ -11,7 +11,15 @@
                 </div>
                 @foreach ($section->items as $brand)
                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
-                        <div class="brator-brand-img"><a href="{{ route('search', ['brand' => [$brand->slug]], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $brand->logo_path }}" alt="{{ $brand->name }}" /></a></div>
+                        {{-- The brand's name when there is no logo: the seeded values were other
+                             companies' logos, so an empty slot is more honest than a wrong mark. --}}
+                        <div class="brator-brand-img">
+                            @if ($brand->logo_path)
+                                <a href="{{ route('search', ['brand' => [$brand->slug]], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="/{{ $brand->logo_path }}" alt="{{ $brand->name }}" /></a>
+                            @else
+                                <a href="{{ route('search', ['brand' => [$brand->slug]], false) }}">{{ $brand->name }}</a>
+                            @endif
+                        </div>
                     </div>
                 @endforeach
             </div>

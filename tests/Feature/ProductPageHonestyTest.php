@@ -40,7 +40,7 @@ final class ProductPageHonestyTest extends TestCase
         $this->get("/product/{$product->slug}")
             ->assertOk()
             ->assertDontSee('Fits your', false)
-            ->assertDontSee('Does not fit your', false);
+            ->assertDontSee('Not listed as fitting your', false);
     }
 
     public function test_a_part_that_fits_the_chosen_vehicle_says_so(): void
@@ -51,7 +51,7 @@ final class ProductPageHonestyTest extends TestCase
             ->get("/product/{$product->slug}")
             ->assertOk()
             ->assertSee('Fits your', false)
-            ->assertDontSee('Does not fit your', false);
+            ->assertDontSee('Not listed as fitting your', false);
     }
 
     public function test_a_part_that_does_not_fit_the_chosen_vehicle_says_that_too(): void
@@ -74,7 +74,7 @@ final class ProductPageHonestyTest extends TestCase
         $this->withSession([VehicleSelection::SESSION_KEY => $otherVariant])
             ->get("/product/{$product->slug}")
             ->assertOk()
-            ->assertSee('Does not fit your', false);
+            ->assertSee('Not listed as fitting your', false);
     }
 
     public function test_the_brand_shown_is_the_products_own(): void

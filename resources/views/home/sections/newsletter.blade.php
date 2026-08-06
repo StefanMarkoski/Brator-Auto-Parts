@@ -13,7 +13,7 @@
                     <div class="brator-newsletter-form design-one">
                         <form class="news-letter-form" method="post" action="{{ route('newsletter.subscribe', [], false) }}">
                             @csrf
-                            @if (session('status'))<span class="brator-name">{{ session('status') }}</span>@endif
+                            @if (session('newsletter_status'))<span class="brator-name">{{ session('newsletter_status') }}</span>@endif
                             @error('email')<span class="brator-name">{{ $message }}</span>@enderror<span class="wpcf7-form-control-wrap email">
                                 <input class="wpcf7-form-control wpcf7-text wpcf7-email wpcf7-validates-as-required wpcf7-validates-as-email" type="email" name="email" value="" size="40" aria-required="true" aria-invalid="false" placeholder="Enter your email" /></span>
                             <button class="wpcf7-form-control wpcf7-submit" type="submit">Subscribe</button><span class="ajax-loader"></span>

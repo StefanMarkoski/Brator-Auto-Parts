@@ -1,3 +1,4 @@
+@use('App\Domain\Ordering\Support\DeliveryCharge')
 @extends('layouts.shop')
 
 @section('title', 'Brator Auto Parts')
@@ -79,7 +80,22 @@
                                             <a href="{{ route('shop.categories', [], false) }}">Unbranded</a>
                                         @endif
                                     </div>
-                                    <div class="brator-product-hero-content-brand-img"><a href="{{ $product->brand ? route('search', ['brand' => [$product->brand->slug]], false) : route('shop.categories', [], false) }}"> <img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->brand?->logo_path ?? 'assets/images/b-p-01.jpg' }}" alt="{{ $product->brand?->name }}" /></a></div>
+                                    {{--
+                                        The brand mark, or the brand's NAME when we have no logo.
+
+                                        The seeder used to fill logo_path with one of the theme's
+                                        own brand images — other companies' real logos, 18 shared
+                                        across 36 brands — so a Gates caliper displayed an "otyres"
+                                        mark. Showing a third party's branding on somebody else's
+                                        product is worse than showing nothing.
+                                    --}}
+                                    <div class="brator-product-hero-content-brand-img">
+                                        @if ($product->brand?->logo_path)
+                                            <a href="{{ route('search', ['brand' => [$product->brand->slug]], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="/{{ $product->brand->logo_path }}" alt="{{ $product->brand->name }}" /></a>
+                                        @elseif ($product->brand)
+                                            <a href="{{ route('search', ['brand' => [$product->brand->slug]], false) }}">{{ $product->brand->name }}</a>
+                                        @endif
+                                    </div>
                                     <div class="brator-product-hero-content-title">
                                         <h2>{{ $product->name }}</h2>
                                     </div>
@@ -104,9 +120,23 @@
                                     <div class="brator-product-hero-content-stock">
                                         <h6>{{ $product->stock_status->label() }}</h6>
                                         <h5>
-                                            <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                            </svg><span>@if ($fitsChosenVehicle === true){{ $chosenVehicleName ? 'Fits your '.$chosenVehicleName : 'Fits your vehicle' }}@elseif ($fitsChosenVehicle === false){{ $chosenVehicleName ? 'Does not fit your '.$chosenVehicleName : 'Does not fit your vehicle' }}@else{{ $product->stock_status->isBuyable() ? 'Ready to ship' : 'Currently unavailable' }}@endif</span>
+                                            {{--
+                                                The star is shown only when the answer is POSITIVE.
+
+                                                The theme has one class for this box and it is
+                                                green, so a "does not fit" message was appearing
+                                                with an approving star in a green panel — the
+                                                styling contradicting the words. Dropping the star
+                                                is as far as this can be fixed without adding CSS,
+                                                which needs Stefan's say-so. The colour is still
+                                                wrong for the negative case and is flagged.
+                                            --}}
+                                            @if ($fitsChosenVehicle !== false)
+                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
+                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
+                                                </svg>
+                                            @endif
+                                            <span>@if ($fitsChosenVehicle === true){{ $chosenVehicleName ? 'Fits your '.$chosenVehicleName : 'Fits your vehicle' }}@elseif ($fitsChosenVehicle === false){{ $chosenVehicleName ? 'Not listed as fitting your '.$chosenVehicleName.' — check before ordering' : 'Not listed as fitting your vehicle — check before ordering' }}@else{{ $product->stock_status->isBuyable() ? 'Ready to ship' : 'Currently unavailable' }}@endif</span>
                                         </h5>
                                     </div>
                                 </div>
@@ -145,21 +175,13 @@
                                         </div>
                                     </form>
                                     <div class="brator-product-single-cart-action">
-                                        <div class="brator-product-single-cart-wish">
-                                            <button>
-                                                <svg class="bi bi-suit-heart-fill" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                    <path d="M4 1c2.21 0 4 1.755 4 3.92C8 2.755 9.79 1 12 1s4 1.755 4 3.92c0 3.263-3.234 4.414-7.608 9.608a.513.513 0 0 1-.784 0C3.234 9.334 0 8.183 0 4.92 0 2.755 1.79 1 4 1z"></path>
-                                                </svg><span>Add to Wishlist</span>
-                                            </button>
-                                        </div>
-                                        <div class="brator-product-single-cart-compare">
-                                            <button>
-                                                <svg class="bi bi-arrow-left-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                    <path fill-rule="evenodd" d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5zm14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5z"></path>
-                                                </svg><span>Add to Compare</span>
-                                            </button>
-                                        </div>
-                                        <div class="brator-product-single-cart-share">
+                                        {{--
+                                        "Add to Wishlist" and "Add to Compare" are REMOVED. Neither
+                                        feature exists — both were explicitly out of scope — and both
+                                        were <button> elements with no handler, so they depressed and
+                                        did nothing. Share is kept: it works.
+                                    --}}
+                                    <div class="brator-product-single-cart-share">
                                             <button>
                                                 <svg id="lni_lni-share" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" xml:space="preserve">
                                                     <g></g>
@@ -178,7 +200,10 @@
                                                 <path d="M32,15.7c-5.9,0-10.8,4.8-10.8,10.8c0,5.9,4.8,10.8,10.8,10.8s10.8-4.8,10.8-10.8C42.8,20.5,37.9,15.7,32,15.7z M32,33.7                    c-4,0-7.3-3.3-7.3-7.3c0-4,3.3-7.3,7.3-7.3c4,0,7.3,3.3,7.3,7.3C39.3,30.4,36,33.7,32,33.7z"></path>
                                             </g>
                                         </svg>
-                                        <p><span>Ship to</span> North Hills, CA 91343</p>
+                                        {{-- Was "Ship to North Hills, CA 91343" — a Los Angeles suburb, hardcoded by
+                                     the theme's authors, on a shop that delivers in North Macedonia.
+                                     Now the real delivery promise, from the rule that sets it. --}}
+                                <p><span>Delivery</span> free over {{ DeliveryCharge::freeFrom()->format() }}, otherwise {{ DeliveryCharge::flatRate()->format() }}</p>
                                     </div>
                                     <div class="brator-product-single-light-info">
                                         <div class="brator-product-single-light-info-s cat">
