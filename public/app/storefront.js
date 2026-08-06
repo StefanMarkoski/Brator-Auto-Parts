@@ -206,11 +206,50 @@
         });
     }
 
+    /* ------------------------------------------------------------------ *
+     | The product page's +/- quantity buttons.
+     |
+     | The theme ships this control on the product page and never binds it —
+     | grep its own JS for decrement-count-qty and there are no matches — so
+     | both buttons were decoration. The number input beside them always
+     | worked, which is exactly why nobody noticed.
+     |
+     | Bound via data-qty-step rather than by class or by type="button". The
+     | CART page's +/- carry the same classes but are real submits posting
+     | name="step", and hijacking those would break a control that works.
+     * ------------------------------------------------------------------ */
+    function bindQuantitySteppers() {
+        document.querySelectorAll('[data-qty-step]').forEach(function (button) {
+            if (button.dataset.qtyBound) return;
+            button.dataset.qtyBound = '1';
+
+            button.addEventListener('click', function () {
+                var wrapper = button.parentElement;
+                var input = wrapper && wrapper.querySelector('input[type="number"]');
+                if (!input) return;
+
+                var step = parseInt(button.getAttribute('data-qty-step'), 10) || 0;
+                var min = input.min === '' ? 1 : parseInt(input.min, 10);
+                var max = input.max === '' ? Infinity : parseInt(input.max, 10);
+                var next = (parseInt(input.value, 10) || min) + step;
+
+                // Clamped, so the field cannot reach 0 or a stock-exceeding number and
+                // then be rejected only after the shopper has pressed Add to Cart.
+                input.value = Math.min(max, Math.max(min, next));
+
+                // Dispatched so anything else watching the field (a total, a validity
+                // message) reacts as it would to typing.
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
+    }
+
     function init() {
         bindAutoSubmit();
         bindListFilters();
         bindBundleTotals();
         bindPriceSlider();
+        bindQuantitySteppers();
     }
 
     if (document.readyState === 'loading') {

@@ -35,10 +35,22 @@
                             <div id="tabs-product-img" class="brator-product-img-tab-list js-tabs design-two">
                                 <div class="brator-product-img-tab-header js-tabs__header">
                                     <ul>
-                                        <li><a class="js-tabs__title" href="#" style="background-image:url(./assets/images//product-tab-img-01.jpeg)"></a></li>
-                                        <li><a class="js-tabs__title" href="#" style="background-image:url(./assets/images//product-tab-img-02.jpeg)"></a></li>
-                                        <li><a class="js-tabs__title" href="#" style="background-image:url(./assets/images//product-tab-img-03.jpeg)"></a></li>
-                                        <li><a class="js-tabs__title" href="#" style="background-image:url(./assets/images//product-tab-img-04.jpeg)"></a></li>
+                                        {{--
+                                            Two bugs in four lines. The paths were RELATIVE —
+                                            url(./assets/images/…) — so on /product/{slug} the
+                                            browser asked for /product/assets/… and got four 404s
+                                            in the console on every product page. And they were the
+                                            theme's placeholder files rather than this product's
+                                            photographs, so the thumbnail strip never matched the
+                                            large image it switches between.
+
+                                            Root-relative now, and driven by the same image list as
+                                            the panes below.
+                                        --}}
+                                        @foreach (range(0, 3) as $slot)
+                                            @php($thumb = $product->images[$slot]->path ?? 'assets/images/product-tab-img-0'.($slot + 1).'.jpeg')
+                                            <li><a class="js-tabs__title" href="#" style="background-image:url(/{{ $thumb }})"></a></li>
+                                        @endforeach
                                     </ul>
                                 </div>
                                 <div class="js-tabs__content brator-product-img-tab-item"><img data-action="zoom" class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->images[0]->path ?? 'assets/images/product-tab-img-01.jpeg' }}" alt="{{ $product->name }}" />
@@ -117,9 +129,14 @@
                                         <div class="brator-product-single-cart-count-add">
                                             <div class="brator-product-single-cart-count">
                                                 <div class="brator-brator-cart-list-items-qty">
-                                                    <button class="decrement-count-qty" type="button">-</button>
+                                                    {{-- data-qty-step is what storefront.js binds. The
+                                                     CART's +/- look identical but are real submits
+                                                     carrying name="step", so the attribute keeps the
+                                                     two apart by construction rather than by
+                                                     inspecting type="button". --}}
+                                                <button class="decrement-count-qty" type="button" data-qty-step="-1" aria-label="Decrease quantity">-</button>
                                                     <input type="number" name="quantity" value="1" min="1" max="99" />
-                                                    <button class="add-count-qty" type="button">+</button>
+                                                    <button class="add-count-qty" type="button" data-qty-step="1" aria-label="Increase quantity">+</button>
                                                 </div>
                                             </div>
                                             <div class="brator-product-single-cart-add">
