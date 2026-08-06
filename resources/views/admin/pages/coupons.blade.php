@@ -29,6 +29,7 @@
                                 <th class="pb-3 pr-4">Applies to</th>
                                 <th class="pb-3 pr-4 text-right">Used</th>
                                 <th class="pb-3 pr-4">Status</th>
+                                <th class="pb-3 pr-4">Top bar</th>
                                 <th class="pb-3 pr-4"></th>
                             </tr>
                         </thead>
@@ -51,6 +52,33 @@
                                         <x-admin.badge size="sm" :color="$coupon->is_active ? 'success' : 'light'">
                                             {{ $coupon->is_active ? 'Live' : 'Off' }}
                                         </x-admin.badge>
+                                    </td>
+                                    <td class="py-3 pr-4">
+                                        {{--
+                                            Three states, not two. "Showing" is the one the bar is
+                                            actually rendering; "Queued" means ticked but beaten by a
+                                            newer code. Without that distinction, ticking three and
+                                            seeing one looks broken.
+                                        --}}
+                                        <form method="post"
+                                            action="{{ route('admin.coupons.update', $coupon->id, false) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="show_as_promotion" value="{{ $coupon->show_as_promotion ? 0 : 1 }}" />
+                                            @if ($promoted !== null && $promoted->id === $coupon->id)
+                                                <button type="submit" class="inline-flex items-center gap-1">
+                                                    <x-admin.badge size="sm" color="primary">Showing</x-admin.badge>
+                                                </button>
+                                            @elseif ($coupon->show_as_promotion)
+                                                <button type="submit" class="inline-flex items-center gap-1"
+                                                    title="Ticked, but a newer promoted code is the one being shown.">
+                                                    <x-admin.badge size="sm" color="warning">Queued</x-admin.badge>
+                                                </button>
+                                            @else
+                                                <button type="submit"
+                                                    class="text-sm font-medium text-brand-500 hover:underline">Advertise</button>
+                                            @endif
+                                        </form>
                                     </td>
                                     <td class="py-3 pr-4">
                                         <div class="flex items-center justify-end gap-3">
@@ -79,7 +107,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="py-6 text-center text-gray-400">
+                                    <td colspan="7" class="py-6 text-center text-gray-400">
                                         No codes yet. Generate one on the right.
                                     </td>
                                 </tr>
@@ -110,8 +138,26 @@
                             :value="old('minimum_order_major')" placeholder="3000.00" />
                     </x-admin.field>
 
+                    {{-- Separate from "live": a code can be usable without being shouted about,
+                         and conflating the two would put every code you make on the homepage. --}}
+                    <x-admin.toggle name="show_as_promotion" label="Advertise in the shop's top bar"
+                        :checked="false" />
+
                     <x-admin.button type="submit">Generate code</x-admin.button>
                 </form>
+            </x-admin.component-card>
+
+            <x-admin.component-card title="The shop's top bar"
+                :desc="$promoted !== null
+                    ? 'Currently advertising '.$promoted->code.'.'
+                    : 'No code is advertised, so the bar shows the free-delivery threshold instead.'">
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    One code at a time — the bar is a single line of the purchased theme. The most
+                    recently created promoted code wins, so ticking a new one takes over. Switching a
+                    code off stops it being advertised as well as stopping it discounting.
+                </p>
+                <x-admin.button variant="outline" size="sm" target="_blank"
+                    :href="route('home', [], false)">See it on the shop</x-admin.button>
             </x-admin.component-card>
 
             <x-admin.component-card title="How a code behaves">

@@ -6,13 +6,24 @@
                 <div class="col-lg-6 col-12">
                     <div class="brator-header-top-bar-info-left">
                         {{--
-                            Was "BLACK FRIDAY: Discount up to 50% use code Brator50" with a dead
-                            "See more" link — a discount code that does not exist, promised on
-                            every page of the shop. Replaced with the one promotional fact that
-                            IS true: the free-delivery threshold, read from the class that
-                            actually decides it, so the two can never disagree.
+                            THE PROMO BAR, driven by coupons.
+
+                            The theme shipped "BLACK FRIDAY: Discount up to 50% use code Brator50"
+                            here — a code that never existed, promised on every page. It was
+                            replaced with the free-delivery threshold, which at least was true.
+
+                            Now it advertises whichever coupon staff have ticked as a promotion,
+                            and falls back to the delivery threshold when none is. The fallback
+                            matters: an empty promo bar is a hole in the design, and a hardcoded
+                            offer is how the theme got it wrong in the first place. Both branches
+                            state something the shop will actually honour.
                         --}}
-                        <p><span class="c-ts">FREE DELIVERY</span><span>on orders over</span><span class="c-ts">{{ App\Domain\Ordering\Support\DeliveryCharge::freeFrom()->format() }}</span></p><a href="{{ route('shop.categories', [], false) }}">Start shopping</a>
+                        @if ($promotedCoupon !== null)
+                            @php($parts = $promotedCoupon->promotionParts())
+                            <p><span class="c-ts">{{ $parts['headline'] }}</span><span>{{ $parts['condition'] }}</span><span class="c-ts">{{ $parts['code'] }}</span></p><a href="{{ route('shop.categories', [], false) }}">Start shopping</a>
+                        @else
+                            <p><span class="c-ts">FREE DELIVERY</span><span>on orders over</span><span class="c-ts">{{ DeliveryCharge::freeFrom()->format() }}</span></p><a href="{{ route('shop.categories', [], false) }}">Start shopping</a>
+                        @endif
                     </div>
                 </div>
                 <div class="col-lg-6 col-12">

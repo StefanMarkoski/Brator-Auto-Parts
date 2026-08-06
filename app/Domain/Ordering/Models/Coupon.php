@@ -23,13 +23,15 @@ class Coupon extends Model
     use HasUlids;
 
     protected $fillable = [
-        'code', 'discount_percent', 'minimum_order_minor', 'is_active', 'times_used',
+        'code', 'discount_percent', 'minimum_order_minor', 'is_active',
+        'show_as_promotion', 'times_used',
     ];
 
     protected $casts = [
         'discount_percent' => 'integer',
         'minimum_order_minor' => MoneyCast::class,
         'is_active' => 'boolean',
+        'show_as_promotion' => 'boolean',
         'times_used' => 'integer',
     ];
 
@@ -37,6 +39,30 @@ class Coupon extends Model
     public function scopeUsable(Builder $query): void
     {
         $query->where('is_active', true);
+    }
+
+    /**
+     * The code advertised in the storefront's top bar, if any.
+     *
+     * ONE, not all of them. That bar is a single line of the purchased theme's markup, and
+     * cramming three offers into it would need new layout. The newest promoted code wins,
+     * because that is how a promo bar is actually managed — you tick the current campaign and
+     * it takes over. The admin list says which one is showing so the choice is never a
+     * mystery.
+     *
+     * Requires is_active too: advertising a code that has been switched off is the same class
+     * of lie as the theme's "use code Brator50" for a code that never existed.
+     */
+    public static function promoted(): ?self
+    {
+        return self::query()
+            ->where('show_as_promotion', true)
+            ->where('is_active', true)
+            ->latest('created_at')
+            // A tiebreaker, because two codes made in the same second would otherwise swap
+            // places between requests and the bar would flicker between offers.
+            ->orderByDesc('id')
+            ->first();
     }
 
     /** Codes are stored and compared uppercase, so what a customer types always matches. */
@@ -122,5 +148,25 @@ class Coupon extends Model
         return $this->hasMinimum()
             ? "{$this->discount_percent}% off orders over {$this->minimum_order_minor->format()}"
             : "{$this->discount_percent}% off any order";
+    }
+
+    /**
+     * The offer as the top bar says it: a headline, the condition, and the code.
+     *
+     * Returned as parts rather than one string because the theme's bar wraps each piece in its
+     * own span, and the middle one is what its CSS highlights. Building the sentence here
+     * keeps the wording in one place instead of spread across the markup.
+     *
+     * @return array{headline: string, condition: string, code: string}
+     */
+    public function promotionParts(): array
+    {
+        return [
+            'headline' => "{$this->discount_percent}% OFF",
+            'condition' => $this->hasMinimum()
+                ? 'on orders over '.$this->minimum_order_minor->format().' with code'
+                : 'on any order with code',
+            'code' => $this->code,
+        ];
     }
 }
