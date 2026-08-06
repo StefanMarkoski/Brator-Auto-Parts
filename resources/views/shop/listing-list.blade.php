@@ -234,13 +234,39 @@
                             <p>No parts match this category yet.</p>
                         @endforelse
                     </div>
+                    @if ($lastPage > 1)
                     <div class="brator-pagination-box brator-product-pagination type-list">
                         <nav class="navigation pagination" aria-label="Posts">
+                    @endif
                             <h2 class="screen-reader-text">Posts navigation</h2>
-                            <div class="nav-links"><span class="page-numbers current" aria-current="page">1</span><a class="page-numbers" href="#_">2</a><a class="page-numbers" href="#_">3</a><a class="next page-numbers" href="#_">Next
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
+                            {{--
+                                Real pagination. The theme shipped "1 2 3 Next" with every
+                                href="#_", so a shopper could only ever see page 1 — on a
+                                203-result category that hid 92% of the catalogue.
+
+                                Uses the theme's own page-numbers classes, and
+                                fullUrlWithQuery so the current filters, sort, view and
+                                search term all survive a page change.
+                            --}}
+                            <div class="nav-links">
+                                @if ($page > 1)
+                                    <a class="prev page-numbers" href="{{ request()->fullUrlWithQuery(['page' => $page - 1]) }}"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 0 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"></path></svg> Previous</a>
+                                @endif
+
+                                @foreach ($paginationWindow as $number)
+                                    @if ($number === null)
+                                        <span class="page-numbers dots">&hellip;</span>
+                                    @elseif ($number === $page)
+                                        <span class="page-numbers current" aria-current="page">{{ $number }}</span>
+                                    @else
+                                        <a class="page-numbers" href="{{ request()->fullUrlWithQuery(['page' => $number]) }}">{{ $number }}</a>
+                                    @endif
+                                @endforeach
+
+                                @if ($page < $lastPage)
+                                    <a class="next page-numbers" href="{{ request()->fullUrlWithQuery(['page' => $page + 1]) }}">Next <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"></path></svg></a>
+                                @endif
+                            </div>
                         </nav>
                     </div>
                 </div>

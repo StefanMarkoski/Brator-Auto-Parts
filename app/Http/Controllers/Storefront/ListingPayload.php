@@ -27,6 +27,36 @@ final class ListingPayload
         private RecentlyViewed $recentlyViewed,
     ) {}
 
+    /**
+     * Page numbers to show, with nulls standing in for gaps.
+     *
+     * @return list<int|null>
+     */
+    private function window(int $current, int $last): array
+    {
+        if ($last <= 7) {
+            return range(1, $last);
+        }
+
+        $window = [1];
+
+        if ($current > 3) {
+            $window[] = null;
+        }
+
+        foreach (range(max(2, $current - 1), min($last - 1, $current + 1)) as $number) {
+            $window[] = $number;
+        }
+
+        if ($current < $last - 2) {
+            $window[] = null;
+        }
+
+        $window[] = $last;
+
+        return $window;
+    }
+
     /** @return array<string, mixed> */
     public function build(ProductFilter $filter, ?string $categoryId = null): array
     {
@@ -47,6 +77,9 @@ final class ListingPayload
             // hardcoded as "1 - 40 of 1,652 results".
             'shownFrom' => $total === 0 ? 0 : (($filter->page - 1) * $perPage) + 1,
             'shownTo' => min($total, $filter->page * $perPage),
+            // A short window rather than every page number: 13 pages is fine to list,
+            // 400 is not, and the theme's markup has room for about seven.
+            'paginationWindow' => $this->window($filter->page, max(1, (int) ceil($total / $perPage))),
             'listView' => $filter->listView,
             'filterGroups' => $filters,
             'facets' => $this->products->facets($filter, $codes),
