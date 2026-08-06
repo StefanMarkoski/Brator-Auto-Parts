@@ -768,6 +768,131 @@
         };
     }
 
+    /* ------------------------------------------------------------------ *
+     | The vehicle picker: advance the cascade without reloading the page.
+     |
+     | Choosing a Year posted the form, the server answered back(), and the
+     | whole document reloaded — which scrolled the shopper to the top of the
+     | homepage. Five times over, once per level, so narrowing down to an engine
+     | meant scrolling back to the picker after every single choice.
+     |
+     | The cascade is STILL decided by the server. The same form is posted, and
+     | the picker is taken out of the response — so every rule about which
+     | options exist at which level stays in one place, and none of it is
+     | duplicated here. Only the delivery changed.
+     |
+     | WHAT IS COPIED IS THE OPTIONS, NOT THE SELECTS. The theme runs select2
+     | over these dropdowns, which replaces the native control with its own DOM;
+     | swapping a select element would strand that widget on a node no longer in
+     | the document. So each existing select keeps its identity and only its
+     | <option> children change, with select2 taken down and put back around the
+     | swap. The theme initialises with $('.brator-select-active').select2() and
+     | no arguments, so re-initialising reproduces exactly the same widget —
+     | which is the only reason this is safe to do.
+     |
+     | Choosing an Engine is left alone entirely: that is not a cascade step, it
+     | is the shopper saying "this is my car, show me parts", and it should go to
+     | the results the way it always did.
+     * ------------------------------------------------------------------ */
+    function bindVehicleCascade() {
+        /*
+         | EVERY picker on the page is refreshed, not just the one that was used. A shop page
+         | carries two — one in the header, one in the body — and they all read the same
+         | session, so leaving the others showing the old state would mean the same form
+         | disagreeing with itself in two places on one screen.
+        */
+        function refresh(doc) {
+            var fresh = doc.querySelector('[data-vehicle-picker]');
+            if (!fresh) throw new Error('no picker in the response');
+
+            document.querySelectorAll('[data-vehicle-picker]').forEach(function (picker) {
+                picker.querySelectorAll('select[name]').forEach(function (select) {
+                    var replacement = fresh.querySelector(
+                        'select[name="' + CSS.escape(select.name) + '"]'
+                    );
+
+                    if (!replacement) return;
+
+                    var $select = window.jQuery ? window.jQuery(select) : null;
+                    var enhanced = !!($select && $select.data('select2'));
+
+                    if (enhanced) $select.select2('destroy');
+
+                    select.innerHTML = replacement.innerHTML;
+                    // Set BEFORE select2 comes back: it renders the disabled look at
+                    // initialisation, so a select disabled afterwards would still look
+                    // usable and then refuse to open.
+                    select.disabled = replacement.disabled;
+
+                    if (enhanced) $select.select2();
+                });
+            });
+
+            // "Start again" and the "no vehicles for that year" note both depend on how far
+            // the cascade has got, so they move with it.
+            var freshExtras = doc.querySelector('[data-vehicle-extras]');
+
+            if (freshExtras) {
+                document.querySelectorAll('[data-vehicle-extras]').forEach(function (extras) {
+                    extras.innerHTML = freshExtras.innerHTML;
+                });
+            }
+        }
+
+        document.querySelectorAll('[data-vehicle-picker]').forEach(function (form) {
+            if (form.dataset.cascadeBound) return;
+            form.dataset.cascadeBound = '1';
+
+            var busy = false;
+
+            form.addEventListener('submit', function (event) {
+                /*
+                 | An Engine has been chosen, so this is "show me parts for this car" and
+                 | the server will redirect to the shop. Left to navigate normally — the
+                 | shopper is asking to go somewhere.
+                */
+                var engine = form.querySelector('[name="vehicle_variant_id"]');
+                if (engine && engine.value) return;
+
+                // A click on Search rather than a dropdown changing. Also a deliberate
+                // "go", so it is not swallowed either.
+                if (event.submitter) return;
+
+                if (busy) return;
+
+                event.preventDefault();
+                busy = true;
+
+                var body = new FormData(form);
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: body,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                })
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('status ' + response.status);
+
+                        return response.text();
+                    })
+                    .then(function (html) {
+                        refresh(new DOMParser().parseFromString(html, 'text/html'));
+                        busy = false;
+                    })
+                    .catch(function () {
+                        /*
+                         | Falls back to the reload this replaced, so a shopper still gets
+                         | their next dropdown. form.submit() rather than requestSubmit()
+                         | on purpose: requestSubmit fires the submit event again and this
+                         | handler would swallow it, leaving the picker permanently stuck.
+                        */
+                        form.submit();
+                    });
+            });
+        });
+    }
+
     function init() {
         bindAutoSubmit();
         bindListFilters();
@@ -775,6 +900,7 @@
         bindQuantitySteppers();
         bindHeroRotation();
         bindSmoothListing();
+        bindVehicleCascade();
     }
 
     if (document.readyState === 'loading') {

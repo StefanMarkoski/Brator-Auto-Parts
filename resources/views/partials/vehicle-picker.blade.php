@@ -1,15 +1,19 @@
 {{--
     The theme's Year → Make → Model → Sub Model → Engine picker, made real.
 
-    Server-rendered cascade: each choice posts, the session remembers how far the
-    shopper has got, and the page comes back with the next dropdown filled. This is
-    deliberate — the theme drives these selects through select2, which replaces the
-    native element, so injecting options client-side would fight it. Rendering them
-    server-side leaves the theme's own JS completely untouched.
+    THE CASCADE IS STILL SERVER-RENDERED, and that has not changed: each choice posts,
+    the session remembers how far the shopper has got, and the next dropdown comes back
+    filled. Every rule about which options are available lives in one place, on the
+    server, and the form works with JavaScript switched off.
 
-    The select classes are the theme's own, so the styling is identical.
+    What changed is that the round trip no longer reloads the document. storefront.js
+    posts the same form, takes the picker out of the response and copies each dropdown's
+    OPTIONS into the dropdown already on the page — so choosing a Year no longer throws
+    the shopper back to the top of the homepage. The selects themselves are never
+    replaced, because the theme drives them through select2.
 --}}
-<form method="post" action="{{ route('vehicle.pick', [], false) }}" class="brator-parts-search-box-form">
+<form method="post" action="{{ route('vehicle.pick', [], false) }}" class="brator-parts-search-box-form"
+    data-vehicle-picker>
     @csrf
     <input type="hidden" name="redirect_to" value="{{ route('shop.categories', [], false) }}" />
 
@@ -47,7 +51,11 @@
             @disabled($vehiclePicker['engines'] === []) data-auto-submit>
         <option value="">Engine</option>
         @foreach ($vehiclePicker['engines'] as $engine)
-            <option value="{{ $engine['id'] }}">{{ $engine['label'] }}</option>
+            {{-- @selected was missing here, so the Engine box came back empty on any real
+                 page load even though a vehicle WAS chosen — the one level of the cascade
+                 that forgot what the shopper had picked. --}}
+            <option value="{{ $engine['id'] }}"
+                @selected($vehiclePicker['variant'] === $engine['id'])>{{ $engine['label'] }}</option>
         @endforeach
     </select>
 
@@ -58,17 +66,25 @@
     Escape hatches. Without these a shopper who picked a year the catalogue does not
     cover saw a nearly-empty Make list, no explanation, and no way back — a dead end
     reachable in one click.
---}}
-@if ($vehiclePicker['state']['year'] !== null && $vehiclePicker['makes'] === [])
-    <div class="brator-current-vehicle-content">
-        <p>No vehicles in the catalogue for {{ $vehiclePicker['state']['year'] }}. Try another year, or start again.</p>
-    </div>
-@endif
 
-@if (array_filter($vehiclePicker['state'], fn ($v) => $v !== null) !== [])
-    <form method="post" action="{{ route('vehicle.clear', [], false) }}">
-        @csrf
-        <input type="hidden" name="redirect_to" value="{{ request()->fullUrl() }}" />
-        <button type="submit">Start again</button>
-    </form>
-@endif
+    Both depend on how far the cascade has got, so they are kept in one always-present
+    container the in-place update can refresh wholesale. It holds nothing the theme has
+    bound to — a message and a plain form — so unlike the selects it is safe to replace.
+    The container is an unclassed div and renders empty when neither applies, which
+    occupies no space.
+--}}
+<div data-vehicle-extras>
+    @if ($vehiclePicker['state']['year'] !== null && $vehiclePicker['makes'] === [])
+        <div class="brator-current-vehicle-content">
+            <p>No vehicles in the catalogue for {{ $vehiclePicker['state']['year'] }}. Try another year, or start again.</p>
+        </div>
+    @endif
+
+    @if (array_filter($vehiclePicker['state'], fn ($v) => $v !== null) !== [])
+        <form method="post" action="{{ route('vehicle.clear', [], false) }}">
+            @csrf
+            <input type="hidden" name="redirect_to" value="{{ request()->fullUrl() }}" />
+            <button type="submit">Start again</button>
+        </form>
+    @endif
+</div>

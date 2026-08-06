@@ -163,6 +163,52 @@ final class ClearFiltersTest extends TestCase
         $this->assertStringContainsString(route('filters.clear', [], false), $html);
     }
 
+    public function test_the_engine_box_remembers_the_chosen_vehicle(): void
+    {
+        $variant = (int) DB::table('product_vehicle_fitments')->value('vehicle_variant_id');
+        $row = DB::table('vehicle_variants')->where('id', $variant)->first();
+
+        // The whole cascade, as the session would hold it after a shopper picked a car.
+        $html = $this->withSession([
+            VehicleSelection::SESSION_KEY => $variant,
+            VehicleSelection::PICKER_KEY => [
+                'year' => $row->year_from,
+                'make' => (int) DB::table('vehicle_models')->where('id', $row->model_id)->value('make_id'),
+                'model' => (int) $row->model_id,
+                'name' => $row->name,
+            ],
+        ])->get('/shop')->assertOk()->getContent();
+
+        /*
+         | The Engine <option> had no @selected, so this one level of the picker came back
+         | empty on every real page load even though a vehicle WAS chosen — the shopper saw
+         | Year, Make, Model and Sub Model filled in and Engine blank, which reads as the
+         | form having lost their car.
+        */
+        $this->assertMatchesRegularExpression(
+            '/<option value="'.$variant.'"\s+selected/',
+            $html,
+            'The Engine dropdown does not mark the chosen vehicle as selected.'
+        );
+    }
+
+    public function test_the_picker_marks_the_regions_the_cascade_updates(): void
+    {
+        $html = $this->get('/shop')->assertOk()->getContent();
+
+        /*
+         | Choosing a Year no longer reloads the page: storefront.js posts the same form and
+         | copies the new options into the dropdowns already on screen, which is what stops
+         | the homepage jumping back to the top five times on the way to one car. It finds
+         | the form and the "Start again" area by these attributes and falls back to a full
+         | reload without them.
+        */
+        foreach (['data-vehicle-picker', 'data-vehicle-extras'] as $hook) {
+            $this->assertStringContainsString($hook, $html,
+                "The vehicle picker no longer marks '{$hook}', so its cascade will reload the page.");
+        }
+    }
+
     public function test_no_blade_directive_leaks_onto_the_listing_page(): void
     {
         $variant = (int) DB::table('product_vehicle_fitments')->value('vehicle_variant_id');

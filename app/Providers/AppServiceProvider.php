@@ -75,6 +75,10 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('vehiclePicker', [
                 'state' => $state,
+                // The chosen variant, so the Engine box can show what was picked. It lives
+                // apart from the rest of the state because choosing an engine IS choosing
+                // the vehicle — the other four levels are only the route to it.
+                'variant' => $selection->current(),
                 'years' => $picker->years(),
                 'makes' => $picker->makes($state['year']),
                 'models' => $state['make'] === null ? [] : $picker->models($state['make'], $state['year']),
