@@ -9,6 +9,7 @@ use App\Domain\Catalog\Queries\Internal\ListProductCardsQuery;
 use App\Domain\Catalog\Services\RecentlyViewed;
 use App\Domain\Fitment\Queries\Public\GetProductIdsForVehicleQuery;
 use App\Domain\Fitment\Services\VehicleSelection;
+use App\Domain\Ordering\Queries\Public\GetFrequentlyBoughtTogetherQuery;
 use App\Support\ValueObjects\Money;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -21,6 +22,8 @@ final class ProductController
         private RecentlyViewed $recentlyViewed,
         private VehicleSelection $vehicle,
         private GetProductIdsForVehicleQuery $fitment,
+        // Ordering's own read API. Receipts are its data; Catalog may only ask through it.
+        private GetFrequentlyBoughtTogetherQuery $boughtWith,
     ) {}
 
     public function show(string $slug): View
@@ -36,7 +39,17 @@ final class ProductController
         $recent = $this->cards->forIds($this->recentlyViewed->all($product->id));
         $this->recentlyViewed->remember($product->id);
 
-        $boughtTogether = $this->detail->recommendations($product->id, 'bought_together', 3);
+        /*
+         | REAL co-purchase data, not the seeded product_recommendations table this used to read.
+         | That table made the strip a convincing-looking widget presenting invented pairings —
+         | the same class of thing as the theme's fake prices. This counts receipt lines: the
+         | other parts on the receipts this part appears on, most-shared first.
+         |
+         | Sparse and honest about it: 590 of 5,000 products have a companion today, so most
+         | pages get nothing and the section is hidden rather than claiming a pairing that has
+         | never happened.
+        */
+        $boughtTogether = $this->cards->forIds($this->boughtWith->execute($product->id, 5));
 
         $primary = $product->categories->firstWhere('pivot.is_primary', true)
             ?? $product->categories->first();

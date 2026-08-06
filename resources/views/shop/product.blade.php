@@ -230,6 +230,15 @@
             </div>
         </div>
     </div>
+    {{--
+        HIDDEN WHEN NOTHING HAS EVER BEEN BOUGHT WITH THIS PART.
+
+        The companions come from receipt lines now, not from the seeded recommendations table, so
+        for most parts there genuinely are none — 590 of 5,000 have a companion today. Showing the
+        strip anyway would leave "Frequently Bought Together" above the product on its own, which
+        both looks broken and claims a pairing that has never happened.
+    --}}
+    @if ($boughtTogether->isNotEmpty())
     <div class="brator-product-frequently-area">
         <div class="container-xxxl container-xxl container">
             <div class="row">
@@ -279,6 +288,7 @@
             </div>
         </div>
     </div>
+    @endif
     <div class="brator-product-single-tab-area design-one-m">
         <div class="container-xxxl container-xxl container">
             <div class="row">
