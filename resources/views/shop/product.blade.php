@@ -466,6 +466,14 @@
         </div>
     </div>
     <!-- bread start-->
+    {{--
+        HIDDEN WHEN THERE IS NOTHING TO RECOMMEND.
+
+        product_recommendations only covers 300 of the 5,000 products, so on most pages
+        this was a "You May Also Like" heading over empty space — which reads as a strip
+        that failed to load rather than as a product with no companions.
+    --}}
+    @if (count($similar ?? []))
     <div class="brator-deal-product-slider recently-view">
         <div class="container-xxxl container-xxl container">
             <div class="row">
@@ -477,7 +485,12 @@
                     </div>
                 </div>
                 <div class="col-12">
-                    <div class="brator-product-slider splide js-splide p-splide" data-splide='{"pagination":false,"type":"loop","perPage":5,"perMove":"1","gap":30, "breakpoints":{ "520" :{ "perPage": "1" },"746" :{ "perPage": "2" }, "768" :{ "perPage" : "3" }, "1090":{ "perPage" : "3" }, "1366":{ "perPage" : "4" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "5" }}}'>
+                    {{-- The carousel classes are CONDITIONAL. The theme mounts Splide on every element with
+                         the class "splide", and Splide on an EMPTY list still initialises: with
+                         type:loop it computes a clone offset from nothing and translates the list
+                         a few hundred pixels sideways, so the "nothing here yet" line appeared
+                         shoved off to one side. No items, no carousel — just the message. --}}
+                    <div class="brator-product-slider @if (count($similar ?? [])) splide js-splide p-splide @endif" data-splide='{"pagination":false,"type":"loop","perPage":5,"perMove":"1","gap":30, "breakpoints":{ "520" :{ "perPage": "1" },"746" :{ "perPage": "2" }, "768" :{ "perPage" : "3" }, "1090":{ "perPage" : "3" }, "1366":{ "perPage" : "4" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "5" }}}'>
                         <div class="splide__arrows style-two">
                             <button class="splide__arrow splide__arrow--prev">
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -503,6 +516,7 @@
         </div>
     </div>
     <!-- bread end-->
+    @endif
     <div class="brator-plan-pixel-area">
         <div class="container-xxxl container-xxl container">
             <div class="col-12">
@@ -522,7 +536,12 @@
                     </div>
                 </div>
                 <div class="col-12">
-                    <div class="brator-product-slider splide js-splide p-splide" data-splide='{"pagination":false,"type":"loop","perPage":5,"perMove":"1","gap":30, "breakpoints":{ "520" :{ "perPage": "1" },"746" :{ "perPage": "2" }, "767" :{ "perPage" : "2" }, "1090":{ "perPage" : "3" }, "1366":{ "perPage" : "4" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "5" }}}'>
+                    {{-- The carousel classes are CONDITIONAL. The theme mounts Splide on every element with
+                         the class "splide", and Splide on an EMPTY list still initialises: with
+                         type:loop it computes a clone offset from nothing and translates the list
+                         a few hundred pixels sideways, so the "nothing here yet" line appeared
+                         shoved off to one side. No items, no carousel — just the message. --}}
+                    <div class="brator-product-slider @if (count($recentlyViewed ?? [])) splide js-splide p-splide @endif" data-splide='{"pagination":false,"type":"loop","perPage":5,"perMove":"1","gap":30, "breakpoints":{ "520" :{ "perPage": "1" },"746" :{ "perPage": "2" }, "767" :{ "perPage" : "2" }, "1090":{ "perPage" : "3" }, "1366":{ "perPage" : "4" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "5" }}}'>
                         <div class="splide__arrows style-two">
                             <button class="splide__arrow splide__arrow--prev">
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">

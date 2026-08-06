@@ -127,7 +127,12 @@
                                 <h2>Best Seller</h2>
                             </div>
                         </div>
-                        <div class="brator-product-slider splide js-splide p-splide" data-splide='{"pagination":false,"type":"loop","perPage":4,"perMove":"1","gap":30, "breakpoints":{ "576" :{ "perPage": "1" },"746" :{ "perPage": "2" }, "768" :{ "perPage" : "2" }, "991":{ "perPage" : "3" }, "1399":{ "perPage" : "4" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "4" }}}'>
+                        {{-- The carousel classes are CONDITIONAL. The theme mounts Splide on every element with
+                             the class "splide", and Splide on an EMPTY list still initialises: with
+                             type:loop it computes a clone offset from nothing and translates the list
+                             a few hundred pixels sideways, so the "nothing here yet" line appeared
+                             shoved off to one side. No items, no carousel — just the message. --}}
+                        <div class="brator-product-slider @if (count($bestSellers ?? [])) splide js-splide p-splide @endif" data-splide='{"pagination":false,"type":"loop","perPage":4,"perMove":"1","gap":30, "breakpoints":{ "576" :{ "perPage": "1" },"746" :{ "perPage": "2" }, "768" :{ "perPage" : "2" }, "991":{ "perPage" : "3" }, "1399":{ "perPage" : "4" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "4" }}}'>
                             <div class="splide__arrows style-one">
                                 <button class="splide__arrow splide__arrow--prev">
                                     <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -142,8 +147,22 @@
                             </div>
                             <div class="splide__track">
                                 <div class="splide__list">
+                                    {{--
+                                        THE VARIANT MUST KEEP splide__slide HERE.
+
+                                        This strip is a Splide carousel, and Splide finds its
+                                        slides by that class. Passing 'design-two' alone — which
+                                        is what the results grid below correctly passes, because
+                                        it is NOT a carousel — overrode the card's default of
+                                        'splide__slide design-two' and left the slider with ZERO
+                                        slides. Splide still initialised, so with type:loop it
+                                        computed a clone offset from nothing and translated the
+                                        list 286px to the right: the strip sat visibly off to one
+                                        side, with cards at their natural 1642px instead of a
+                                        quarter of the track.
+                                    --}}
                                     @forelse ($bestSellers as $sidebarProduct)
-                                        @include('partials.product-card', ['product' => $sidebarProduct, 'variant' => 'design-two'])
+                                        @include('partials.product-card', ['product' => $sidebarProduct, 'variant' => 'splide__slide design-two'])
                                     @empty
                                         <p>No sales recorded yet.</p>
                                     @endforelse
@@ -266,7 +285,12 @@
                     </div>
                 </div>
                 <div class="col-12">
-                    <div class="brator-product-slider splide js-splide p-splide" data-splide='{"pagination":false,"type":"loop","perPage":5,"perMove":"1","gap":30, "breakpoints":{ "520" :{ "perPage": "1" },"746" :{ "perPage": "2" }, "767" :{ "perPage" : "2" }, "1090":{ "perPage" : "3" }, "1366":{ "perPage" : "4" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "5" }}}'>
+                    {{-- The carousel classes are CONDITIONAL. The theme mounts Splide on every element with
+                         the class "splide", and Splide on an EMPTY list still initialises: with
+                         type:loop it computes a clone offset from nothing and translates the list
+                         a few hundred pixels sideways, so the "nothing here yet" line appeared
+                         shoved off to one side. No items, no carousel — just the message. --}}
+                    <div class="brator-product-slider @if (count($recentlyViewed ?? [])) splide js-splide p-splide @endif" data-splide='{"pagination":false,"type":"loop","perPage":5,"perMove":"1","gap":30, "breakpoints":{ "520" :{ "perPage": "1" },"746" :{ "perPage": "2" }, "767" :{ "perPage" : "2" }, "1090":{ "perPage" : "3" }, "1366":{ "perPage" : "4" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "5" }}}'>
                         <div class="splide__arrows style-two">
                             <button class="splide__arrow splide__arrow--prev">
                                 <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">

@@ -96,6 +96,70 @@ final class NoTemplatePlaceholdersTest extends TestCase
             .implode("\n  ", $offenders));
     }
 
+    public function test_every_carousel_card_is_marked_as_a_slide(): void
+    {
+        // No database needed: this reads the templates, because whether a card is wrong depends
+        // on the markup it sits in, not on what the page happened to render.
+        /*
+         | Splide finds its slides by the class "splide__slide". The Best Seller strip on the
+         | listing pages passed 'design-two' as the card variant — correct for the results grid
+         | below it, which is NOT a carousel — and that overrode the card's default of
+         | 'splide__slide design-two', leaving the slider with ZERO slides. Splide still mounted,
+         | so with type:loop it computed a clone offset from nothing and shifted the list 286px
+         | sideways: the strip sat visibly off to one side with cards at their natural 1642px.
+         |
+         | Checked in the MARKUP rather than the rendered page, because a card is only wrong when
+         | it is inside a carousel and that context is what the template decides.
+        */
+        $offenders = [];
+
+        foreach (glob(resource_path('views/shop/*.blade.php')) as $file) {
+            $lines = explode("\n", (string) file_get_contents($file));
+
+            foreach ($lines as $number => $line) {
+                if (! str_contains($line, "@include('partials.product-card'")) {
+                    continue;
+                }
+
+                /*
+                 | Walk BACKWARDS to the nearest container marker rather than looking at a fixed
+                 | window of preceding lines. The first version of this test looked back eight
+                 | lines, and adding a comment above the include pushed splide__list out of range
+                 | — so the test passed with the bug deliberately put back. Distance is not the
+                 | question; which container encloses the card is.
+                */
+                $inCarousel = null;
+
+                for ($i = $number - 1; $i >= 0; $i--) {
+                    if (str_contains($lines[$i], 'splide__list')) {
+                        $inCarousel = true;
+                        break;
+                    }
+
+                    if (str_contains($lines[$i], 'product-list-items')) {
+                        $inCarousel = false;
+                        break;
+                    }
+                }
+
+                if ($inCarousel !== true) {
+                    continue;
+                }
+
+                // Inside a carousel, the card's own default keeps the slide class; an explicit
+                // variant must not drop it.
+                if (preg_match("/'variant'\s*=>\s*'([^']*)'/", $line, $variant)
+                    && ! str_contains($variant[1], 'splide__slide')) {
+                    $offenders[] = basename($file).':'.($number + 1)." variant='{$variant[1]}'";
+                }
+            }
+        }
+
+        $this->assertSame([], $offenders,
+            'These cards sit inside a Splide carousel but are not marked as slides, so the '
+            ."slider mounts with nothing in it and shifts sideways:\n  ".implode("\n  ", $offenders));
+    }
+
     public function test_the_footer_states_the_current_year(): void
     {
         foreach (['/', '/shop'] as $page) {
