@@ -43,7 +43,44 @@ final class SaveProductImagesAction
         }
 
         return DB::transaction(function () use ($product, $files): int {
-            $position = (int) $product->images()->max('position');
+            /*
+             | A PLACEHOLDER IS NOT A PHOTOGRAPH, and the first real one clears them out.
+             |
+             | Every seeded product carries the theme's grey square, and a department bulk photo is
+             | a generic stand-in shared by hundreds of parts. Both sit at position 0 with
+             | is_primary set — so without this, uploading a real photograph left it at position 1
+             | BEHIND the grey square: the card still showed the placeholder, and so did the
+             | product page, which reads its four slots in position order. Somebody would have had
+             | to upload and then also click "Make main", every time.
+             |
+             | Only a previous upload counts as a real photograph worth keeping alongside.
+            */
+            $ownsPhotographs = $product->images()
+                ->where('path', 'like', 'storage/'.self::DIRECTORY.'/%')
+                ->exists();
+
+            if (! $ownsPhotographs) {
+                /*
+                 | Rows only, never the files. A theme asset belongs to the purchased template and
+                 | a department photo is referenced by every other product in that department —
+                 | deleting either file here would blank images across the shop.
+                */
+                $product->images()
+                    ->where(fn ($q) => $q
+                        ->where('path', 'like', 'assets/%')
+                        ->orWhere('path', 'like', 'storage/'.AssignDepartmentPhotosAction::DIRECTORY.'/%'))
+                    ->delete();
+            }
+
+            /*
+             | -1 when there are none, so the first image lands at position 0 like every other
+             | slot-numbered thing here. max() on an empty set returns null and (int) null is 0,
+             | which would start the first photograph at 1 and leave slot 0 permanently empty —
+             | the same trap the hero importer had.
+            */
+            $highest = $product->images()->max('position');
+            $position = $highest === null ? -1 : (int) $highest;
+
             $hasPrimary = $product->images()->where('is_primary', true)->exists();
             $stored = 0;
 

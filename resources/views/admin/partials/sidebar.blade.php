@@ -10,6 +10,7 @@
         ]],
         ['label' => 'Catalogue', 'items' => [
             ['name' => 'Products', 'route' => 'admin.products.index'],
+            ['name' => 'Product photos', 'route' => 'admin.product-photos.index'],
             ['name' => 'Categories', 'route' => 'admin.categories.index'],
             ['name' => 'Brands', 'route' => 'admin.brands.index'],
         ]],

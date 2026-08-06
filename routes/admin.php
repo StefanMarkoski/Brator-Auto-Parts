@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\HeroImageController;
 use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductPhotoController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\VehicleLookupController;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -108,6 +109,17 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('vehicles/models/{make}', [VehicleLookupController::class, 'models'])->name('vehicles.models');
         Route::get('vehicles/sub-models/{model}', [VehicleLookupController::class, 'subModels'])->name('vehicles.sub-models');
         Route::get('vehicles/engines/{model}', [VehicleLookupController::class, 'engines'])->name('vehicles.engines');
+
+        /*
+         | Bulk product photos, one set per department. Throttled: each POST makes the server
+         | download from an address the poster chose, and then writes thousands of rows.
+         */
+        Route::get('product-photos', [ProductPhotoController::class, 'index'])->name('product-photos.index');
+        Route::post('product-photos/{department}', [ProductPhotoController::class, 'store'])
+            ->middleware('throttle:20,1')
+            ->name('product-photos.store');
+        Route::delete('product-photos/{department}', [ProductPhotoController::class, 'destroy'])
+            ->name('product-photos.destroy');
 
         Route::get('imports', [CatalogController::class, 'imports'])->name('imports.index');
 
