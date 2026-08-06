@@ -165,6 +165,26 @@ final class AdminPanelTest extends TestCase
         ])->assertSessionHasErrors('price_major');
     }
 
+    public function test_the_pre_paint_theme_script_does_not_touch_the_body(): void
+    {
+        $html = $this->actingAs($this->admin())->get('/admin')->assertOk()->getContent();
+
+        // Everything before </head> runs while document.body is still null, so any
+        // reference to it there throws — and TailAdmin's version did, on every page load,
+        // which also stopped the rest of that script from running.
+        $head = substr($html, 0, (int) strpos($html, '</head>'));
+
+        // Comments stripped first — the comment explaining this very bug names
+        // document.body, and matching it would make the test pass on prose.
+        $code = (string) preg_replace('#/\*.*?\*/#s', '', $head);
+
+        $this->assertStringNotContainsString('document.body', $code,
+            'A script in <head> references document.body, which does not exist yet.');
+
+        // The other half: dark mode must still be applied before first paint.
+        $this->assertStringContainsString("documentElement.classList.toggle('dark'", $head);
+    }
+
     private function admin(): User
     {
         return User::factory()->create(['role' => UserRole::Admin]);

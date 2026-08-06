@@ -12,6 +12,7 @@
         "vite": "^7.0"
     },
     "dependencies": {
-        "alpinejs": "^3.14"
+        "alpinejs": "^3.14",
+        "apexcharts": "^6.7.0"
     }
 }

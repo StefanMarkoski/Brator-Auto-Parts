@@ -900,3 +900,19 @@ pre[class*='language-'] {
     margin-right: -60px !important;
   }
 }
+/*
+ | Alpine's x-cloak, declared once here rather than in a <style> block inside the modal
+ | component (which TailAdmin does, and which repeats the rule for every modal on a page).
+ | Without it, a modal's markup flashes on screen before Alpine boots and hides it.
+ */
+[x-cloak] {
+  display: none !important;
+}
+
+/*
+ | Row action-menu items. Declared once as a utility rather than repeated on every link
+ | inside every table row — the same reason TailAdmin declares menu-item above.
+ */
+@utility admin-menu-item {
+  @apply flex w-full px-3 py-2 font-medium text-left text-gray-500 rounded-lg text-theme-xs hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300;
+}
