@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Ordering\Enums\ReceiptStatus;
 use App\Domain\Ordering\Models\Receipt;
 use App\Models\Enums\UserRole;
 use App\Models\User;
@@ -363,6 +364,53 @@ final class AdminPanelTest extends TestCase
             'stock_status' => 'in_stock',
             'condition' => 'new',
         ])->assertSessionHasErrors('sale_price_major');
+    }
+
+    public function test_the_dashboard_trend_compares_the_same_number_of_days(): void
+    {
+        // Placed at a fixed point in the month so the comparison window is predictable.
+        $this->travelTo(now()->startOfMonth()->addDays(5)->setTime(12, 0));
+
+        /*
+         | Figures chosen so the right and the wrong answer cannot be mistaken for each other.
+         |
+         | Like for like: 2.000,00 this month against 1.000,00 in the same window last month
+         | is +100.00%. Comparing against the WHOLE of last month gives 2.000,00 against
+         | 10.000,00, which is -80.00%.
+         |
+         | The numbers matter, because the first version of this test asserted the page
+         | contained "0.00%" — and "90.00%" contains "0.00%", so it passed against the broken
+         | implementation. A substring match on a formatted number is not an assertion.
+        */
+        Receipt::factory()->create([
+            'total_minor' => 200_000,
+            'status' => ReceiptStatus::Paid,
+            'placed_at' => now()->startOfMonth()->addDays(3),
+        ]);
+
+        Receipt::factory()->create([
+            'total_minor' => 100_000,
+            'status' => ReceiptStatus::Paid,
+            'placed_at' => now()->startOfMonth()->subMonthNoOverflow()->addDays(3),
+        ]);
+
+        // Late last month, outside the comparison window. Counting it is exactly the bug:
+        // six days cannot lose to thirty-one, so the card read "down 73%" on the sixth.
+        Receipt::factory()->create([
+            'total_minor' => 900_000,
+            'status' => ReceiptStatus::Paid,
+            'placed_at' => now()->startOfMonth()->subDays(2),
+        ]);
+
+        $html = $this->actingAs($this->admin())->get('/admin')->assertOk()->getContent();
+
+        $this->assertStringContainsString('100.00%', $html,
+            'The trend did not compare against the same window last month.');
+
+        $this->assertStringNotContainsString('80.00%', $html,
+            'The trend compared a partial month against a full one.');
+
+        $this->travelBack();
     }
 
     public function test_the_pre_paint_theme_script_does_not_touch_the_body(): void
