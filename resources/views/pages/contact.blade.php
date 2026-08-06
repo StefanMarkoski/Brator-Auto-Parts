@@ -77,28 +77,43 @@
                         </div>
                         <div class="brator-contact-form"><span class="info-text">Required fields are marked *</span></div>
                     </div>
+                    {{-- The theme shipped these fields with no <form> around them, no action and
+                        no CSRF — so POST /contact existed and was unreachable, and the page was
+                        decoration. Field names corrected too: the theme had TWO inputs called
+                        "name" (one of them the email) and a checkbox called "condcion". --}}
+                    <form method="post" action="{{ route('contact.submit', [], false) }}">
+                        @csrf
+                        @if (session('status'))
+                            <div class="brator-contact-form-field-info"><p>{{ session('status') }}</p></div>
+                        @endif
+                        @if ($errors->any())
+                            <div class="brator-contact-form-field-info">
+                                @foreach ($errors->all() as $message)<p>{{ $message }}</p>@endforeach
+                            </div>
+                        @endif
                     <div class="brator-contact-form-fields">
                         <div class="brator-contact-form-field">
-                            <input type="text" name="sub" placeholder="Subject (Optional)" />
+                            <input type="text" name="subject" value="{{ old('subject') }}" placeholder="Subject (Optional)" />
                         </div>
                         <div class="brator-contact-form-field">
-                            <textarea name="sms" placeholder="Write your message here"></textarea>
+                            <textarea name="message" required placeholder="Write your message here"></textarea>
                         </div>
                         <div class="brator-contact-form-field-two-items">
                             <div class="brator-contact-form-field">
-                                <input type="text" name="name" placeholder="Your Email *" />
+                                <input type="email" name="email" value="{{ old('email') }}" placeholder="Your Email *" required />
                             </div>
                             <div class="brator-contact-form-field">
-                                <input type="text" name="name" placeholder="Name" />
+                                <input type="text" name="name" value="{{ old('name') }}" placeholder="Name *" required />
                             </div>
                         </div>
                         <div class="brator-contact-form-field-info">
-                            <input type="checkbox" name="condcion" /><span>Save my name & email in this browser for next time i comment</span>
+                            <input type="checkbox" name="consent" value="1" /><span>Save my name & email in this browser for next time i comment</span>
                         </div>
                         <div class="brator-contact-form-field">
                             <button type="submit">Send Message</button>
                         </div>
                     </div>
+                    </form>
                 </div>
             </div>
         </div>

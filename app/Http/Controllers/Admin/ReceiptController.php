@@ -31,6 +31,7 @@ final class ReceiptController
                 ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
                 ->withCount('lines')
                 ->orderByDesc('placed_at')
+                ->orderBy('id')
                 ->paginate(20)
                 ->withQueryString(),
         ]);

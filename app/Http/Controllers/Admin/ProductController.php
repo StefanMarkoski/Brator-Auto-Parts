@@ -33,6 +33,10 @@ final class ProductController
                 ->when($request->query('stock') === 'out', fn ($q) => $q->where('stock_status', 'out_of_stock'))
                 ->when($request->query('stock') === 'low', fn ($q) => $q->where('stock_quantity', '<=', 5))
                 ->orderByDesc('updated_at')
+                // A tiebreaker, because updated_at alone is not unique: MySQL was free to
+                // order ties differently per query, and page 1 and page 2 shared 24 of 25
+                // SKUs. Any paginated list needs a deterministic total order.
+                ->orderBy('id')
                 ->paginate(25)
                 ->withQueryString(),
         ]);

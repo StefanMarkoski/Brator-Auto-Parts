@@ -48,6 +48,7 @@ Route::get('/receipt/{receipt}', [CheckoutController::class, 'show'])->name('rec
  */
 Route::post('/vehicle', [VehicleController::class, 'select'])->name('vehicle.select');
 Route::post('/vehicle/pick', [VehicleController::class, 'pick'])->name('vehicle.pick');
+Route::get('/vehicle/make/{slug}', [VehicleController::class, 'byMake'])->name('vehicle.by-make');
 Route::post('/vehicle/clear', [VehicleController::class, 'clear'])->name('vehicle.clear');
 Route::get('/vehicle/makes', [VehicleController::class, 'makes'])->name('vehicle.makes');
 Route::get('/vehicle/models/{make}', [VehicleController::class, 'models'])->name('vehicle.models');

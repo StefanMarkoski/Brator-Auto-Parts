@@ -4,8 +4,8 @@
             <div class="brator-brator-makes-list-tab-list js-tabs" id="tabs-product-content">
                 <div class="brator-makes-list-tab-header js-tabs__header">
                     <ul>
-                        <li><a class="js-tabs__title" href="#">Featured Makes</a></li>
-                        <li><a class="js-tabs__title" href="#">Featured Models</a></li>
+                        <li><a class="js-tabs__title" href="{{ route('shop.categories', [], false) }}">Featured Makes</a></li>
+                        <li><a class="js-tabs__title" href="{{ route('shop.categories', [], false) }}">Featured Models</a></li>
                     </ul>
                 </div>
                 <div class="row js-tabs__content">
@@ -13,7 +13,7 @@
                         <div class="brator-makes-list">
                             @foreach ($section->items as $make)
                                 <div class="brator-makes-list-single">
-                                    <a href="{{ route('shop.categories', [], false) }}?make={{ $make->slug }}">
+                                    <a href="{{ route('vehicle.by-make', $make->slug, false) }}">
                                         <span>{{ $make->name }}</span>
                                         <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                             <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>

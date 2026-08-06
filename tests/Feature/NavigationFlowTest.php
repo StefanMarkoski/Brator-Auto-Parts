@@ -59,10 +59,24 @@ final class NavigationFlowTest extends TestCase
                 }
                 $checked[$link] = true;
 
-                $status = $this->get($link)->getStatusCode();
+                $response = $this->get($link);
 
-                if ($status !== 200) {
-                    $broken[] = "{$link} (status {$status}, linked from {$page})";
+                // A redirect is not a dead link — some links deliberately set state and
+                // send the shopper on (picking a make seeds the vehicle picker). Follow it
+                // and judge where it lands.
+                if ($response->isRedirect()) {
+                    $target = $response->headers->get('Location');
+                    $response = $this->get($target);
+
+                    if ($response->getStatusCode() !== 200) {
+                        $broken[] = "{$link} -> {$target} (status {$response->getStatusCode()}, linked from {$page})";
+                    }
+
+                    continue;
+                }
+
+                if ($response->getStatusCode() !== 200) {
+                    $broken[] = "{$link} (status {$response->getStatusCode()}, linked from {$page})";
                 }
             }
         }

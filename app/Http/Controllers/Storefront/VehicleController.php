@@ -9,6 +9,7 @@ use App\Domain\Fitment\Services\VehicleSelection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The "shop by my car" picker.
@@ -77,6 +78,28 @@ final class VehicleController
         }
 
         return back();
+    }
+
+    /**
+     * Land on the shop with a make pre-chosen, ready to narrow further.
+     *
+     * The homepage's "shop by make" tiles used to link to /shop?make=bosch, which the shop
+     * page ignored entirely — 34 links that looked like filters and were byte-identical to
+     * clicking nothing. A make alone cannot filter parts, because fitment is recorded per
+     * engine variant; what it CAN do is start the cascade, which is what a shopper
+     * clicking a marque actually wants.
+     */
+    public function byMake(string $slug): RedirectResponse
+    {
+        $make = DB::table('vehicle_makes')->where('slug', $slug)->first(['id']);
+
+        if ($make === null) {
+            return redirect()->route('shop.categories');
+        }
+
+        $this->selection->rememberPicker(['make' => (int) $make->id]);
+
+        return redirect()->route('shop.categories');
     }
 
     /** Choose a vehicle and land on the catalogue filtered to it. */
