@@ -40,8 +40,13 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('receipts/{receipt}', [ReceiptController::class, 'show'])->name('receipts.show');
 
         Route::get('products', [ProductController::class, 'index'])->name('products.index');
+        // Declared before products/{product}/edit, or "create" is matched as a product id.
+        Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
+        Route::post('products', [ProductController::class, 'store'])->name('products.store');
         Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+        Route::post('products/{product}/restore', [ProductController::class, 'restore'])->name('products.restore');
         Route::delete('products/{product}/override', [ProductController::class, 'releaseOverride'])
             ->name('products.override.release');
 

@@ -25,6 +25,18 @@ use Illuminate\Support\Facades\Log;
 final class RecordFieldOverridesAction
 {
     /**
+     * Fields an import never supplies, so there is nothing to protect them from.
+     *
+     * Publishing is a merchandising decision by definition — a supplier feed has no opinion
+     * about whether this shop is ready to sell a part. Claiming it would drop "published_at"
+     * into the staff-owned list every time somebody toggled Published, which is noise in the
+     * one place that has to stay readable.
+     *
+     * @var list<string>
+     */
+    public const NEVER_CLAIMED = ['published_at'];
+
+    /**
      * @param  array<string, mixed>  $changes  field => new value
      * @return list<string> the fields newly claimed by a human
      */
@@ -34,6 +46,10 @@ final class RecordFieldOverridesAction
 
         DB::transaction(function () use ($product, $changes, $userId, &$claimed): void {
             foreach ($changes as $field => $newValue) {
+                if (in_array($field, self::NEVER_CLAIMED, true)) {
+                    continue;
+                }
+
                 if ($this->unchanged($product, $field, $newValue)) {
                     continue;
                 }
