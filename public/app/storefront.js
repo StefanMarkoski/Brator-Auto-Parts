@@ -175,9 +175,21 @@
             range: { min: floor, max: ceiling },
         };
 
-        // The theme already creates this slider on DOM ready with a placeholder 0-100
-        // range, and noUiSlider throws if created twice. Update it if it exists, create it
-        // if the theme's script did not get there.
+        /*
+         | The theme creates this slider itself, on DOMContentLoaded, with a placeholder
+         | 0-100 range. noUiSlider THROWS if something creates it twice.
+         |
+         | This used to create the slider when it did not yet exist — and because both
+         | scripts are deferred and both run on DOMContentLoaded, whichever went first won.
+         | When it was this one, the theme's own create() then threw
+         | "Slider was already initialized", which killed the rest of brator-script.js from
+         | that line on. Ten of those in the console on a single browsing session, and
+         | anything the theme initialises after its slider silently never ran.
+         |
+         | So: never create it here. bindPriceSlider is called on window.load, which is after
+         | every DOMContentLoaded handler, so the theme has always been and gone. The create
+         | below is only a last resort for the case where the theme's script is absent.
+        */
         if (mount.noUiSlider) {
             mount.noUiSlider.updateOptions(options, true);
         } else {
@@ -248,7 +260,6 @@
         bindAutoSubmit();
         bindListFilters();
         bindBundleTotals();
-        bindPriceSlider();
         bindQuantitySteppers();
     }
 
@@ -256,5 +267,22 @@
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
+    }
+
+    /*
+     | The price slider is bound LATER than everything else, on window.load.
+     |
+     | The theme creates that slider in its own DOMContentLoaded handler, and noUiSlider
+     | throws if it is created twice. Binding it alongside the rest was a race between two
+     | deferred scripts: when this one won, the theme's create() threw and took out the rest
+     | of brator-script.js from that line onwards.
+     |
+     | window.load runs after every DOMContentLoaded handler, so by the time this fires the
+     | theme's slider exists and there is only ever an updateOptions to do.
+    */
+    if (document.readyState === 'complete') {
+        bindPriceSlider();
+    } else {
+        window.addEventListener('load', bindPriceSlider);
     }
 })();
