@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CatalogController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -65,6 +66,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('brands', [CatalogController::class, 'storeBrand'])->name('brands.store');
         Route::put('brands/{brand}', [CatalogController::class, 'updateBrand'])->name('brands.update');
         Route::delete('brands/{brand}', [CatalogController::class, 'destroyBrand'])->name('brands.destroy');
+
+        Route::get('homepage', [HomepageController::class, 'index'])->name('homepage.index');
+        Route::put('homepage/{section}', [HomepageController::class, 'update'])->name('homepage.update');
+        Route::put('homepage/{section}/move', [HomepageController::class, 'move'])->name('homepage.move');
 
         Route::get('imports', [CatalogController::class, 'imports'])->name('imports.index');
     });

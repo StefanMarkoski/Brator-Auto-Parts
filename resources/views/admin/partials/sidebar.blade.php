@@ -13,6 +13,9 @@
             ['name' => 'Categories', 'route' => 'admin.categories.index'],
             ['name' => 'Brands', 'route' => 'admin.brands.index'],
         ]],
+        ['label' => 'Storefront', 'items' => [
+            ['name' => 'Homepage', 'route' => 'admin.homepage.index'],
+        ]],
         ['label' => 'Supply', 'items' => [
             ['name' => 'Imports', 'route' => 'admin.imports.index'],
         ]],
