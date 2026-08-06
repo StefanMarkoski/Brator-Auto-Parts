@@ -55,7 +55,17 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
             ->name('products.override.release');
 
         Route::get('categories', [CatalogController::class, 'categories'])->name('categories.index');
+        Route::post('categories', [CatalogController::class, 'storeCategory'])->name('categories.store');
+        Route::put('categories/{category}', [CatalogController::class, 'updateCategory'])
+            ->name('categories.update');
+        Route::delete('categories/{category}', [CatalogController::class, 'destroyCategory'])
+            ->name('categories.destroy');
+
         Route::get('brands', [CatalogController::class, 'brands'])->name('brands.index');
+        Route::post('brands', [CatalogController::class, 'storeBrand'])->name('brands.store');
+        Route::put('brands/{brand}', [CatalogController::class, 'updateBrand'])->name('brands.update');
+        Route::delete('brands/{brand}', [CatalogController::class, 'destroyBrand'])->name('brands.destroy');
+
         Route::get('imports', [CatalogController::class, 'imports'])->name('imports.index');
     });
 });
