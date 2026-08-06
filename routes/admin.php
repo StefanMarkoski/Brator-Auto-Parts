@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReceiptController;
+use App\Http\Controllers\Admin\VehicleLookupController;
 use App\Http\Middleware\EnsureUserIsStaff;
 use Illuminate\Support\Facades\Route;
 
@@ -96,6 +97,17 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
             ->name('homepage.hero-images.store');
         Route::delete('homepage/hero-images/{banner}', [HeroImageController::class, 'destroy'])
             ->name('homepage.hero-images.destroy');
+
+        /*
+         | The fitment picker's cascade. Read-only JSON, staff-only like everything else in
+         | this group — the vehicle tree is not secret, but an endpoint is a surface and there
+         | is no reason for this one to be open.
+         */
+        Route::get('vehicles/years', [VehicleLookupController::class, 'years'])->name('vehicles.years');
+        Route::get('vehicles/makes', [VehicleLookupController::class, 'makes'])->name('vehicles.makes');
+        Route::get('vehicles/models/{make}', [VehicleLookupController::class, 'models'])->name('vehicles.models');
+        Route::get('vehicles/sub-models/{model}', [VehicleLookupController::class, 'subModels'])->name('vehicles.sub-models');
+        Route::get('vehicles/engines/{model}', [VehicleLookupController::class, 'engines'])->name('vehicles.engines');
 
         Route::get('imports', [CatalogController::class, 'imports'])->name('imports.index');
 

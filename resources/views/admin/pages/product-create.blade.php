@@ -36,15 +36,14 @@
                 </x-admin.component-card>
 
                 <x-admin.component-card title="Fitment"
-                    desc="Which cars this part fits comes from the import feed's fits column, not from here — a part fits hundreds of engine variants and picking them by hand is not the job.">
-                    <p class="text-sm text-gray-400">
-                        A product with no fitment records still sells; it just will not appear when
-                        a shopper filters by their car. To give this part fitment, put it in a feed
-                        with a <code>fits</code> column — an existing SKU is updated rather than
-                        duplicated, so a one-row file is enough.
+                    desc="Which cars this part fits. Narrow down the same way a shopper does, then add — or set it in bulk from a feed's fits column.">
+                    <x-admin.fitment-picker />
+
+                    <p class="mt-4 border-t border-gray-100 pt-4 text-xs text-gray-400 dark:border-gray-800">
+                        For more than a handful of parts, the <code>fits</code> column in an import
+                        feed is the faster route — an existing SKU is updated rather than
+                        duplicated, so a one-row file is enough to give a part its vehicles.
                     </p>
-                    <x-admin.button variant="outline" size="sm"
-                        :href="route('admin.imports.index', [], false)">Go to imports</x-admin.button>
                 </x-admin.component-card>
             </div>
         </div>

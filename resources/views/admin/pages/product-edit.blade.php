@@ -37,6 +37,19 @@
                     desc="Editing a value claims that field for you — imports will stop overwriting it.">
                     @include('admin.partials.product-form')
                 </x-admin.component-card>
+
+                {{--
+                    Inside the same form, so the chosen vehicles post with Save changes and there
+                    is one button to press rather than two ways to half-save a product.
+
+                    Unlike every other field on this screen, this list is SYNCED: what you see is
+                    what the part will fit. Removing a chip is the whole point of the control, so
+                    it has to actually remove — including fitment that arrived from a feed.
+                --}}
+                <x-admin.component-card class="mt-6" title="Fitment"
+                    :desc="'Which cars this part fits — '.$fitment->count().' recorded. Removing one here removes it, including fitment that came from a feed.'">
+                    <x-admin.fitment-picker :chosen="$fitment" />
+                </x-admin.component-card>
             </form>
         </div>
 

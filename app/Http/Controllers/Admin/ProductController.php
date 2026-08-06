@@ -16,10 +16,13 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\CatalogImport\Actions\RecordFieldOverridesAction;
 use App\Domain\CatalogImport\Models\ProductFieldOverride;
+use App\Domain\Fitment\Actions\SetProductFitmentAction;
 use App\Support\Database\LikePattern;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 final class ProductController
@@ -30,6 +33,9 @@ final class ProductController
         private DeleteProductAction $deleteProduct,
         private AdjustStockAction $adjustStock,
         private SaveProductImagesAction $saveImages,
+        // Fitment's own action. Which vehicles exist, and what it means for a part to fit one,
+        // is Fitment's business — this controller only passes on what staff chose.
+        private SetProductFitmentAction $setFitment,
     ) {}
 
     public function index(Request $request): View
@@ -78,6 +84,8 @@ final class ProductController
             'stock_quantity' => ['required', 'integer', 'min:0'],
             'category_ids' => ['array'],
             'category_ids.*' => ['string', 'exists:categories,id'],
+            'fitment_variant_ids' => ['array'],
+            'fitment_variant_ids.*' => ['integer', 'exists:vehicle_variants,id'],
         ]);
 
         $product = $this->createProduct->execute(
@@ -91,12 +99,21 @@ final class ProductController
             actorId: $request->user()?->id,
         );
 
+        // Attached rather than synced: there is nothing to sync against on a brand new
+        // product, and attach is the operation that says "add these".
+        $added = $this->setFitment->attach($product->id, $validated['fitment_variant_ids'] ?? []);
+
         return redirect()
             ->route('admin.products.edit', $product->id)
             ->with('status', "{$product->name} was created. It is "
                 .($product->published_at === null
                     ? 'not published yet, so the shop will not show it until you publish it.'
-                    : 'live in the shop.'));
+                    : 'live in the shop.')
+                .($added === 0
+                    // Said out loud, because a part with no fitment is invisible the moment a
+                    // shopper picks their car and nothing else on the screen would mention it.
+                    ? ' No vehicles were set, so it will not appear when a shopper filters by their car.'
+                    : " It fits {$added} ".($added === 1 ? 'vehicle.' : 'vehicles.')));
     }
 
     public function edit(string $product): View
@@ -113,6 +130,7 @@ final class ProductController
             'overridden' => ProductFieldOverride::lockedFieldsFor($model->id),
             'selectedCategories' => $model->categories()->pluck('categories.id')->all(),
             'images' => $model->images()->orderBy('position')->orderBy('id')->get(),
+            'fitment' => $this->fitmentFor($model->id),
         ]);
     }
 
@@ -125,6 +143,8 @@ final class ProductController
             'stock_quantity' => ['required', 'integer', 'min:0'],
             'category_ids' => ['array'],
             'category_ids.*' => ['string', 'exists:categories,id'],
+            'fitment_variant_ids' => ['array'],
+            'fitment_variant_ids.*' => ['integer', 'exists:vehicle_variants,id'],
         ]);
 
         $changes = $this->attributesFrom($validated, $request);
@@ -157,6 +177,26 @@ final class ProductController
         if ($delta !== 0) {
             $message .= sprintf(' Stock %s by %d and the movement was recorded.',
                 $delta > 0 ? 'rose' : 'fell', abs($delta));
+        }
+
+        /*
+         | SYNCED here, and only here. Everywhere else fitment is additive, because a feed
+         | cannot know what another source recorded. This screen shows the whole list to a
+         | person who has decided what it should be, so removing a chip has to really remove —
+         | otherwise the control lies about what it does.
+         |
+         | Guarded on the picker's own marker. That list is rendered by Alpine, so if the admin
+         | bundle ever failed to load the ids would simply be absent — and a plain sync would
+         | read that as "remove everything", quietly destroying fitment on every save. No marker
+         | means the control was not running, which means it has no opinion to act on.
+        */
+        if ($request->has('fitment_managed')) {
+            $fitment = $this->setFitment->sync($model->id, $validated['fitment_variant_ids'] ?? []);
+
+            if ($fitment['added'] !== 0 || $fitment['removed'] !== 0) {
+                $message .= sprintf(' Fitment: %d added, %d removed.',
+                    $fitment['added'], $fitment['removed']);
+            }
         }
 
         return redirect()->route('admin.products.edit', $model->id)->with('status', $message);
@@ -246,6 +286,31 @@ final class ProductController
                 ? ($request->input('published_at_existing') ?: now())
                 : null,
         ];
+    }
+
+    /**
+     * The vehicles a product currently fits, labelled the way the picker shows them.
+     *
+     * Read here rather than through the model's relation because the label wants make, model
+     * and engine joined into one string, and a relation would either load three levels of
+     * nested models per row or leave the view assembling it.
+     *
+     * @return Collection<int, array{id: int, label: string}>
+     */
+    private function fitmentFor(string $productId): Collection
+    {
+        return DB::table('product_vehicle_fitments as f')
+            ->join('vehicle_variants as v', 'v.id', '=', 'f.vehicle_variant_id')
+            ->join('vehicle_models as mo', 'mo.id', '=', 'v.model_id')
+            ->join('vehicle_makes as mk', 'mk.id', '=', 'mo.make_id')
+            ->where('f.product_id', $productId)
+            ->orderBy('mk.name')->orderBy('mo.name')->orderBy('v.name')
+            ->get(['v.id', 'mk.name as make', 'mo.name as model', 'v.name as variant', 'v.engine_code'])
+            ->map(fn ($row): array => [
+                'id' => (int) $row->id,
+                'label' => trim($row->make.' '.$row->model.' '.$row->variant
+                    .($row->engine_code !== null && $row->engine_code !== '' ? ' '.$row->engine_code : '')),
+            ]);
     }
 
     /**

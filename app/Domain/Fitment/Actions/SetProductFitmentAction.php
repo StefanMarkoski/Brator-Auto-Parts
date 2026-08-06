@@ -133,6 +133,102 @@ final class SetProductFitmentAction
     }
 
     /**
+     * Add these vehicles, by id, leaving anything already recorded alone.
+     *
+     * For the create screen: staff pick vehicles from the cascade, so the ids are already
+     * resolved and there is no name to interpret.
+     *
+     * @param  list<int>  $variantIds
+     * @return int how many were newly recorded
+     */
+    public function attach(string $productId, array $variantIds): int
+    {
+        $variantIds = $this->existingOnly($variantIds);
+
+        if ($variantIds === []) {
+            return 0;
+        }
+
+        $before = DB::table('product_vehicle_fitments')->where('product_id', $productId)->count();
+
+        DB::table('product_vehicle_fitments')->insertOrIgnore(array_map(
+            fn (int $id): array => [
+                'vehicle_variant_id' => $id,
+                'product_id' => $productId,
+                'year_from' => null,
+                'year_to' => null,
+                'note' => null,
+            ],
+            $variantIds,
+        ));
+
+        return DB::table('product_vehicle_fitments')->where('product_id', $productId)->count() - $before;
+    }
+
+    /**
+     * Make the product's fitment exactly this list.
+     *
+     * THE ONE PLACE A SYNC IS RIGHT. Everywhere else fitment is additive, because a feed does
+     * not know what another source recorded. Here a person is looking at the whole list on
+     * screen and has decided what it should be — removing a row is the point of the control, and
+     * refusing to remove it would make the screen a liar.
+     *
+     * @param  list<int>  $variantIds
+     * @return array{added: int, removed: int}
+     */
+    public function sync(string $productId, array $variantIds): array
+    {
+        $wanted = $this->existingOnly($variantIds);
+
+        $current = DB::table('product_vehicle_fitments')
+            ->where('product_id', $productId)
+            ->pluck('vehicle_variant_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $remove = array_values(array_diff($current, $wanted));
+        $add = array_values(array_diff($wanted, $current));
+
+        if ($remove !== []) {
+            DB::table('product_vehicle_fitments')
+                ->where('product_id', $productId)
+                ->whereIn('vehicle_variant_id', $remove)
+                ->delete();
+        }
+
+        if ($add !== []) {
+            $this->attach($productId, $add);
+        }
+
+        return ['added' => count($add), 'removed' => count($remove)];
+    }
+
+    /**
+     * Only ids that are real vehicles.
+     *
+     * The ids arrive from a form, so they are input. A missing check would either throw on a
+     * foreign key or, on a schema without one, record fitment against a vehicle that does not
+     * exist — invisible until somebody wonders why a part appears for nothing.
+     *
+     * @param  list<int>  $variantIds
+     * @return list<int>
+     */
+    private function existingOnly(array $variantIds): array
+    {
+        $variantIds = array_values(array_unique(array_map('intval', $variantIds)));
+
+        if ($variantIds === []) {
+            return [];
+        }
+
+        return DB::table('vehicle_variants')
+            ->whereIn('id', $variantIds)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
      * Every way a vehicle can be named, mapped to the ids that name matches.
      *
      * A LIST per key, not one id, because engine codes are shared between models. Storing one
