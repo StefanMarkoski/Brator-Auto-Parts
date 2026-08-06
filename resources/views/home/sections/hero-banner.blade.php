@@ -44,6 +44,10 @@
                  with no timer running and no dots to click. --}}
             data-hero-rotate="{{ $heroImages->map(fn (string $path): string => '/'.$path)->values()->toJson() }}"
             data-hero-interval="5000"
+            {{-- How long one picture takes to dissolve into the next. Well under the
+                 interval, so a picture is fully itself for most of its turn rather than
+                 permanently half-way between two. --}}
+            data-hero-fade="900"
         @endif
         >
         <div class="container-xxxl container-xxl container">

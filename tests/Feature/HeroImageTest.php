@@ -99,6 +99,39 @@ final class HeroImageTest extends TestCase
         $this->assertSame(1, substr_count($html, 'splide__pagination__page is-active'));
     }
 
+    public function test_the_fade_is_declared_and_is_shorter_than_the_interval(): void
+    {
+        $this->heroImage('storage/hero/one.jpg', 0);
+        $this->heroImage('storage/hero/two.jpg', 1);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        preg_match('/data-hero-fade="(\d+)"/', $html, $fade);
+        preg_match('/data-hero-interval="(\d+)"/', $html, $interval);
+
+        $this->assertNotEmpty($fade, 'The banner does not declare a fade duration.');
+
+        /*
+         | A fade as long as the interval would leave the hero permanently half-way between
+         | two pictures — never quite showing either. The gap is the point: a picture should
+         | be fully itself for most of its turn.
+        */
+        $this->assertLessThan(
+            (int) $interval[1],
+            (int) $fade[1],
+            'The cross-fade must finish well before the next picture is due.'
+        );
+    }
+
+    public function test_a_single_picture_declares_no_fade(): void
+    {
+        $this->heroImage('storage/hero/only.jpg');
+
+        // Nothing to fade between, so no timer and no layer. The rotator bails out before
+        // building anything, which is why the attribute has to be absent rather than zero.
+        $this->get('/')->assertOk()->assertDontSee('data-hero-fade', false);
+    }
+
     public function test_the_dots_reuse_the_themes_own_pagination_classes(): void
     {
         $this->heroImage('storage/hero/one.jpg', 0);

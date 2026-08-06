@@ -50,8 +50,10 @@
     <script src="/assets/js/animation.gsap.js"></script>
     <script src="/assets/js/brator-script.js"></script>
     {{-- Storefront enhancement. Served off disk like the theme's own assets: no
-         bundler touches this side. Everything degrades to a real submit button. --}}
-    <script src="/app/storefront.js" defer></script>
+         bundler touches this side. Everything degrades to a real submit button.
+         ?v= is the file's modified time — nothing fingerprints this file, so without
+         it a browser keeps running whatever copy it already cached. --}}
+    <script src="{{ \App\Support\Assets::version('app/storefront.js') }}" defer></script>
 </body>
 
 </html>

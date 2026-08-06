@@ -261,8 +261,26 @@
      |
      | The theme renders this banner as a background with the headings and the
      | vehicle picker layered on top, so there is no slider to drive — the
-     | picture IS the container's background-image. Swapping that leaves the
-     | overlay untouched and needs no styling of its own.
+     | picture IS the container's background-image.
+     |
+     | THE CROSS-FADE, and why it needs a second layer.
+     |
+     | background-image cannot be transitioned: CSS has no way to interpolate
+     | between two pictures, so a `transition` on it does nothing and the swap is
+     | a hard cut. Fading the banner's own opacity is not an alternative either —
+     | that would fade the headings and the vehicle picker along with it.
+     |
+     | So a plain div is laid over the banner, given the NEXT picture, and faded
+     | from transparent to opaque. When it lands, the banner takes that picture as
+     | its own background and the layer is reset to invisible without a
+     | transition, ready for the next one. The result is a cross-fade in which
+     | only the photograph moves.
+     |
+     | The layer is built HERE rather than in the Blade file on purpose: it is
+     | pure presentation with no meaning in the markup, it must not exist for
+     | anyone without JavaScript, and keeping it in script means the template and
+     | the purchased stylesheets are both left alone. It carries no class, so it
+     | inherits nothing and collides with nothing.
      |
      | Every image is preloaded before the first swap. Assigning a
      | background-image the browser has not fetched paints the element empty
@@ -286,27 +304,121 @@
 
             var dots = banner.querySelectorAll('[data-hero-page]');
             var interval = parseInt(banner.getAttribute('data-hero-interval'), 10) || 5000;
+            var fade = parseInt(banner.getAttribute('data-hero-fade'), 10);
             var current = 0;
             var timer = null;
+            var fadeToken = 0;
+
+            if (isNaN(fade)) fade = 900;
+
+            /*
+             | Somebody who has asked their system for less animation gets the picture
+             | swapped outright. A cross-fade is decoration; the pictures are the content.
+            */
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                fade = 0;
+            }
 
             images.forEach(function (src) {
                 var pre = new Image();
                 pre.src = src;
             });
 
-            function show(index) {
-                current = ((index % images.length) + images.length) % images.length;
+            var banded = getComputedStyle(banner);
+            var layer = document.createElement('div');
 
-                banner.style.backgroundImage = 'url("' + images[current] + '")';
+            layer.style.position = 'absolute';
+            layer.style.top = '0';
+            layer.style.right = '0';
+            layer.style.bottom = '0';
+            layer.style.left = '0';
+            /*
+             | Copied from the banner rather than hardcoded to "cover center". If the two
+             | ever disagreed the photograph would visibly jump at the moment the fade
+             | finishes and the banner adopts the picture — the crop has to be identical
+             | on both layers.
+            */
+            layer.style.backgroundSize = banded.backgroundSize;
+            layer.style.backgroundPosition = banded.backgroundPosition;
+            layer.style.backgroundRepeat = 'no-repeat';
+            layer.style.opacity = '0';
+            // Never intercepts a click. The vehicle picker sits over this.
+            layer.style.pointerEvents = 'none';
+            layer.style.zIndex = '0';
+
+            banner.insertBefore(layer, banner.firstChild);
+
+            /*
+             | The layer is positioned, so it would paint over the headings and the picker,
+             | which are static. Lifting the banner's own children above it is what keeps
+             | the content on top — and z-index only has meaning on a positioned element,
+             | hence the relative alongside it. Neither moves anything by a pixel.
+            */
+            Array.prototype.forEach.call(banner.children, function (child) {
+                if (child === layer) return;
+
+                if (getComputedStyle(child).position === 'static') {
+                    child.style.position = 'relative';
+                }
+
+                child.style.zIndex = '1';
+            });
+
+            function commit(src) {
+                banner.style.backgroundImage = 'url("' + src + '")';
 
                 // The theme's lazyload sets the background from data-bg and marks the
                 // element done. Clearing the attribute stops it painting the first
                 // picture back over a later one if it runs again.
                 banner.removeAttribute('data-bg');
 
+                // Hidden again with no transition, so resetting it is invisible rather
+                // than a second fade running backwards over the new picture.
+                layer.style.transition = 'none';
+                layer.style.opacity = '0';
+            }
+
+            function show(index) {
+                var previous = current;
+                current = ((index % images.length) + images.length) % images.length;
+
                 dots.forEach(function (dot, i) {
                     dot.classList.toggle('is-active', i === current);
                 });
+
+                if (fade === 0 || current === previous) {
+                    commit(images[current]);
+
+                    return;
+                }
+
+                // Staged, and NOT collapsible into one block: the layer has to be
+                // transparent and carrying the new picture in one frame, and only then
+                // told to become opaque. Setting both in the same frame gives the browser
+                // nothing to animate from and the fade is skipped entirely.
+                layer.style.transition = 'none';
+                layer.style.opacity = '0';
+                layer.style.backgroundImage = 'url("' + images[current] + '")';
+
+                // Reading a layout property flushes the two lines above, which is what
+                // makes the next frame a real starting point rather than a no-op.
+                void layer.offsetHeight;
+
+                layer.style.transition = 'opacity ' + fade + 'ms ease-in-out';
+                layer.style.opacity = '1';
+
+                /*
+                 | Timed rather than driven by transitionend. If the tab is hidden mid-fade
+                 | the event may never arrive, and the banner would then be left showing an
+                 | old background under a fully opaque layer — the next fade would appear
+                 | to jump. A token makes a stale timeout harmless when a dot is clicked
+                 | part-way through.
+                */
+                var token = ++fadeToken;
+
+                window.setTimeout(function () {
+                    if (token === fadeToken) commit(images[current]);
+                }, fade);
             }
 
             function start() {

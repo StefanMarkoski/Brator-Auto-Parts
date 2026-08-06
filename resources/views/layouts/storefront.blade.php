@@ -53,8 +53,14 @@
     <script src="/assets/js/animation.gsap.js"></script>
     <script src="/assets/js/brator-script.js"></script>
     {{-- Storefront enhancement. Served off disk like the theme's own assets: no
-         bundler touches this side. Everything degrades to a real submit button. --}}
-    <script src="/app/storefront.js" defer></script>
+         bundler touches this side. Everything degrades to a real submit button.
+
+         The ?v= is the file's own modified time, and it is not decoration. Without it
+         the browser keeps serving whatever copy it cached, so a fix ships and returning
+         visitors carry on running the old script — which is exactly how the hero
+         cross-fade appeared not to work while the correct file was already on the
+         server. No bundler touches this file, so nothing else would fingerprint it. --}}
+    <script src="{{ \App\Support\Assets::version('app/storefront.js') }}" defer></script>
 </body>
 
 </html>
