@@ -70,6 +70,40 @@ final class NoTemplatePlaceholdersTest extends TestCase
             .implode("\n  ", $offenders));
     }
 
+    public function test_configured_contact_details_are_shown_and_dialable(): void
+    {
+        // Set on the config rather than read from .env, so this proves the WIRING and cannot
+        // pass or fail depending on whose machine it runs on.
+        config([
+            'shop.contact.phone' => '071234567',
+            'shop.contact.address' => '1420 Woodward Ave, Detroit, MI 48226',
+        ]);
+
+        $html = $this->get('/shop')->assertOk()->getContent();
+
+        $this->assertStringContainsString('071234567', $html);
+        $this->assertStringContainsString('1420 Woodward Ave, Detroit, MI 48226', $html);
+
+        // A number a shopper cannot tap on a phone is half a phone number, and the leading
+        // zero has to survive into the href.
+        $this->assertStringContainsString('href="tel:071234567"', $html);
+    }
+
+    public function test_a_contact_line_with_no_value_is_omitted_not_faked(): void
+    {
+        config(['shop.contact.phone' => null, 'shop.contact.address' => null]);
+
+        $html = $this->get('/shop')->assertOk()->getContent();
+
+        /*
+         | The rule the theme broke: it shipped "1800 500 1234 925" and an Asheville address as
+         | this shop's own details. An empty value has to produce nothing at all — not a bare
+         | "Call us" label with no number after it, and certainly not a placeholder.
+        */
+        $this->assertStringNotContainsString('tel:', $html);
+        $this->assertStringNotContainsString('Call us', $html);
+    }
+
     public function test_no_page_shows_prices_in_dollars(): void
     {
         // The shop trades in denars. A dollar sign means a hardcoded theme price
