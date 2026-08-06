@@ -40,7 +40,45 @@ final class ProductPhotoController
                 'own' => $this->photos->protectedCount($department),
             ]),
             'maxPhotos' => AssignDepartmentPhotosAction::MAX_PHOTOS,
+            'totalProducts' => DB::table('products')->whereNull('deleted_at')->count(),
+            'withOwnPhotos' => DB::table('product_images')
+                ->where('path', 'like', AssignDepartmentPhotosAction::UPLOAD_PREFIX.'%')
+                ->distinct()
+                ->count('product_id'),
         ]);
+    }
+
+    /**
+     * One set of photographs for the whole catalogue.
+     *
+     * Cruder than one per department — a bulb and a brake disc end up showing the same picture —
+     * but it is one click instead of eight, which is what somebody setting up a demo wants. The
+     * URLs are fetched once, not once per department.
+     */
+    public function storeAll(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'urls' => ['required', 'string', 'max:4096'],
+        ]);
+
+        try {
+            $result = $this->photos->assignEverywhere($this->urlsFrom($validated['urls']));
+        } catch (RuntimeException $e) {
+            return redirect()->route('admin.product-photos.index')->with('error', $e->getMessage());
+        }
+
+        $message = sprintf('%d photo%s applied to every product — %s in total.',
+            $result['photos'], $result['photos'] === 1 ? '' : 's',
+            number_format($result['products']));
+
+        if ($result['protected'] > 0) {
+            $message .= sprintf(' %d product%s left alone, %s photographs of %s own.',
+                $result['protected'], $result['protected'] === 1 ? '' : 's',
+                $result['protected'] === 1 ? 'it has' : 'they have',
+                $result['protected'] === 1 ? 'its' : 'their');
+        }
+
+        return redirect()->route('admin.product-photos.index')->with('status', $message);
     }
 
     public function store(Request $request, string $department): RedirectResponse
@@ -51,17 +89,8 @@ final class ProductPhotoController
             'urls' => ['required', 'string', 'max:4096'],
         ]);
 
-        /*
-         | Semicolons and newlines both, because somebody pasting four URLs will use whichever
-         | their clipboard gave them. Commas are NOT a separator — they appear inside URLs.
-        */
-        $urls = array_values(array_filter(array_map(
-            'trim',
-            preg_split('/[;\n\r]+/', $validated['urls']) ?: [],
-        ), fn (string $url): bool => $url !== ''));
-
         try {
-            $result = $this->photos->assign($model, $urls);
+            $result = $this->photos->assign($model, $this->urlsFrom($validated['urls']));
         } catch (RuntimeException $e) {
             return redirect()->route('admin.product-photos.index')->with('error', $e->getMessage());
         }
@@ -95,6 +124,21 @@ final class ProductPhotoController
                 ? "{$model->name} had no bulk photos to remove."
                 : "{$model->name}: {$removed} bulk photo rows removed. Products with photographs of "
                     .'their own are untouched.');
+    }
+
+    /**
+     * Split a pasted block into URLs.
+     *
+     * Semicolons and newlines both, because somebody pasting four URLs will use whichever their
+     * clipboard gave them. Commas are NOT a separator — they appear inside URLs.
+     *
+     * @return list<string>
+     */
+    private function urlsFrom(string $pasted): array
+    {
+        $urls = array_map('trim', preg_split('/[;\n\r]+/', $pasted) ?: []);
+
+        return array_values(array_filter($urls, fn (string $url): bool => $url !== ''));
     }
 
     /** By path, because parts are filed against sub-categories, not the department itself. */

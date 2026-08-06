@@ -71,6 +71,57 @@ final class DepartmentPhotosTest extends TestCase
         $this->assertCount(1, Storage::disk('public')->files('departments'));
     }
 
+    public function test_one_click_can_photograph_the_whole_catalogue(): void
+    {
+        Http::fake(['*' => Http::response($this->jpeg(), 200, ['Content-Type' => 'image/jpeg'])]);
+
+        $expected = Product::query()->count();
+        $this->assertGreaterThan(0, $expected);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.product-photos.all'), ['urls' => self::HOST.'/part.jpg'])
+            ->assertRedirect(route('admin.product-photos.index'))
+            ->assertSessionHas('status');
+
+        // Not one product left showing a placeholder, including any filed under no department at
+        // all — that lone grey square is exactly what gets noticed on a demo.
+        $withoutPhoto = DB::table('products as p')
+            ->whereNull('p.deleted_at')
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
+                ->from('product_images as i')
+                ->whereColumn('i.product_id', 'p.id')
+                ->where('i.path', 'like', 'storage/departments/%'))
+            ->count();
+
+        $this->assertSame(0, $withoutPhoto);
+
+        // Fetched ONCE for the whole catalogue, not once per department: eight identical
+        // downloads of the same file is the obvious way to write this and eight times the wait.
+        Http::assertSentCount(1);
+    }
+
+    public function test_the_whole_catalogue_run_also_spares_a_products_own_photograph(): void
+    {
+        $product = Product::query()->firstOrFail();
+
+        $this->actingAs($this->admin())->post(route('admin.products.images.store', $product->id), [
+            'images' => [UploadedFile::fake()->image('real-part.jpg', 900, 700)],
+        ])->assertRedirect();
+
+        $own = $product->images()->firstOrFail();
+
+        Http::fake(['*' => Http::response($this->jpeg(), 200)]);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.product-photos.all'), ['urls' => self::HOST.'/part.jpg'])
+            ->assertRedirect();
+
+        // The protection is in the shared path, so it holds for the whole-catalogue button too —
+        // which is the one most likely to be pressed after somebody has set up a few products.
+        $this->assertSame([$own->id], $product->images()->pluck('id')->all());
+        $this->assertStringContainsString('left alone', (string) session('status'));
+    }
+
     public function test_the_bulk_photo_becomes_the_card_image_and_replaces_the_placeholder(): void
     {
         Http::fake(['*' => Http::response($this->jpeg(), 200)]);

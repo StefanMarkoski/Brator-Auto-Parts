@@ -24,6 +24,40 @@
         times this runs — that is what makes it safe to press.
     </x-admin.alert>
 
+    {{--
+        The whole-catalogue button, first, because it is the one somebody setting up a demo wants.
+        Cruder than per-department — a bulb and a brake disc end up showing the same picture — so
+        the trade-off is stated rather than left to be discovered.
+    --}}
+    <x-admin.component-card class="mb-6" title="Every product at once"
+        :desc="'One set of photographs for all '.number_format($totalProducts).' products.'">
+        <form method="post" action="{{ route('admin.product-photos.all', [], false) }}" class="space-y-4">
+            @csrf
+
+            <x-admin.field label="Image URLs" name="urls-all"
+                :hint="'One per line, up to '.$maxPhotos.'. Fetched once and applied to the whole catalogue — a brake disc and a bulb will show the same picture, which is the price of one click instead of eight.'">
+                <x-admin.textarea name="urls" rows="2"
+                    placeholder="https://example.com/car-part.jpg" />
+            </x-admin.field>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <x-admin.button type="submit">
+                    Apply to all {{ number_format($totalProducts - $withOwnPhotos) }} products
+                </x-admin.button>
+
+                @if ($withOwnPhotos > 0)
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ $withOwnPhotos }} product{{ $withOwnPhotos === 1 ? '' : 's' }} with
+                        {{ $withOwnPhotos === 1 ? 'a photograph' : 'photographs' }} of
+                        {{ $withOwnPhotos === 1 ? 'its' : 'their' }} own will be skipped.
+                    </p>
+                @endif
+            </div>
+        </form>
+    </x-admin.component-card>
+
+    <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Or one set per department</h3>
+
     <div class="space-y-4">
         @foreach ($departments as $department)
             <x-admin.component-card :title="$department['model']->name"

@@ -54,20 +54,64 @@ final class AssignDepartmentPhotosAction
      */
     public function assign(Category $department, array $urls): array
     {
-        if ($urls === []) {
-            throw new RuntimeException('Give at least one image URL.');
-        }
-
-        if (count($urls) > self::MAX_PHOTOS) {
-            throw new RuntimeException('The product page shows at most '.self::MAX_PHOTOS
-                .' images, so there is no point fetching more.');
-        }
+        $this->assertUsable($urls);
 
         // Fetched BEFORE anything is deleted. A bad URL then leaves the department exactly as it
         // was, rather than stripped of its old photos and given nothing.
-        $images = array_map(fn (string $url): array => $this->remote->fetchInto($url, self::DIRECTORY), $urls);
+        $images = $this->fetchAll($urls);
 
-        $productIds = $this->productsIn($department);
+        $result = $this->applyTo($this->productsIn($department), $images);
+
+        Log::info('catalog.assign_department_photos.success', [
+            'department' => $department->slug,
+            ...$result,
+        ]);
+
+        return $result;
+    }
+
+    /**
+     * The same, for every product in the shop.
+     *
+     * One set of photographs across the whole catalogue is cruder than one per department — a
+     * bulb and a brake disc end up showing the same picture — but it is one click instead of
+     * eight, which is what somebody setting up a demo actually wants. Both entry points exist.
+     *
+     * The URLs are fetched ONCE here, not once per department. Eight identical downloads of the
+     * same file would be the obvious way to write this and eight times the wait.
+     *
+     * @param  list<string>  $urls
+     * @return array{photos: int, products: int, protected: int}
+     *
+     * @throws RuntimeException with a message written for whoever pasted the URLs
+     */
+    public function assignEverywhere(array $urls): array
+    {
+        $this->assertUsable($urls);
+
+        $images = $this->fetchAll($urls);
+
+        /*
+         | Every product, not every product in a department — a product filed under nothing at all
+         | still shows on its own page and in search, and leaving it as the only grey square in the
+         | shop is exactly the kind of gap that gets noticed on a demo.
+        */
+        $productIds = DB::table('products')->whereNull('deleted_at')->pluck('id')->all();
+
+        $result = $this->applyTo($productIds, $images);
+
+        Log::info('catalog.assign_photos_everywhere.success', $result);
+
+        return $result;
+    }
+
+    /**
+     * @param  list<string>  $productIds
+     * @param  list<array{path: string, width: int, height: int, source: string, bytes: int}>  $images
+     * @return array{photos: int, products: int, protected: int}
+     */
+    private function applyTo(array $productIds, array $images): array
+    {
         $protectedIds = $this->productsWithOwnPhotos($productIds);
         $targets = array_values(array_diff($productIds, $protectedIds));
 
@@ -82,18 +126,36 @@ final class AssignDepartmentPhotosAction
 
         $this->deleteOrphanedFiles();
 
-        Log::info('catalog.assign_department_photos.success', [
-            'department' => $department->slug,
-            'photos' => count($images),
-            'products' => count($targets),
-            'protected' => count($protectedIds),
-        ]);
-
         return [
             'photos' => count($images),
             'products' => count($targets),
             'protected' => count($protectedIds),
         ];
+    }
+
+    /**
+     * @param  list<string>  $urls
+     * @return list<array{path: string, width: int, height: int, source: string, bytes: int}>
+     */
+    private function fetchAll(array $urls): array
+    {
+        return array_map(
+            fn (string $url): array => $this->remote->fetchInto($url, self::DIRECTORY),
+            $urls,
+        );
+    }
+
+    /** @param  list<string>  $urls */
+    private function assertUsable(array $urls): void
+    {
+        if ($urls === []) {
+            throw new RuntimeException('Give at least one image URL.');
+        }
+
+        if (count($urls) > self::MAX_PHOTOS) {
+            throw new RuntimeException('The product page shows at most '.self::MAX_PHOTOS
+                .' images, so there is no point fetching more.');
+        }
     }
 
     /**

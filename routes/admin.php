@@ -115,6 +115,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
          | download from an address the poster chose, and then writes thousands of rows.
          */
         Route::get('product-photos', [ProductPhotoController::class, 'index'])->name('product-photos.index');
+        // Declared before the {department} route, or "all" is matched as a department id.
+        Route::post('product-photos/all', [ProductPhotoController::class, 'storeAll'])
+            ->middleware('throttle:20,1')
+            ->name('product-photos.all');
         Route::post('product-photos/{department}', [ProductPhotoController::class, 'store'])
             ->middleware('throttle:20,1')
             ->name('product-photos.store');
