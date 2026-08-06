@@ -23,12 +23,14 @@ class Receipt extends Model
     protected $fillable = [
         'receipt_number', 'customer_id', 'customer_name', 'customer_email',
         'customer_phone', 'shipping_address', 'billing_address',
-        'subtotal_minor', 'vat_minor', 'shipping_minor', 'total_minor',
+        'subtotal_minor', 'discount_minor', 'coupon_code',
+        'vat_minor', 'shipping_minor', 'total_minor',
         'status', 'notes', 'placed_at',
     ];
 
     protected $casts = [
         'subtotal_minor' => MoneyCast::class,
+        'discount_minor' => MoneyCast::class,
         'vat_minor' => MoneyCast::class,
         'shipping_minor' => MoneyCast::class,
         'total_minor' => MoneyCast::class,
@@ -50,6 +52,10 @@ class Receipt extends Model
         'receipt_number', 'subtotal_minor', 'vat_minor', 'shipping_minor',
         'total_minor', 'customer_name', 'customer_email', 'customer_phone',
         'shipping_address', 'billing_address', 'placed_at',
+        // The discount and the code that gave it are money facts too. Leaving them writable
+        // would let somebody change what a customer was charged after the fact, which is the
+        // exact hole this list was written to close.
+        'discount_minor', 'coupon_code',
     ];
 
     protected static function booted(): void

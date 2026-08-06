@@ -32,6 +32,17 @@ Route::get('/search', SearchController::class)->name('search');
 Route::get('/cart', [BasketController::class, 'show'])->name('cart');
 Route::post('/cart/add', [BasketController::class, 'add'])->name('cart.add');
 Route::post('/cart/add-many', [BasketController::class, 'addMany'])->name('cart.add-many');
+/*
+ | Discount codes. DECLARED BEFORE /cart/{line}, and that ordering is the whole point:
+ | "/cart/coupon" matches the {line} wildcard too, so with the routes the other way round
+ | applying a code ran the line-update action with $line = "coupon", found nothing, and
+ | redirected in silence. The same trap as products/create being read as a product id.
+ |
+ | POST rather than a link because it changes session state.
+*/
+Route::post('/cart/coupon', [BasketController::class, 'applyCoupon'])->name('cart.coupon.apply');
+Route::delete('/cart/coupon', [BasketController::class, 'removeCoupon'])->name('cart.coupon.remove');
+
 Route::post('/cart/{line}', [BasketController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{line}', [BasketController::class, 'remove'])->name('cart.remove');
 

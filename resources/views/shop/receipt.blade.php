@@ -57,6 +57,14 @@
                                 <div class="brator-cart-list-items-title"><div class="prodct-info"><h5>Subtotal</h5><p>excluding VAT</p></div></div>
                                 <div class="brator-cart-list-items-subtotal"><p>{{ $receipt->subtotal_minor->format() }}</p></div>
                             </div>
+                                @if (! $receipt->discount_minor->isZero())
+                                    {{-- The receipt has to explain its own total. Without this row the
+                                         VAT and the total look wrong against the subtotal. --}}
+                                    <div class="brator-cart-list-items">
+                                        <div class="brator-cart-list-items-title"><div class="prodct-info"><h5>Discount</h5><p>{{ $receipt->coupon_code }}</p></div></div>
+                                        <div class="brator-cart-list-items-subtotal"><p>−{{ $receipt->discount_minor->format() }}</p></div>
+                                    </div>
+                                @endif
                             <div class="brator-cart-list-items">
                                 <div class="brator-cart-list-items-title"><div class="prodct-info"><h5>VAT</h5><p>{{ (int) config('shop.vat_rate') }}%</p></div></div>
                                 <div class="brator-cart-list-items-subtotal"><p>{{ $receipt->vat_minor->format() }}</p></div>

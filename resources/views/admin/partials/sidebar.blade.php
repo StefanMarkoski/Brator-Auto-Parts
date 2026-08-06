@@ -15,6 +15,7 @@
         ]],
         ['label' => 'Storefront', 'items' => [
             ['name' => 'Homepage', 'route' => 'admin.homepage.index'],
+            ['name' => 'Coupons', 'route' => 'admin.coupons.index'],
         ]],
         ['label' => 'Supply', 'items' => [
             ['name' => 'Imports', 'route' => 'admin.imports.index'],

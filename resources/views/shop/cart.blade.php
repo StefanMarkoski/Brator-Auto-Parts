@@ -143,11 +143,28 @@
                                         <p>{{ $basket->subtotal->format() }}</p>
                                     </div>
                                 </div>
+                                @if ($basket->hasDiscount())
+                                    {{-- Only when it actually discounts something. A zero row for a
+                                         code that has not reached its minimum would read as broken. --}}
+                                    <div class="brator-cart-list-items">
+                                        <div class="brator-cart-list-items-title">
+                                            <div class="prodct-info">
+                                                <h5>Discount</h5>
+                                                <p>{{ $basket->coupon->code }} — {{ $basket->coupon->discount_percent }}% off</p>
+                                            </div>
+                                        </div>
+                                        <div class="brator-cart-list-items-subtotal">
+                                            <p>−{{ $basket->discount->format() }}</p>
+                                        </div>
+                                    </div>
+                                @endif
                                 <div class="brator-cart-list-items">
                                     <div class="brator-cart-list-items-title">
                                         <div class="prodct-info">
                                             <h5>VAT ({{ (int) config('shop.vat_rate') }}%)</h5>
-                                            <p>Added at checkout</p>
+                                            {{-- VAT is charged on the DISCOUNTED goods, so say so
+                                                 rather than leaving the shopper to check the sum. --}}
+                                            <p>{{ $basket->hasDiscount() ? 'On '.$basket->discountedSubtotal()->format().' after discount' : 'Added at checkout' }}</p>
                                         </div>
                                     </div>
                                     <div class="brator-cart-list-items-subtotal">
@@ -222,14 +239,39 @@
 
                         <div class="brator-cart-checkout">
                             <div class="brator-cart-checkout-left">
-                                <div class="brator-cart-checkout-fields">
-                                    <input type="text" placeholder="Coupon codes coming soon" disabled />
-                                    <button type="button" disabled>Apply Coupon</button>
-                                </div>
+                                {{--
+                                    The theme shipped this disabled, reading "coupon codes coming
+                                    soon". It is real now, in the theme's own markup — same classes,
+                                    same place — so nothing is restyled.
+                                --}}
+                                @if ($basket->coupon !== null)
+                                    <div class="brator-cart-checkout-fields">
+                                        <input type="text" value="{{ $basket->coupon->code }}" readonly />
+                                        <button type="submit" form="remove-coupon">Remove</button>
+                                    </div>
+                                    <p>{{ $basket->coupon->describe() }}@unless ($basket->hasDiscount()) — not applied yet @endunless</p>
+                                @else
+                                    <form method="post" action="{{ route('cart.coupon.apply', [], false) }}" class="brator-cart-checkout-fields">
+                                        @csrf
+                                        <input type="text" name="code" value="{{ old('code') }}" placeholder="Discount code" maxlength="10" required />
+                                        <button type="submit">Apply Coupon</button>
+                                    </form>
+                                @endif
+                                @if (session('coupon_error'))
+                                    <p>{{ session('coupon_error') }}</p>
+                                @endif
                             </div>
                             <div class="brator-cart-checkout-right">
                                 <div class="brator-cart-checkout-back"><a href="{{ route('shop.categories', [], false) }}"> Continue Shopping</a></div>
                             </div>
                         </div>
                     </div>
+    @if ($basket->coupon !== null)
+        {{-- Outside every other form: a nested <form> is invalid HTML, the browser drops the inner
+             one, and that is how the clear-filters button ended up submitting the wrong form. --}}
+        <form method="post" id="remove-coupon" action="{{ route('cart.coupon.remove', [], false) }}" hidden>
+            @csrf
+            @method('DELETE')
+        </form>
+    @endif
 @endsection

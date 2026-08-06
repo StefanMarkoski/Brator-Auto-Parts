@@ -13,6 +13,7 @@ use App\Domain\Ordering\Exceptions\PriceChangedException;
 use App\Domain\Ordering\Models\Basket;
 use App\Domain\Ordering\Models\BasketLine;
 use App\Domain\Ordering\Models\Receipt;
+use App\Domain\Ordering\Services\AppliedCoupon;
 use App\Domain\Ordering\Support\DeliveryCharge;
 use App\Support\ValueObjects\Money;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,10 @@ use RuntimeException;
  */
 final class PlaceReceiptAction
 {
-    public function __construct(private RecordStockSaleAction $recordStockSale) {}
+    public function __construct(
+        private RecordStockSaleAction $recordStockSale,
+        private AppliedCoupon $appliedCoupon,
+    ) {}
 
     public function execute(Basket $basket, CheckoutDetails $details): Receipt
     {
@@ -114,10 +118,29 @@ final class PlaceReceiptAction
                 ];
             }
 
+            /*
+             | THE DISCOUNT, recomputed here from the coupon rather than trusted from the cart.
+             |
+             | Re-deriving it is the same discipline as re-checking the price: the cart is a
+             | page, and a page can be old or edited. The coupon is looked up again, its
+             | minimum re-tested against this subtotal, and the amount recomputed — so a code
+             | that stopped qualifying because a line was removed cannot still take money off.
+            */
+            $coupon = $this->appliedCoupon->coupon();
+            $discount = $coupon?->discountOn($subtotal) ?? Money::zero();
+            $discounted = $subtotal->subtract($discount);
+
+            if (! $discount->isZero()) {
+                // VAT on what is actually charged, matching BasketSummary exactly. If these
+                // two ever diverge the cart and the receipt disagree about the tax.
+                $vatTotal = $discounted->vatAt($vatRate);
+            }
+
             // Same rule as the cart, from the same class — these used to be two
             // copies of a pricing rule, which is how a cart and a receipt end up
-            // disagreeing about what someone owes.
-            $shipping = DeliveryCharge::for($subtotal);
+            // disagreeing about what someone owes. Delivery is judged on the DISCOUNTED
+            // subtotal, as the cart shows it.
+            $shipping = DeliveryCharge::for($discounted);
             $vatTotal = $vatTotal->add(DeliveryCharge::vatOn($shipping, $vatRate));
 
             $receipt = Receipt::create([
@@ -127,9 +150,13 @@ final class PlaceReceiptAction
                 'customer_phone' => $details->customerPhone,
                 'shipping_address' => $details->shippingAddress,
                 'subtotal_minor' => $subtotal->toPrimitive(),
+                // Snapshotted, like every other figure: the receipt must still read correctly
+                // after the coupon is deactivated, repriced or deleted outright.
+                'discount_minor' => $discount->toPrimitive(),
+                'coupon_code' => $discount->isZero() ? null : $coupon?->code,
                 'vat_minor' => $vatTotal->toPrimitive(),
                 'shipping_minor' => $shipping->toPrimitive(),
-                'total_minor' => $subtotal->add($vatTotal)->add($shipping)->toPrimitive(),
+                'total_minor' => $discounted->add($vatTotal)->add($shipping)->toPrimitive(),
                 // The fake payment step. A real gateway would set the same state.
                 'status' => ReceiptStatus::Paid,
                 'notes' => $details->notes,
@@ -149,6 +176,12 @@ final class PlaceReceiptAction
                     reference: $receipt->id,
                     note: 'Receipt '.$receipt->receipt_number,
                 );
+            }
+
+            if (! $discount->isZero() && $coupon !== null) {
+                // Counted only when it actually discounted something, so the number means
+                // "orders this saved money on" rather than "times somebody typed it".
+                $coupon->increment('times_used');
             }
 
             $basket->lines()->delete();

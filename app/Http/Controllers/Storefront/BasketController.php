@@ -11,7 +11,9 @@ use App\Domain\Ordering\Actions\UpdateBasketLineAction;
 use App\Domain\Ordering\Http\Requests\AddToBasketRequest;
 use App\Domain\Ordering\Http\Requests\UpdateBasketLineRequest;
 use App\Domain\Ordering\Models\BasketLine;
+use App\Domain\Ordering\Models\Coupon;
 use App\Domain\Ordering\Queries\Internal\GetBasketSummaryQuery;
+use App\Domain\Ordering\Services\AppliedCoupon;
 use App\Domain\Ordering\Services\BasketResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +29,7 @@ final class BasketController
         private AddProductToBasketAction $addAction,
         private UpdateBasketLineAction $updateAction,
         private PruneOrphanedBasketLinesAction $pruneOrphans,
+        private AppliedCoupon $appliedCoupon,
     ) {}
 
     public function show(): View
@@ -149,5 +152,45 @@ final class BasketController
         }
 
         return $line;
+    }
+
+    /**
+     * Apply a discount code.
+     *
+     * A code below its minimum is still ACCEPTED and kept, with a message saying how much
+     * more is needed — dropping it silently would leave a shopper who typed a valid code
+     * staring at an unchanged total with no explanation.
+     */
+    public function applyCoupon(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:10'],
+        ]);
+
+        $coupon = Coupon::findUsable($validated['code']);
+
+        if ($coupon === null) {
+            // Deliberately the same message whether the code never existed or has been turned
+            // off: telling the difference lets somebody probe for retired codes.
+            return back()->with('coupon_error', 'That code is not valid.');
+        }
+
+        $basket = $this->baskets->current();
+        $summary = $this->summary->execute($basket);
+
+        $this->appliedCoupon->apply($coupon);
+
+        $reason = $coupon->reasonItCannotApply($summary->subtotal);
+
+        return $reason === null
+            ? back()->with('status', "{$coupon->code} applied — {$coupon->discount_percent}% off.")
+            : back()->with('coupon_error', $reason);
+    }
+
+    public function removeCoupon(): RedirectResponse
+    {
+        $this->appliedCoupon->clear();
+
+        return back()->with('status', 'Discount code removed.');
     }
 }

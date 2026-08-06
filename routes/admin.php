@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CatalogController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\ImportController;
@@ -74,6 +75,11 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('brands', [CatalogController::class, 'storeBrand'])->name('brands.store');
         Route::put('brands/{brand}', [CatalogController::class, 'updateBrand'])->name('brands.update');
         Route::delete('brands/{brand}', [CatalogController::class, 'destroyBrand'])->name('brands.destroy');
+
+        Route::get('coupons', [CouponController::class, 'index'])->name('coupons.index');
+        Route::post('coupons', [CouponController::class, 'store'])->name('coupons.store');
+        Route::put('coupons/{coupon}', [CouponController::class, 'update'])->name('coupons.update');
+        Route::delete('coupons/{coupon}', [CouponController::class, 'destroy'])->name('coupons.destroy');
 
         Route::get('homepage', [HomepageController::class, 'index'])->name('homepage.index');
         Route::put('homepage/{section}', [HomepageController::class, 'update'])->name('homepage.update');

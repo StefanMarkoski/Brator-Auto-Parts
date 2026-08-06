@@ -8,9 +8,12 @@ use App\Domain\Ordering\DTOs\BasketLineSummary;
 use App\Domain\Ordering\DTOs\BasketSummary;
 use App\Domain\Ordering\Models\Basket;
 use App\Domain\Ordering\Models\BasketLine;
+use App\Domain\Ordering\Services\AppliedCoupon;
 
 final class GetBasketSummaryQuery
 {
+    public function __construct(private AppliedCoupon $appliedCoupon) {}
+
     public function execute(?Basket $basket): BasketSummary
     {
         if ($basket === null) {
@@ -22,7 +25,20 @@ final class GetBasketSummaryQuery
             ->filter()
             ->values();
 
-        return BasketSummary::fromLines($lines, (float) config('shop.vat_rate'));
+        /*
+         | The coupon is read here, in the ONE place the basket's arithmetic is built, so the
+         | cart page, the header total and the checkout cannot disagree about the discount.
+         | The same reasoning that put the delivery rule in DeliveryCharge.
+         |
+         | Passed even when it does not currently apply — the summary keeps it so the cart can
+         | say "spend a little more and this saves you X" rather than silently ignoring a code
+         | the shopper has entered.
+        */
+        return BasketSummary::fromLines(
+            $lines,
+            (float) config('shop.vat_rate'),
+            $this->appliedCoupon->coupon(),
+        );
     }
 
     /** Just the badge number for the header, without loading the whole basket. */

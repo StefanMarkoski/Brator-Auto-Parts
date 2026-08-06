@@ -24,7 +24,10 @@
             </tr>
         @endforeach
         <tr><td colspan="4" align="right">Subtotal (excl. VAT)</td><td align="right">{{ $receipt->subtotal_minor->format() }}</td></tr>
-        <tr><td colspan="4" align="right">VAT {{ (int) config('shop.vat_rate') }}%</td><td align="right">{{ $receipt->vat_minor->format() }}</td></tr>
+        @if (! $receipt->discount_minor->isZero())
+                <tr><td colspan="4" align="right">Discount ({{ $receipt->coupon_code }})</td><td align="right">-{{ $receipt->discount_minor->format() }}</td></tr>
+            @endif
+            <tr><td colspan="4" align="right">VAT {{ (int) config('shop.vat_rate') }}%</td><td align="right">{{ $receipt->vat_minor->format() }}</td></tr>
         <tr><td colspan="4" align="right">Delivery</td><td align="right">{{ $receipt->shipping_minor->isZero() ? 'Free' : $receipt->shipping_minor->format() }}</td></tr>
         <tr style="font-weight:bold;background:#f4f4f4"><td colspan="4" align="right">Total</td><td align="right">{{ $receipt->total_minor->format() }}</td></tr>
     </table>

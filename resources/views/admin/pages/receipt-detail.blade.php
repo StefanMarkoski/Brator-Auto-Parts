@@ -48,6 +48,9 @@
                 </div>
                 <dl class="ml-auto max-w-xs space-y-2 text-sm">
                     <div class="flex justify-between"><dt class="text-gray-500">Subtotal (net)</dt><dd>{{ $receipt->subtotal_minor->format() }}</dd></div>
+                    @if (! $receipt->discount_minor->isZero())
+                        <div class="flex justify-between"><dt class="text-gray-500">Discount ({{ $receipt->coupon_code }})</dt><dd>−{{ $receipt->discount_minor->format() }}</dd></div>
+                    @endif
                     <div class="flex justify-between"><dt class="text-gray-500">VAT</dt><dd>{{ $receipt->vat_minor->format() }}</dd></div>
                     <div class="flex justify-between"><dt class="text-gray-500">Delivery</dt><dd>{{ $receipt->shipping_minor->isZero() ? 'Free' : $receipt->shipping_minor->format() }}</dd></div>
                     <div class="flex justify-between border-t border-gray-100 pt-2 font-semibold dark:border-gray-800">
