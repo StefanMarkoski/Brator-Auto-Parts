@@ -40,7 +40,23 @@ final class ThemeFidelityTest extends TestCase
 
         $rendered = $this->get('/')->assertOk()->getContent();
 
-        $themeClasses = $this->classesIn($this->allReferenceMarkup());
+        /*
+         | THE VOCABULARY IS THE THEME'S MARKUP *AND* THE THEME'S OWN STYLESHEETS.
+         |
+         | It used to be the markup alone, and that was too narrow in one specific way: the
+         | theme drives its carousels with Splide, and Splide BUILDS its dots in JavaScript —
+         | so `splide__pagination` and friends are styled by splide.min.css, which we ship
+         | unmodified, yet appear in none of the static reference pages.
+         |
+         | The rule being guarded is "introduce no styling the theme does not already have".
+         | A class the purchased CSS defines carries purchased styling by definition, so
+         | reusing one adds nothing new — while inventing `my-cool-banner` still fails here,
+         | which is the case this test exists for.
+        */
+        $themeClasses = array_unique(array_merge(
+            $this->classesIn($this->allReferenceMarkup()),
+            $this->classesDefinedInThemeCss(),
+        ));
         $pageClasses = $this->classesIn($rendered);
 
         $invented = array_values(array_diff($pageClasses, $themeClasses));
@@ -150,6 +166,31 @@ final class ThemeFidelityTest extends TestCase
         }
 
         return $markup;
+    }
+
+    /**
+     * Every class name the purchased stylesheets define a rule for.
+     *
+     * Read from public/assets/css, which is the theme's CSS exactly as bought — nothing in the
+     * project writes to it, and the load-order test below pins which files those are.
+     *
+     * @return list<string>
+     */
+    private function classesDefinedInThemeCss(): array
+    {
+        $classes = [];
+
+        foreach (glob(public_path('assets/css').'/*.css') as $file) {
+            // Class selectors only: .foo, .foo-bar, .foo__baz. Ids, elements and
+            // pseudo-classes are not class names and must not widen the vocabulary.
+            preg_match_all('/\.(-?[_a-zA-Z][_a-zA-Z0-9-]*)/', (string) file_get_contents($file), $matches);
+
+            foreach ($matches[1] as $class) {
+                $classes[$class] = true;
+            }
+        }
+
+        return array_keys($classes);
     }
 
     /** @return list<string> */

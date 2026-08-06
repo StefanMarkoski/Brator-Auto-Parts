@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CatalogController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\HeroImageController;
 use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ProductController;
@@ -84,6 +85,17 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('homepage', [HomepageController::class, 'index'])->name('homepage.index');
         Route::put('homepage/{section}', [HomepageController::class, 'update'])->name('homepage.update');
         Route::put('homepage/{section}/move', [HomepageController::class, 'move'])->name('homepage.move');
+
+        /*
+         | Hero pictures. Throttled because each POST makes the server download a file from an
+         | address the poster chose, and an unthrottled endpoint of that shape is a free
+         | outbound-request generator for anybody who reaches the admin.
+         */
+        Route::post('homepage/hero-images', [HeroImageController::class, 'store'])
+            ->middleware('throttle:20,1')
+            ->name('homepage.hero-images.store');
+        Route::delete('homepage/hero-images/{banner}', [HeroImageController::class, 'destroy'])
+            ->name('homepage.hero-images.destroy');
 
         Route::get('imports', [CatalogController::class, 'imports'])->name('imports.index');
 

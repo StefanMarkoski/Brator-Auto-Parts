@@ -108,6 +108,92 @@
                         <x-admin.button type="submit" size="sm">Save section</x-admin.button>
                     </div>
                 </form>
+
+                @if ($section->section_type === 'hero_banner')
+                    {{--
+                        The hero's pictures live inside the hero section's own card rather than in
+                        a card of their own, because that is where somebody looks for them.
+                    --}}
+                    <div class="mt-6 space-y-4 border-t border-gray-100 pt-5 dark:border-gray-800">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-800 dark:text-white/90">Pictures</h4>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                @if ($heroImages->count() > 1)
+                                    {{ $heroImages->count() }} pictures, so the banner rotates every
+                                    5 seconds and shows a row of dots you can click to jump.
+                                @elseif ($heroImages->count() === 1)
+                                    One picture, so it sits still and there are no dots. Add another
+                                    and the banner starts rotating on its own.
+                                @else
+                                    None yet, so the banner falls back to the theme's own background.
+                                @endif
+                            </p>
+                        </div>
+
+                        @if ($heroImages->isNotEmpty())
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                @foreach ($heroImages as $index => $image)
+                                    <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
+                                        {{-- object-cover, the same way the storefront paints it, so
+                                             this preview shows the crop the shopper will see rather
+                                             than a squashed whole picture. --}}
+                                        <img src="/{{ $image->image_path }}" alt=""
+                                            class="h-28 w-full bg-gray-100 object-cover dark:bg-gray-900" />
+
+                                        <div class="space-y-2 p-3">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-xs text-gray-400">#{{ $index + 1 }} in the rotation</span>
+                                                <span class="text-xs {{ $image->isComfortableForHero() ? 'text-gray-500 dark:text-gray-400' : 'text-warning-600 dark:text-warning-400' }}">
+                                                    {{ $image->dimensions() ?? 'theme asset' }}
+                                                </span>
+                                            </div>
+
+                                            @unless ($image->isComfortableForHero())
+                                                <p class="text-xs text-warning-600 dark:text-warning-400">
+                                                    Narrower than {{ $comfortableWidth }}px, so it is
+                                                    enlarged to fill the banner and will look soft.
+                                                </p>
+                                            @endunless
+
+                                            @if ($image->source_url)
+                                                <p class="truncate text-xs text-gray-400" title="{{ $image->source_url }}">
+                                                    from {{ parse_url($image->source_url, PHP_URL_HOST) }}
+                                                </p>
+                                            @endif
+
+                                            <x-admin.confirm-action
+                                                :action="route('admin.homepage.hero-images.destroy', $image->id, false)"
+                                                method="DELETE"
+                                                label="Remove"
+                                                trigger-class="text-xs font-medium text-error-600 hover:underline dark:text-error-400"
+                                                title="Remove this picture?"
+                                                message="It comes off the banner straight away. The file is deleted too, so you would need the URL again to put it back."
+                                                confirm="Yes, remove it" />
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        {{-- Its own form, a sibling of the section form above — never nested. A
+                             form inside a form posts to the outer one. --}}
+                        <form method="post" action="{{ route('admin.homepage.hero-images.store', [], false) }}"
+                            class="flex flex-wrap items-end gap-3">
+                            @csrf
+
+                            <div class="min-w-[16rem] flex-1">
+                                <x-admin.field label="Add a picture by URL" name="url"
+                                    :hint="'The file is downloaded and served from this shop, not linked to. '
+                                        .$comfortableWidth.'px wide or more looks best. JPEG, PNG, WebP, GIF or AVIF.'">
+                                    <x-admin.input name="url" type="url" :value="old('url')"
+                                        placeholder="https://example.com/car.webp" required />
+                                </x-admin.field>
+                            </div>
+
+                            <x-admin.button type="submit" size="sm">Add picture</x-admin.button>
+                        </form>
+                    </div>
+                @endif
             </x-admin.component-card>
         @endforeach
     </div>

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Catalog\Models\ProductCollection;
+use App\Domain\Content\Actions\ImportHeroImageAction;
 use App\Domain\Content\Actions\SaveHomepageSectionAction;
+use App\Domain\Content\Models\Banner;
 use App\Domain\Content\Models\HomepageSection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +38,14 @@ final class HomepageController
                 ->get(),
             'collections' => ProductCollection::query()->orderBy('name')->get(['id', 'name']),
             'collectionBacked' => SaveHomepageSectionAction::COLLECTION_BACKED,
+            // Every hero picture, not only the live ones, so a switched-off or scheduled image
+            // is still visible to whoever manages them rather than silently absent.
+            'heroImages' => Banner::query()
+                ->where('placement', ImportHeroImageAction::PLACEMENT)
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get(),
+            'comfortableWidth' => ImportHeroImageAction::COMFORTABLE_WIDTH,
         ]);
     }
 

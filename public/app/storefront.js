@@ -256,11 +256,105 @@
         });
     }
 
+    /* ------------------------------------------------------------------ *
+     | The homepage hero: rotate its background picture.
+     |
+     | The theme renders this banner as a background with the headings and the
+     | vehicle picker layered on top, so there is no slider to drive — the
+     | picture IS the container's background-image. Swapping that leaves the
+     | overlay untouched and needs no styling of its own.
+     |
+     | Every image is preloaded before the first swap. Assigning a
+     | background-image the browser has not fetched paints the element empty
+     | while it downloads, which on a hero reads as the page breaking.
+     * ------------------------------------------------------------------ */
+    function bindHeroRotation() {
+        document.querySelectorAll('[data-hero-rotate]').forEach(function (banner) {
+            if (banner.dataset.heroBound) return;
+            banner.dataset.heroBound = '1';
+
+            var images;
+            try {
+                images = JSON.parse(banner.getAttribute('data-hero-rotate'));
+            } catch (e) {
+                // A malformed list leaves the banner exactly as the server rendered it:
+                // one background, no rotation. Never a blank hero.
+                return;
+            }
+
+            if (!Array.isArray(images) || images.length < 2) return;
+
+            var dots = banner.querySelectorAll('[data-hero-page]');
+            var interval = parseInt(banner.getAttribute('data-hero-interval'), 10) || 5000;
+            var current = 0;
+            var timer = null;
+
+            images.forEach(function (src) {
+                var pre = new Image();
+                pre.src = src;
+            });
+
+            function show(index) {
+                current = ((index % images.length) + images.length) % images.length;
+
+                banner.style.backgroundImage = 'url("' + images[current] + '")';
+
+                // The theme's lazyload sets the background from data-bg and marks the
+                // element done. Clearing the attribute stops it painting the first
+                // picture back over a later one if it runs again.
+                banner.removeAttribute('data-bg');
+
+                dots.forEach(function (dot, i) {
+                    dot.classList.toggle('is-active', i === current);
+                });
+            }
+
+            function start() {
+                stop();
+                timer = window.setInterval(function () {
+                    show(current + 1);
+                }, interval);
+            }
+
+            function stop() {
+                if (timer !== null) {
+                    window.clearInterval(timer);
+                    timer = null;
+                }
+            }
+
+            dots.forEach(function (dot) {
+                dot.addEventListener('click', function () {
+                    show(parseInt(dot.getAttribute('data-hero-page'), 10) || 0);
+                    // Restarted, not merely left running: clicking a dot and having it
+                    // move on half a second later feels broken.
+                    start();
+                });
+            });
+
+            /*
+             | Paused while the tab is hidden. A background tab still fires setInterval,
+             | so a shop left open in another tab would spend the afternoon cycling
+             | pictures nobody is looking at.
+            */
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) {
+                    stop();
+                } else {
+                    start();
+                }
+            });
+
+            start();
+        });
+    }
+
     function init() {
         bindAutoSubmit();
         bindListFilters();
         bindBundleTotals();
         bindQuantitySteppers();
+        bindHeroRotation();
     }
 
     if (document.readyState === 'loading') {
