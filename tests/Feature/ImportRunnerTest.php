@@ -12,6 +12,7 @@ use App\Domain\CatalogImport\Models\ImportRun;
 use App\Models\Enums\UserRole;
 use App\Models\User;
 use Database\Seeders\CatalogStructureSeeder;
+use Database\Seeders\FitmentSeederSmall;
 use Database\Seeders\ProductSeederSmall;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -302,6 +303,240 @@ final class ImportRunnerTest extends TestCase
         ])->assertRedirect('/admin/login');
 
         $this->assertSame(0, ImportRun::query()->count());
+    }
+
+    public function test_the_fits_column_makes_an_imported_part_findable_by_car(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $golf = $this->variantNamed('Volkswagen', 'Golf V', '1.9 TDI');
+
+        $run = $this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock,fits
+            XG-FIT-1,XGate Brake Disc Front,XGate,brake-discs,2450.00,24,Volkswagen Golf V 1.9 TDI
+            CSV);
+
+        $this->apply($run);
+
+        $product = Product::query()->where('sku', 'XG-FIT-1')->firstOrFail();
+
+        // The whole reason this column exists: without it an imported part is invisible the
+        // moment a shopper picks their car, which on this shop is the main way in.
+        $this->assertTrue(
+            DB::table('product_vehicle_fitments')
+                ->where('product_id', $product->id)
+                ->where('vehicle_variant_id', $golf)
+                ->exists(),
+            'The fits column did not record any fitment.'
+        );
+    }
+
+    public function test_an_engine_code_identifies_a_car_when_only_one_uses_it(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $code = DB::table('vehicle_variants')
+            ->select('engine_code')
+            ->whereNotNull('engine_code')
+            ->groupBy('engine_code')
+            ->havingRaw('COUNT(*) = 1')
+            ->value('engine_code');
+
+        $this->assertNotNull($code, 'No unshared engine code to test with.');
+
+        $expected = (int) DB::table('vehicle_variants')->where('engine_code', $code)->value('id');
+
+        $run = $this->stage(<<<CSV
+            sku,name,brand,category,price_net,stock,fits
+            XG-FIT-2,XGate Oil Filter,XGate,oil-filters,410.00,85,{$code}
+            CSV);
+
+        $this->apply($run);
+
+        // Engine codes are what a real supplier catalogue carries, so a feed has to be able to
+        // use them rather than spelling out make and model.
+        $product = Product::query()->where('sku', 'XG-FIT-2')->firstOrFail();
+
+        $this->assertSame([$expected], DB::table('product_vehicle_fitments')
+            ->where('product_id', $product->id)
+            ->pluck('vehicle_variant_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all());
+    }
+
+    public function test_an_engine_code_shared_by_two_models_matches_nothing_and_says_why(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $shared = DB::table('vehicle_variants')
+            ->select('engine_code')
+            ->whereNotNull('engine_code')
+            ->groupBy('engine_code')
+            ->havingRaw('COUNT(*) > 1')
+            ->value('engine_code');
+
+        $this->assertNotNull($shared, 'No shared engine code in the seed to test with.');
+
+        $run = $this->stage(<<<CSV
+            sku,name,brand,category,price_net,stock,fits
+            XG-FIT-3,XGate Brake Pad Set,XGate,brake-pads,1450.00,40,{$shared}
+            CSV);
+
+        $this->apply($run);
+
+        $product = Product::query()->where('sku', 'XG-FIT-3')->firstOrFail();
+
+        /*
+         | Guessing would be the wrong kind of helpful. The same engine goes in several models,
+         | and a brake pad for one is not a brake pad for another — so an ambiguous code records
+         | nothing at all rather than quietly picking whichever row came back first.
+        */
+        $this->assertSame(0, DB::table('product_vehicle_fitments')
+            ->where('product_id', $product->id)->count());
+
+        $error = (string) $run->fresh()->stagingRows()->value('error');
+
+        $this->assertStringContainsString($shared, $error);
+        $this->assertStringContainsString('shared by more than one model', $error);
+        // And the row still imported: fitment is supplementary, not a reason to reject a part.
+        $this->assertNotNull($product->id);
+    }
+
+    public function test_an_unrecognised_vehicle_is_named_back_and_the_part_still_imports(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $run = $this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock,fits
+            XG-FIT-4,XGate Cabin Filter,XGate,cabin-filters,690.00,52,Tesla Cybertruck 4.0 EV
+            CSV);
+
+        $this->apply($run);
+
+        $this->assertSame(1, Product::query()->where('sku', 'XG-FIT-4')->count(),
+            'A typo in the fits column must not stop the part importing.');
+
+        $error = (string) $run->fresh()->stagingRows()->value('error');
+
+        // Named, not counted. "1 unrecognised vehicle" does not tell anybody which cell to fix.
+        $this->assertStringContainsString('Tesla Cybertruck 4.0 EV', $error);
+    }
+
+    public function test_re_running_a_feed_does_not_duplicate_fitment(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $csv = <<<'CSV'
+            sku,name,brand,category,price_net,stock,fits
+            XG-FIT-5,XGate Bulb H7,XGate,bulbs,290.00,150,Volkswagen Golf V 1.9 TDI
+            CSV;
+
+        $this->apply($this->stage($csv));
+        $this->apply($this->stage($csv));
+
+        $product = Product::query()->where('sku', 'XG-FIT-5')->firstOrFail();
+
+        // A feed that is re-run daily must not grow the table every day, and must not fail on
+        // a duplicate key and abandon the rest of the file.
+        $this->assertSame(1, DB::table('product_vehicle_fitments')
+            ->where('product_id', $product->id)->count());
+    }
+
+    public function test_fitment_is_added_not_replaced(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $golf = $this->variantNamed('Volkswagen', 'Golf V', '1.9 TDI');
+        $passat = $this->variantNamed('Volkswagen', 'Passat B6', '2.0 TDI');
+
+        $this->apply($this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock,fits
+            XG-FIT-6,XGate Brake Fluid,XGate,brake-fluid,320.00,120,Volkswagen Golf V 1.9 TDI
+            CSV));
+
+        $this->apply($this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock,fits
+            XG-FIT-6,XGate Brake Fluid,XGate,brake-fluid,320.00,120,Volkswagen Passat B6 2.0 TDI
+            CSV));
+
+        $product = Product::query()->where('sku', 'XG-FIT-6')->firstOrFail();
+
+        // The second feed did not know about the first. Syncing would have deleted the Golf,
+        // the same way syncing categories would delete ones a human attached.
+        $recorded = DB::table('product_vehicle_fitments')
+            ->where('product_id', $product->id)
+            ->pluck('vehicle_variant_id')
+            ->map(fn ($id): int => (int) $id)
+            ->sort()->values()->all();
+
+        $this->assertSame([min($golf, $passat), max($golf, $passat)], $recorded);
+    }
+
+    public function test_the_preview_reports_bad_vehicles_before_anything_is_written(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $run = $this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock,fits
+            XG-FIT-7,XGate Shock Absorber,XGate,shock-absorbers,4300.00,14,Tesla Cybertruck 4.0 EV
+            CSV);
+
+        // Counted before, not compared against zero: the seed has its own fitment, and what
+        // matters is that the PREVIEW added none of its own.
+        $before = DB::table('product_vehicle_fitments')->count();
+
+        // The preview's job is to say what is wrong BEFORE somebody commits the file — a
+        // problem only discovered on apply is a problem discovered too late.
+        $preview = $this->actingAs($this->admin())
+            ->get("/admin/imports/{$run->id}")
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Tesla Cybertruck 4.0 EV', $preview);
+        $this->assertSame($before, DB::table('product_vehicle_fitments')->count(),
+            'The preview wrote fitment rows. A preview must write nothing at all.');
+        $this->assertSame(0, Product::query()->where('sku', 'XG-FIT-7')->count());
+    }
+
+    public function test_the_shipped_xgate_feed_gives_every_part_fitment(): void
+    {
+        $this->seed(FitmentSeederSmall::class);
+
+        $run = $this->stage(file_get_contents(base_path('database/fixtures/xgate-feed.csv')));
+
+        $this->apply($run);
+
+        /*
+         | The fixture is what gets demonstrated, so it has to be right: every row names real
+         | cars. A silent typo here would show as a part that vanishes the moment a car is
+         | picked, which is the exact failure the fits column was added to fix.
+        */
+        $errors = $run->fresh()->stagingRows()
+            ->whereNotNull('error')
+            ->pluck('error')
+            ->all();
+
+        $this->assertSame([], $errors, "The shipped feed has fitment problems:\n".implode("\n", $errors));
+
+        $withoutFitment = Product::query()
+            ->where('sku', 'like', 'XG-%')
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
+                ->from('product_vehicle_fitments')
+                ->whereColumn('product_vehicle_fitments.product_id', 'products.id'))
+            ->pluck('sku')
+            ->all();
+
+        $this->assertSame([], $withoutFitment,
+            'These rows of the shipped feed got no fitment: '.implode(', ', $withoutFitment));
+    }
+
+    private function variantNamed(string $make, string $model, string $variant): int
+    {
+        return (int) DB::table('vehicle_variants as v')
+            ->join('vehicle_models as mo', 'mo.id', '=', 'v.model_id')
+            ->join('vehicle_makes as mk', 'mk.id', '=', 'mo.make_id')
+            ->where('mk.name', $make)->where('mo.name', $model)->where('v.name', $variant)
+            ->value('v.id');
     }
 
     /** Uploads a CSV and returns the staged run. Heredoc indentation is stripped. */

@@ -41,7 +41,19 @@
                 <p><code>sku</code>, <code>name</code> and <code>price_net</code> are required.
                     <code>brand</code>, <code>category</code>, <code>sale_price</code>,
                     <code>stock</code>, <code>condition</code>, <code>short_description</code> and
-                    <code>part_number</code> are optional. Any other column is ignored.</p>
+                    <code>part_number</code> and <code>fits</code> are optional. Any other column is
+                    ignored.</p>
+                <p class="mt-2"><code>fits</code> is which cars the part fits — the only way to set
+                    fitment, and what makes a part findable through the Year/Make/Model picker.
+                    Separate several with a semicolon, and write each either as an engine code or in
+                    full:</p>
+                <p class="mt-1"><code>Opel Astra H 1.7 CDTI;Z19DT;Volkswagen Golf V 1.9 TDI</code></p>
+                <p class="mt-2">A part with no <code>fits</code> still imports and still sells — it
+                    just will not appear once a shopper picks their car. Fitment is <strong>added</strong>,
+                    never replaced, so a second feed cannot delete what a first one recorded. An
+                    engine code shared by more than one model matches <strong>nothing</strong> and is
+                    reported: the same engine in a different car often takes a different part, so
+                    write the make, model and engine in that case.</p>
                 <p class="mt-2">A brand we do not have is <strong>created</strong>, so a new supplier
                     appears in the shop's brand filter on its own. A category that does not exist is
                     <strong>refused</strong> — a feed does not get to invent departments.</p>

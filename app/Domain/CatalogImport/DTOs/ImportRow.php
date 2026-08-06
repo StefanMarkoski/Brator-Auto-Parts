@@ -16,7 +16,7 @@ final readonly class ImportRow
     /** The columns a feed may supply. Anything else in the file is ignored, not an error. */
     public const COLUMNS = [
         'sku', 'name', 'brand', 'category', 'price_net', 'sale_price',
-        'stock', 'condition', 'short_description', 'part_number',
+        'stock', 'condition', 'short_description', 'part_number', 'fits',
     ];
 
     /** The ones without which a row cannot be a product. */
@@ -33,6 +33,12 @@ final readonly class ImportRow
         public ?string $condition,
         public ?string $shortDescription,
         public ?string $partNumber,
+        /**
+         * Which vehicles this part fits — engine codes or written-out names, separated by
+         * semicolons. Optional: a feed that does not carry fitment still imports products,
+         * they simply will not be findable by car.
+         */
+        public ?string $fits,
         /** 1-based line number in the uploaded file, for error messages a human can act on. */
         public int $line,
     ) {}
@@ -63,6 +69,7 @@ final readonly class ImportRow
             condition: $get('condition'),
             shortDescription: $get('short_description'),
             partNumber: $get('part_number'),
+            fits: $get('fits'),
             line: (int) ($values['line'] ?? $line),
         );
     }
@@ -81,8 +88,28 @@ final readonly class ImportRow
             'condition' => $this->condition,
             'short_description' => $this->shortDescription,
             'part_number' => $this->partNumber,
+            'fits' => $this->fits,
             'line' => $this->line,
         ];
+    }
+
+    /**
+     * The vehicles this row claims to fit, one per entry.
+     *
+     * Semicolon-separated, because commas turn up inside vehicle names and a comma-separated
+     * list inside a CSV cell is a quoting problem waiting to happen.
+     *
+     * @return list<string>
+     */
+    public function fitsReferences(): array
+    {
+        if ($this->fits === null) {
+            return [];
+        }
+
+        $parts = array_map('trim', explode(';', $this->fits));
+
+        return array_values(array_filter($parts, fn (string $part): bool => $part !== ''));
     }
 
     /**

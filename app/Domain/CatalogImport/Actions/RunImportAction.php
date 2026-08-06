@@ -15,6 +15,7 @@ use App\Domain\CatalogImport\Enums\ImportRunStatus;
 use App\Domain\CatalogImport\Enums\StagingRowOutcome;
 use App\Domain\CatalogImport\Models\ImportRun;
 use App\Domain\CatalogImport\Models\ProductFieldOverride;
+use App\Domain\Fitment\Actions\SetProductFitmentAction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -48,6 +49,12 @@ final class RunImportAction
     public function __construct(
         private CreateProductAction $createProduct,
         private AdjustStockAction $adjustStock,
+        /*
+         | Fitment's own action, not SQL written here. Which vehicles exist and what identifies
+         | one is Fitment's business; the importer's business is reading a file. It is held for
+         | the whole run because it caches the vehicle list, which is the expensive part.
+        */
+        private SetProductFitmentAction $setFitment,
     ) {}
 
     /**
@@ -166,9 +173,69 @@ final class RunImportAction
 
         $existing = Product::withTrashed()->where('sku', $row->sku)->first();
 
-        return $existing === null
+        [$result, $productId, $error] = $existing === null
             ? $this->createFrom($row, $brandId, $categoryId, $dryRun, $actorId)
             : $this->updateFrom($row, $existing, $brandId, $categoryId, $dryRun, $actorId);
+
+        // Fitment last, and once for both paths. A part is a product first: if the vehicle
+        // names are wrong the row still imports and still sells, it just cannot be found by
+        // car — so this reports, it never fails the row.
+        $fitmentNote = $this->applyFitment($row, $productId, $dryRun);
+
+        if ($fitmentNote !== null) {
+            $error = $error === null ? $fitmentNote : $error.'; '.$fitmentNote;
+        }
+
+        return [$result, $productId, $error];
+    }
+
+    /**
+     * Attach the row's vehicles, and say so if any name was not recognised.
+     *
+     * The unrecognised ones are named back, not counted. "4 vehicles matched" tells whoever
+     * uploaded the file nothing they can act on; "unknown vehicle: BXZ" tells them there is a
+     * typo in one cell.
+     */
+    private function applyFitment(ImportRow $row, ?string $productId, bool $dryRun): ?string
+    {
+        $references = $row->fitsReferences();
+
+        if ($references === []) {
+            return null;
+        }
+
+        $result = $this->setFitment->apply($productId, $references, $dryRun);
+
+        $problems = [];
+
+        if ($result['unknown'] !== []) {
+            $problems[] = 'unrecognised vehicle'.(count($result['unknown']) === 1 ? '' : 's')
+                .': '.$this->few($result['unknown']);
+        }
+
+        if ($result['ambiguous'] !== []) {
+            // Named separately from "unrecognised", because the fix is different: the code is
+            // real, it just names more than one car, and the feed has to say which.
+            $problems[] = 'engine code'.(count($result['ambiguous']) === 1 ? '' : 's')
+                .' shared by more than one model, so no car was matched: '
+                .$this->few($result['ambiguous'])
+                .' — name the make, model and engine instead';
+        }
+
+        if ($problems === []) {
+            return null;
+        }
+
+        return implode('; ', $problems)
+            .'. The part imported; it just will not appear for those cars.';
+    }
+
+    /** @param  list<string>  $values */
+    private function few(array $values): string
+    {
+        $shown = array_slice($values, 0, 5);
+
+        return implode(', ', $shown).(count($values) > count($shown) ? ', …' : '');
     }
 
     /** @return array{0: StagingRowOutcome, 1: ?string, 2: ?string} */
