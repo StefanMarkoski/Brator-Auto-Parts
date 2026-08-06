@@ -24,11 +24,16 @@ final class UpdateBasketLineRequest extends FormRequest
     {
         return [
             'quantity' => ['required', 'integer', 'min:0', 'max:99'],
+            // The +/- buttons post a step rather than a competing quantity.
+            'step' => ['nullable', 'integer', 'in:-1,1'],
         ];
     }
 
+    /** The quantity asked for, after applying a +/- step if one was pressed. */
     public function quantity(): int
     {
-        return (int) $this->validated()['quantity'];
+        $validated = $this->validated();
+
+        return max(0, (int) $validated['quantity'] + (int) ($validated['step'] ?? 0));
     }
 }

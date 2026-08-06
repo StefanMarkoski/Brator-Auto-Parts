@@ -227,13 +227,26 @@ class ProductSeeder extends Seeder
             DB::table('stock_movements')->insert($movements);
         }
 
-        // Category counters, computed once at the end rather than per insert.
-        DB::statement('
+        // Category counters, computed once at the end rather than per insert, and over
+        // the SUBTREE rather than direct assignments only. Counting direct rows left every
+        // parent department reading "0 parts" on the homepage while /shop/braking returned
+        // 800-odd — the number a shopper saw and the number they got disagreed on the very
+        // first click.
+        //
+        // A JOIN against a derived table, because MySQL refuses to reference an UPDATE's
+        // own target table inside a subquery (error 1093).
+        DB::statement('UPDATE categories SET products_count = 0');
+        DB::statement("
             UPDATE categories c
-            SET products_count = (
-                SELECT COUNT(*) FROM product_categories pc WHERE pc.category_id = c.id
-            )
-        ');
+            JOIN (
+                SELECT parent.id AS id, COUNT(DISTINCT pc.product_id) AS total
+                FROM categories parent
+                JOIN categories child ON child.path LIKE CONCAT(parent.path, '%')
+                JOIN product_categories pc ON pc.category_id = child.id
+                GROUP BY parent.id
+            ) counted ON counted.id = c.id
+            SET c.products_count = counted.total
+        ");
 
         $this->command->info('  seeded '.count($productIds).' products');
     }

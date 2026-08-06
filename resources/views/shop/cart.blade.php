@@ -84,10 +84,14 @@
                                     <div class="brator-cart-list-items-qty-area">
                                         <form method="post" action="{{ route('cart.update', $line->lineId, false) }}">
                                             @csrf
+                                            {{-- The minus button never worked: all three controls were name="quantity",
+                                                and a submit button's value loses to a same-named input. The buttons now post
+                                                a separate `step`, applied to the input's value in the request object — so plus,
+                                                minus and typing all work, and it still submits correctly without JavaScript. --}}
                                             <div class="brator-cart-list-items-qty">
-                                                <button class="decrement-count-qty" type="submit" name="quantity" value="{{ $line->quantity - 1 }}">-</button>
+                                                <button class="decrement-count-qty" type="submit" name="step" value="-1" aria-label="One fewer">-</button>
                                                 <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" max="99" />
-                                                <button class="add-count-qty" type="submit" name="quantity" value="{{ $line->quantity + 1 }}">+</button>
+                                                <button class="add-count-qty" type="submit" name="step" value="1" aria-label="One more">+</button>
                                             </div>
                                         </form>
                                     </div>
