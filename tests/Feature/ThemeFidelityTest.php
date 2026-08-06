@@ -66,7 +66,6 @@ final class ThemeFidelityTest extends TestCase
             'brator-makes-list-single',        // featured makes
             'brator-product-single-item-area', // product strips
             'brator-brand-img',                // featured brands
-            'brator-blog-listing-single-item-area', // articles
             'brator-footer-area',              // footer
         ];
 
@@ -74,6 +73,22 @@ final class ThemeFidelityTest extends TestCase
             $this->assertStringContainsString($landmark, $rendered,
                 "The theme section identified by '{$landmark}' is no longer rendering.");
         }
+
+        /*
+         | ONE DELIBERATE EXCEPTION, recorded here rather than quietly dropped from the list.
+         |
+         | 'brator-blog-listing-single-item-area' — the "Articles & Reviews" strip — was 127
+         | lines of hardcoded blog posts with seventeen dead links and no Blade logic at all.
+         | Blogs are out of scope by Stefan's decision, so there is no article data to render
+         | and no article page to link to.
+         |
+         | This guard exists to catch a theme section vanishing BY ACCIDENT, and it did its
+         | job — it failed the moment the strip stopped rendering. Asserting the absence keeps
+         | the removal deliberate: if anyone restores the fiction, this fails again.
+        */
+        $this->assertStringNotContainsString('brator-blog-listing-single-item-area', $rendered,
+            'The hardcoded "Articles & Reviews" strip is rendering again. Blogs are out of '
+            .'scope, so that section has no real data behind it.');
     }
 
     public function test_every_asset_the_homepage_references_is_root_relative(): void

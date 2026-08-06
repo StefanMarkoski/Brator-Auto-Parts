@@ -34,12 +34,16 @@
                             </button>
                         </form>
                         <div class="search-quly">
-                            <p>Quick Search:</p><a href="#_">Replacement</a><a href="#_">Parts</a><a href="#_">Brakes</a><a href="#_">Tires</a><a href="#_">Fluids</a><a href="#_">Filters</a><a href="#_">Wipers</a>
+                            {{-- Was "Replacement / Parts / Brakes / …" as dead #_ links. Now
+                                 searches that actually return something. --}}
+                            <p>Quick Search:</p>@foreach (['Brake Discs', 'Oil Filter', 'Spark Plug', 'Wiper Blades'] as $term)<a href="{{ route('search', ['s' => $term], false) }}">{{ $term }}</a>@endforeach
                         </div>
                     </div>
                 </div>
                 <div class="col-xl-5 col-xxl-4">
                     <div class="brator-info-right">
+                        {{-- href="#_" here is a DISCLOSURE TOGGLE, not a dead link: the theme's
+                             JS opens the vehicle picker from it. Leave it alone. --}}
                         <div class="brator-icon-link-text"><a href="#_">
                                 <div class="click-item-count">
                                     <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
@@ -55,18 +59,9 @@
                                 @include('partials.vehicle-picker')
                             </div>
                         </div>
-                        <div class="brator-user-link"><a href="#_">
-                                <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" xml:space="preserve">
-                                    <g>
-                                        <g>
-                                            <path d="M32.1,37.3c-8.8,0-16-7.2-16-16s7.2-16,16-16s16,7.2,16,16S40.9,37.3,32.1,37.3z M32.1,10.7c-5.9,0-10.7,4.8-10.7,10.7                                    S26.3,32,32.1,32s10.7-4.8,10.7-10.7S38,10.7,32.1,10.7z"></path>
-                                        </g>
-                                        <g>
-                                            <path d="M2.8,58.7c-0.8,0-1.6-0.3-2.1-1.1c-1.1-1.1-0.8-2.9,0.3-3.7c8.8-7.2,19.7-11.2,31.2-11.2s22.4,4,30.9,11.2                                    c1.1,1.1,1.3,2.7,0.3,3.7c-1.1,1.1-2.7,1.3-3.7,0.3C52.1,51.5,42.3,48,32.1,48s-20,3.5-27.7,10.1C4.1,58.4,3.3,58.7,2.8,58.7z"></path>
-                                        </g>
-                                    </g>
-                                </svg></a></div>
-                        <div class="brator-cart-link"><a href="#_">
+                            {{-- The customer account icon is REMOVED: there are no customer
+                                 accounts. Guests check out; the only login is staff at /admin. --}}
+                        <div class="brator-cart-link"><a href="{{ route('cart', [], false) }}">
                                 <div class="brator-cart-icon click-item-count">
                                     <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
                                         <g>
@@ -157,7 +152,7 @@
                                 <li><a href="{{ route('contact', [], false) }}">Contact Us</a></li>
                             </ul>
                         </div>
-                        <div class="brator-header-menu-info"><a href="#_">Order Status</a><span>24/7 Support:</span><a class="phomeee" href="tel:18005001234">1800 500 1234</a></div>
+                        <div class="brator-header-menu-info">@if (config('shop.contact.phone'))<span>Support:</span><a class="phomeee" href="tel:{{ preg_replace('/[^0-9+]/', '', (string) config('shop.contact.phone')) }}">{{ config('shop.contact.phone') }}</a>@else<span>Support:</span><a class="phomeee" href="{{ route('contact', [], false) }}">Contact us</a>@endif</div>
                     </div>
                 </div>
             </div>
@@ -223,7 +218,7 @@
                                 <li><a href="{{ route('contact', [], false) }}">Contact Us</a></li>
                             </ul>
                         </div>
-                        <div class="brator-header-menu-info"><a href="#_">Order Status</a></div>
+                        <div class="brator-header-menu-info"></div>
                     </div>
                 </div>
             </div>

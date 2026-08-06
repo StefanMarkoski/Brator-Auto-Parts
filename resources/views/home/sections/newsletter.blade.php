@@ -18,7 +18,7 @@
                                 <input class="wpcf7-form-control wpcf7-text wpcf7-email wpcf7-validates-as-required wpcf7-validates-as-email" type="email" name="email" value="" size="40" aria-required="true" aria-invalid="false" placeholder="Enter your email" /></span>
                             <button class="wpcf7-form-control wpcf7-submit" type="submit">Subscribe</button><span class="ajax-loader"></span>
                         </form>
-                        <p>By subscribing, you accepted the our<a href="#_">Policy</a></p>
+                        <p>By subscribing, you accepted the our<a href="{{ route('about', [], false) }}">terms</a></p>
                     </div>
                 </div>
             </div>

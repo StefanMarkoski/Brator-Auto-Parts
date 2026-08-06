@@ -1,22 +1,34 @@
+@use('App\Domain\Ordering\Support\DeliveryCharge')
     <!-- Header one start-->
     <div class="brator-header-top-bar-area design-one dark-bg">
         <div class="container-xxxl container-xxl container">
             <div class="row">
                 <div class="col-lg-6 col-12">
                     <div class="brator-header-top-bar-info-left">
-                        <p><span class="c-ts">BLACK FRIDAY</span><span>: Discount up to</span><span class="c-ts">50%</span><span>use code</span><b>Brator50</b></p><a href="#_">See more</a>
+                        {{--
+                            Was "BLACK FRIDAY: Discount up to 50% use code Brator50" with a dead
+                            "See more" link — a discount code that does not exist, promised on
+                            every page of the shop. Replaced with the one promotional fact that
+                            IS true: the free-delivery threshold, read from the class that
+                            actually decides it, so the two can never disagree.
+                        --}}
+                        <p><span class="c-ts">FREE DELIVERY</span><span>on orders over</span><span class="c-ts">{{ App\Domain\Ordering\Support\DeliveryCharge::freeFrom()->format() }}</span></p><a href="{{ route('shop.categories', [], false) }}">Start shopping</a>
                     </div>
                 </div>
                 <div class="col-lg-6 col-12">
                     <div class="brator-header-top-bar-info-right">
-                        <div class="brator-header-top-bar-info-right-link"><a href="#_">Sell on Brator</a></div>
+                        {{-- Was "Sell on Brator", a dead link to a marketplace signup. This is
+                             a single-seller shop, so it links to the people who run it. --}}
+                        <div class="brator-header-top-bar-info-right-link"><a href="{{ route('contact', [], false) }}">Contact us</a></div>
                         <div class="brator-header-top-bar-info-right-content">
-                            <p>Currency:</p><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/lang.png" alt="alt" />
-                            <select>
-                                <option value="US Dollar">US Dollar </option>
-                                <option value="US Dollar">US URO </option>
-                                <option value="US Dollar">US BD </option>
-                            </select>
+                            {{--
+                                Was a switcher offering US Dollar / US URO / US BD. This shop is
+                                single-currency MKD and nothing converts anything, so the control
+                                implied a feature that does not exist — and two of its three
+                                options were not currencies. The fact is kept, the control is not.
+                            --}}
+                            <p>Prices in:</p><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/lang.png" alt="alt" />
+                            <span>{{ config('shop.currency_symbol') }} ({{ config('shop.currency') }})</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
                             </svg>
@@ -54,10 +66,17 @@
                     <div class="brator-search-area">
                         <form class="search-form" role="search" method="get" action="{{ route('search', [], false) }}">
                             <div class="select-search">
-                                <select>
-                                    <option value="US Dollar">ALL</option>
-                                    <option value="US Dollar">US URO </option>
-                                    <option value="US Dollar">US BD</option>
+                                {{--
+                                    Was three currency options in a search-SCOPE dropdown, and the
+                                    select had no name attribute, so picking one submitted nothing.
+                                    Now the real departments, posted as `in`, which SearchController
+                                    resolves to a category path.
+                                --}}
+                                <select name="in">
+                                    <option value="">All departments</option>
+                                    @foreach ($navCategories as $department)
+                                        <option value="{{ $department['slug'] }}" @selected(request('in') === $department['slug'])>{{ $department['name'] }}</option>
+                                    @endforeach
                                 </select>
                                 <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" xml:space="preserve">
                                     <g>
@@ -85,19 +104,18 @@
                                 </svg>
                             </div>
                             <div class="header-support-info-l">
-                                <h6>24/7 Support:</h6><a href="#_">1800 500 1234 </a>
+                                {{-- Was the theme's invented "1800 500 1234", presented as this shop's
+                                     support line. Points at the contact page until there is a real
+                                     number to publish. --}}
+                                <h6>Support:</h6><a href="{{ route('contact', [], false) }}">Contact us</a>
                             </div>
                         </div>
-                        <div class="brator-icon-link-text heart-icon"><a href="#_">
-                                <div class="click-item-count">
-                                    <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" xml:space="preserve">
-                                        <g>
-                                            <path d="M32,59.4c-1.2,0-2.5-0.4-3.4-1.3c-2.3-2-4.6-3.9-6.6-5.6c-5.9-5-11-9.3-14.6-13.6c-4.2-5-6.2-9.8-6.2-15.1                                        c0-5.2,1.8-10,5.1-13.5c3.3-3.6,7.9-5.6,12.9-5.6c3.7,0,7.2,1.2,10.2,3.5c0.9,0.7,1.8,1.5,2.6,2.4c0.8-0.9,1.7-1.7,2.6-2.4                                        c3-2.3,6.4-3.5,10.2-3.5c5,0,9.5,2,12.9,5.6c3.3,3.5,5.1,8.3,5.1,13.5c0,5.3-2,10.1-6.2,15.1C53,43.2,47.9,47.5,42,52.5                                        c-2,1.7-4.3,3.6-6.6,5.6C34.5,58.9,33.2,59.4,32,59.4z M19.2,8.1c-4,0-7.7,1.6-10.3,4.5c-2.7,2.9-4.1,6.8-4.1,11.1                                        c0,4.4,1.7,8.5,5.3,12.9c3.4,4.1,8.4,8.3,14.2,13.2c2,1.7,4.3,3.6,6.6,5.7c0.6,0.5,1.6,0.5,2.2,0c2.4-2,4.6-4,6.6-5.7                                        c5.8-4.9,10.8-9.1,14.2-13.2c3.6-4.4,5.3-8.5,5.3-12.9c0-4.3-1.5-8.2-4.1-11.1c-2.7-2.9-6.3-4.5-10.3-4.5c-3,0-5.7,0.9-8,2.8                                        c-1,0.7-1.8,1.6-2.7,2.6c-0.5,0.6-1.3,1-2.1,1c0,0,0,0,0,0c-0.8,0-1.6-0.4-2.1-1c-0.8-1-1.7-1.9-2.7-2.6                                        C24.9,9.1,22.2,8.1,19.2,8.1z"></path>
-                                        </g>
-                                    </svg><span>0</span>
-                                </div>
-                            </a></div>
-                        <div class="brator-cart-link"><a href="#_">
+                        {{--
+                            The wishlist heart is REMOVED. There is no wishlist: it was a dead link
+                            displaying a hardcoded "0", so it always said you had saved nothing and
+                            could never let you save anything.
+                        --}}
+                        <div class="brator-cart-link"><a href="{{ route('cart', [], false) }}">
                                 <div class="brator-cart-icon click-item-count">
                                     <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
                                         <g>
@@ -128,20 +146,11 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="brator-icon-link-text"><a href="#_">
-                                <div class="click-item-count">
-                                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" xml:space="preserve">
-                                        <g>
-                                            <g>
-                                                <path d="M32.1,37.3c-8.8,0-16-7.2-16-16s7.2-16,16-16s16,7.2,16,16S40.9,37.3,32.1,37.3z M32.1,10.7c-5.9,0-10.7,4.8-10.7,10.7                                        S26.3,32,32.1,32s10.7-4.8,10.7-10.7S38,10.7,32.1,10.7z"></path>
-                                            </g>
-                                            <g>
-                                                <path d="M2.8,58.7c-0.8,0-1.6-0.3-2.1-1.1c-1.1-1.1-0.8-2.9,0.3-3.7c8.8-7.2,19.7-11.2,31.2-11.2s22.4,4,30.9,11.2                                        c1.1,1.1,1.3,2.7,0.3,3.7c-1.1,1.1-2.7,1.3-3.7,0.3C52.1,51.5,42.3,48,32.1,48s-20,3.5-27.7,10.1C4.1,58.4,3.3,58.7,2.8,58.7z"></path>
-                                            </g>
-                                        </g>
-                                    </svg>
-                                </div><b>Sign In</b>
-                            </a></div>
+                        {{--
+                            The "Sign In" link is REMOVED. There are no customer accounts — guests
+                            check out and the only login is the staff one at /admin — so this
+                            promised an account a shopper could never create.
+                        --}}
                     </div>
                 </div>
             </div>
@@ -173,37 +182,36 @@
                             </svg>
                         </div>
                         <div class="menu-cat-list-item">
+                            {{--
+                                The "All Categories" dropdown was TWENTY hardcoded department
+                                names from the theme's demo data — Air Filters, Clearance,
+                                "Entertaiments" (their typo), Tires Chains, "sanex" — none of
+                                which exist in this shop, every one a dead link to #_. A shopper
+                                opening the main category menu was reading another site's catalogue.
+
+                                Now the real tree, from the same navigation query the mega menu
+                                uses, with the theme's own nesting markup preserved.
+                            --}}
                             <ul>
-                                <li><a href="#_">Air Filters</a></li>
-                                <li>
-                                    <a href="#_">Auto Parts</a>
-                                </li>
-                                <li>
-                                    <a href="#_">Car Care</a>
-                                    <svg fill="#000000" width="14px" height="14px" version="1.1" id="lni_lni-chevron-right" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                         x="0px" y="0px" viewBox="0 0 64 64" style="enable-background:new 0 0 64 64;" xml:space="preserve">
-                                    <g>
-                                        <path d="M19,62.8c-0.4,0-0.9-0.2-1.2-0.5c-0.7-0.7-0.7-1.8-0.1-2.5L42.9,33c0.5-0.5,0.5-1.4,0-2L17.7,4.2c-0.7-0.7-0.6-1.8,0.1-2.5
-                                            c0.7-0.7,1.8-0.6,2.5,0.1l25.2,26.8c1.7,1.9,1.7,4.9,0,6.7L20.3,62.2C19.9,62.6,19.5,62.8,19,62.8z"/>
-                                    </g>
+                                @foreach ($navCategories as $department)
+                                    <li>
+                                        <a href="{{ route('shop.category', $department['slug'], false) }}">{{ $department['name'] }}</a>
+
+                                        @if ($department['children'] !== [])
+                                            <svg fill="#000000" width="14px" height="14px" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style="enable-background:new 0 0 64 64;" xml:space="preserve">
+                                        <g>
+                                            <path d="M19,62.8c-0.4,0-0.9-0.2-1.2-0.5c-0.7-0.7-0.7-1.8-0.1-2.5L42.9,33c0.5-0.5,0.5-1.4,0-2L17.7,4.2c-0.7-0.7-0.6-1.8,0.1-2.5
+                                                c0.7-0.7,1.8-0.6,2.5,0.1l25.2,26.8c1.7,1.9,1.7,4.9,0,6.7L20.3,62.2C19.9,62.6,19.5,62.8,19,62.8z"/>
+                                        </g>
                                     </svg>
-                                    <ul>
-                                        <li><a href="#_">Exhaust System</a></li>
-                                        <li><a href="#_">Exteriors</a></li>
-                                        <li><a href="#_">Fluids & Chemicals</a></li>
-                                    </ul>                           
-                                </li>
-                                <li><a href="#_">Clearance</a></li>
-                                <li><a href="#_">Entertaiments</a></li>
-                                <li><a href="#_">Exhaust System</a></li>
-                                <li><a href="#_">Exteriors</a></li>
-                                <li><a href="#_">Fluids & Chemicals</a></li>
-                                <li><a href="#_">Interiors</a></li>
-                                <li><a href="#_">Performance</a></li>
-                                <li><a href="#_">sanex</a></li>
-                                <li><a href="#_">Tires Chains</a></li>
-                                <li><a href="#_">Wheels & Tires</a></li>
-                                <li><a href="#_">Wipers & Washers</a></li>
+                                            <ul>
+                                                @foreach ($department['children'] as $child)
+                                                    <li><a href="{{ route('shop.category', $child['slug'], false) }}">{{ $child['name'] }}</a></li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </li>
+                                @endforeach
                             </ul>
                         </div>
                     </div>
@@ -250,12 +258,9 @@
                     </div>
                 </div>
                 <div class="col-xl-4 xxl-dextop-none">
-                    <div class="cat-menu-info-s"><a class="cat-menu-info-s-item" href="#_">
-                            <svg id="lni_lni-check-box" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" xml:space="preserve">
-                                <g>
-                                    <path d="M62.2,8.4c-0.7-0.7-1.8-0.7-2.5,0L55,13.1V9.9c0-2.6-2.1-4.8-4.8-4.8H6c-2.6,0-4.8,2.1-4.8,4.8v44.3c0,2.6,2.1,4.8,4.8,4.8                            h44.3c2.6,0,4.8-2.1,4.8-4.8V18.1l7.2-7.2C62.9,10.2,62.9,9,62.2,8.4z M51.5,54.1c0,0.7-0.6,1.3-1.3,1.3H6c-0.7,0-1.3-0.6-1.3-1.3                            V9.9c0-0.7,0.6-1.3,1.3-1.3h44.3c0.7,0,1.3,0.6,1.3,1.3v6.8L40.4,27.8L33.6,21c-0.7-0.7-1.8-0.7-2.5,0c-0.7,0.7-0.7,1.8,0,2.5                            l8.1,8.1c0,0,0,0,0,0c0,0,0,0,0,0c0.1,0.1,0.1,0.1,0.2,0.1c0,0,0.1,0.1,0.1,0.1c0.1,0,0.1,0.1,0.2,0.1c0,0,0.1,0.1,0.1,0.1                            c0.1,0,0.1,0,0.2,0.1c0,0,0.1,0,0.1,0c0.1,0,0.2,0,0.3,0c0.1,0,0.2,0,0.3,0c0.1,0,0.1,0,0.1,0c0.1,0,0.1,0,0.2-0.1                            c0.1,0,0.1-0.1,0.1-0.1c0.1,0,0.1-0.1,0.2-0.1c0,0,0.1-0.1,0.1-0.1c0.1,0,0.1-0.1,0.2-0.1c0,0,0,0,0,0c0,0,0,0,0,0l9.9-10V54.1z"></path>
-                                </g>
-                            </svg><span>Track Order</span></a><a class="cat-menu-info-s-item" href="#_">
+                    {{-- "Track Order" and "Free Return" removed: neither exists. A receipt is
+                                 emailed, and returns are handled by talking to the shop. --}}
+                            <div class="cat-menu-info-s"><a class="cat-menu-info-s-item" href="#_">
                             <svg id="lni_lni-reload" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" xml:space="preserve">
                                 <g>
                                     <path d="M7.4,28.5c0.3,0,0.6,0,0.8-0.1l11.1-3.9c0.9-0.3,1.4-1.3,1.1-2.2c-0.3-0.9-1.3-1.4-2.2-1.1l-6.7,2.4                                c3.3-9.1,12-15.3,22.1-15.3c10.7,0,20.1,7.1,22.7,17.4c0.2,0.9,1.2,1.5,2.1,1.3c0.9-0.2,1.5-1.2,1.3-2.1c-3-11.8-13.8-20-26.1-20                                c-12,0-22.4,7.7-25.8,18.9l-3.1-8.7c-0.3-0.9-1.3-1.4-2.2-1.1c-0.9,0.3-1.4,1.3-1.1,2.2l3.8,10.9C5.5,27.9,6.5,28.5,7.4,28.5z"></path>
@@ -326,7 +331,7 @@
                                 <li><a href="{{ route('contact', [], false) }}">Contact Us</a></li>
                             </ul>
                         </div>
-                        <div class="brator-header-menu-info"><a href="#_">Order Status</a></div>
+                        {{-- Was "Order Status", a dead link. There is no order tracking. --}}
                     </div>
                 </div>
             </div>

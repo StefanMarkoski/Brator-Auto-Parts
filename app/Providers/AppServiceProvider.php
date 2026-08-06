@@ -54,7 +54,8 @@ class AppServiceProvider extends ServiceProvider
         // keeps that out of every controller — a nav that only works on pages whose
         // controller remembered to pass it is how half a site ends up with dead links.
         View::composer(
-            ['partials.header', 'partials.header-shop', 'partials.footer-top'],
+            ['partials.header', 'partials.header-shop', 'partials.footer-top', 'partials.shop-departments',
+                'home.sections.best-sellers'],
             fn ($view) => $view->with('navCategories', app(GetNavigationQuery::class)->execute())
         );
 

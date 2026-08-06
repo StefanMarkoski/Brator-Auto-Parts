@@ -8,20 +8,26 @@
                             <div class="brator-section-header-title">
                                 <h2>{{ $section->heading ?? 'Best Seller' }}</h2>
                             </div>
-                            <a href="#_">See All Products
+                            <a href="{{ route('shop.categories', [], false) }}">See All Products
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
                                 </svg>
                             </a>
                         </div>
                         <div class="brator-best-seller-sub-filter-area">
-                            <ul class="brator-best-seller-sub-filter-content">
-                                <li class="brator-best-seller-sub-filter-list"><a class="active" href="#_">Top 10</a></li>
-                                <li class="brator-best-seller-sub-filter-list"><a href="#_">Top Auto Parts</a></li>
-                                <li class="brator-best-seller-sub-filter-list"><a href="#_">Top Car Care</a></li>
-                                <li class="brator-best-seller-sub-filter-list"><a href="#_">Top Wheels & Tires</a></li>
-                                <li class="brator-best-seller-sub-filter-list"><a href="#_">Top Tolls & Supplies</a></li>
-                            </ul>
+                            {{--
+                            Was five hardcoded tabs — "Top 10 / Top Auto Parts / Top Car Care /
+                            Top Wheels & Tires / Top Tolls & Supplies" (their typo) — every one a
+                            dead link, and three naming departments this shop does not have. They
+                            now link to the real departments' listings, sorted by rating, which is
+                            what a "top" tab is for.
+                        --}}
+                        <ul class="brator-best-seller-sub-filter-content">
+                            <li class="brator-best-seller-sub-filter-list"><a class="active" href="{{ route('search', ['sort' => 'rating'], false) }}">Top 10</a></li>
+                            @foreach (collect($navCategories)->take(4) as $department)
+                                <li class="brator-best-seller-sub-filter-list"><a href="{{ route('shop.category', [$department['slug'], 'sort' => 'rating'], false) }}">Top {{ $department['name'] }}</a></li>
+                            @endforeach
+                        </ul>
                         </div>
                     </div>
                 </div>

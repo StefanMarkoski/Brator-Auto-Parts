@@ -58,8 +58,16 @@
                         <div class="brator-product-layout-header-content">
                             <div class="brator-product-hero-content">
                                 <div class="brator-product-hero-content-info">
-                                    <div class="brator-product-hero-content-brand"><a href="#_">Sparegold</a></div>
-                                    <div class="brator-product-hero-content-brand-img"><a href="#_"> <img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->brand?->logo_path ?? 'assets/images/b-p-01.jpg' }}" alt="{{ $product->brand?->name }}" /></a></div>
+                                    {{-- Was hardcoded "Sparegold", the theme's demo brand, on every product. Links to the
+                                         brand's own filtered listing when there is a brand. --}}
+                                    <div class="brator-product-hero-content-brand">
+                                        @if ($product->brand)
+                                            <a href="{{ route('search', ['brand' => [$product->brand->slug]], false) }}">{{ $product->brand->name }}</a>
+                                        @else
+                                            <a href="{{ route('shop.categories', [], false) }}">Unbranded</a>
+                                        @endif
+                                    </div>
+                                    <div class="brator-product-hero-content-brand-img"><a href="{{ $product->brand ? route('search', ['brand' => [$product->brand->slug]], false) : route('shop.categories', [], false) }}"> <img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->brand?->logo_path ?? 'assets/images/b-p-01.jpg' }}" alt="{{ $product->brand?->name }}" /></a></div>
                                     <div class="brator-product-hero-content-title">
                                         <h2>{{ $product->name }}</h2>
                                     </div>
@@ -86,7 +94,7 @@
                                         <h5>
                                             <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
                                                 <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                            </svg><span>This product fit for your vehicle</span>
+                                            </svg><span>@if ($fitsChosenVehicle === true){{ $chosenVehicleName ? 'Fits your '.$chosenVehicleName : 'Fits your vehicle' }}@elseif ($fitsChosenVehicle === false){{ $chosenVehicleName ? 'Does not fit your '.$chosenVehicleName : 'Does not fit your vehicle' }}@else{{ $product->stock_status->isBuyable() ? 'Ready to ship' : 'Currently unavailable' }}@endif</span>
                                         </h5>
                                     </div>
                                 </div>
@@ -160,10 +168,13 @@
                                             <h5>Categories: </h5>@foreach ($product->categories as $category)<a href="{{ route('shop.category', $category->slug, false) }}">{{ $category->name }}</a>@endforeach
                                         </div>
                                         <div class="brator-product-single-light-info-s">
-                                            <h5>Part Number: </h5>@foreach ($product->crossReferences->take(3) as $ref)<a href="#_">{{ $ref->number }}</a>@endforeach
+                                            <h5>Part Number: </h5>@foreach ($product->crossReferences->take(3) as $ref)<a href="{{ route('search', ['s' => $ref->number], false) }}">{{ $ref->number }}</a>@endforeach
                                         </div>
                                         <div class="brator-product-single-light-info-s">
-                                            <h5>Tags:</h5><a href="#_">wheels</a><a href="#_">tires</a><a href="#_">rims</a><a href="#_">sliver</a><a href="#_">mercedes</a><a href="#_">glc</a>
+                                            {{-- Was "wheels tires rims sliver mercedes glc" on every
+                                                 part, dead links to #_. Now the product's own
+                                                 categories and brand, each linking somewhere real. --}}
+                                            <h5>Tags:</h5>@foreach ($product->categories->take(3) as $tag)<a href="{{ route('shop.category', $tag->slug, false) }}">{{ Str::lower($tag->name) }}</a>@endforeach @if ($product->brand)<a href="{{ route('search', ['brand' => [$product->brand->slug]], false) }}">{{ Str::lower($product->brand->name) }}</a>@endif
                                         </div>
                                         <div class="brator-product-single-light-info-s">
                                             <h5>SKU:</h5><span>{{ $product->sku }}</span>
@@ -211,57 +222,18 @@
                         </form>
                     </div>
                 </div>
-                <div class="col-xxl-3 col-xl-12">
-                    <div class="brator-product-single-posts">
-                        <h2>Guide & Blog</h2>
-                        <div class="brator-blog-post-sidebar-items">
-                            <div class="brator-blog-listing-single-item-area list-type-one">
-                                <div class="type-post">
-                                    <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-01.jpg" alt="blog-post-blog-01.jpg" /></a></div>
-                                    <div class="brator-blog-listing-single-item-content">
-                                        <h3 class="brator-blog-listing-single-item-title"><a href="#_">Replace Brakes Guide</a></h3>
-                                        <div class="brator-blog-listing-single-item-excerpt">
-                                            <p>The braking system of a vehicle is an important safety [...]</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="brator-blog-listing-single-item-area list-type-one">
-                                <div class="type-post">
-                                    <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-05.jpg" alt="blog-post-blog-05.jpg" /></a></div>
-                                    <div class="brator-blog-listing-single-item-content">
-                                        <h3 class="brator-blog-listing-single-item-title"><a href="#_">Things to keep in mind when washing a car</a></h3>
-                                        <div class="brator-blog-listing-single-item-excerpt">
-                                            <p>The braking system of a vehicle is an important safety [...]</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="brator-blog-listing-single-item-area list-type-one">
-                                <div class="type-post">
-                                    <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-06.jpg" alt="blog-post-blog-06.jpg" /></a></div>
-                                    <div class="brator-blog-listing-single-item-content">
-                                        <h3 class="brator-blog-listing-single-item-title"><a href="#_">Replace Rims by yourself,why not? All tools need to prepare</a></h3>
-                                        <div class="brator-blog-listing-single-item-excerpt">
-                                            <p>The braking system of a vehicle is an important safety [...]</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="brator-blog-listing-single-item-area list-type-one">
-                                <div class="type-post">
-                                    <div class="brator-blog-listing-single-item-thumbnail"><a class="blog-listing-single-item-thumbnail-link" href="#_" aria-hidden="true" tabindex="-1"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/blog/blog-07.jpg" alt="blog-post-blog-07.jpg" /></a></div>
-                                    <div class="brator-blog-listing-single-item-content">
-                                        <h3 class="brator-blog-listing-single-item-title"><a href="#_">Transmission for old car</a></h3>
-                                        <div class="brator-blog-listing-single-item-excerpt">
-                                            <p>The braking system of a vehicle is an important safety [...]</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {{--
+                    The theme's "Guide & Blog" sidebar is REMOVED, not left rendering.
+
+                    It advertised four articles — "Replace Brakes Guide", "Things to keep in
+                    mind when washing a car" — each a dead link to #_, eight placeholder links
+                    on every product page. Blog pages are out of scope by Stefan's decision, so
+                    this was promising content that will never exist and cannot be clicked.
+
+                    Deleting state-displaying markup is within the standing rule: nothing is
+                    restyled and no CSS class is introduced. The product column beside it keeps
+                    its own grid classes, so the layout closes up as the theme intends.
+                --}}
             </div>
         </div>
     </div>
@@ -274,27 +246,38 @@
                             <ul>
                                 <li><a class="js-tabs__title" href="#">Description </a></li>
                                 <li><a class="js-tabs__title" href="#">Specification </a></li>
-                                <li><a class="js-tabs__title" href="#">Reviews (14) </a></li>
+                                <li><a class="js-tabs__title" href="#">Reviews ({{ number_format($product->reviews_count) }}) </a></li>
                                 <li><a class="js-tabs__title" href="#">Product Q&A</a></li>
                             </ul>
                         </div>
                         <div class="js-tabs__content brator-product-single-tab-item">
-                            {!! $product->description ?: e($product->short_description) !!}<img src="/assets/images/product-tab.jpg" alt="alt" />
-                            <h6>featured</h6>
-                            <ul>
-                                <li>Plastic Hub Centering Ring Ensures a Vibration Free Ride</li>
-                                <li>Tight Runout Tolerances Ensure thatwheels are Straight, Round and have Even Thickness</li>
-                                <li>Factory Balancing ofwheels to Minimize Vibrations and Need forwheel Weights</li>
-                                <li>Load Rating Specified on Everywheel</li>
-                                <li>Compatible with All Original Equipment Tire Pressure Monitoring System (TPMS) Sensors</li>
-                                <li>Correct Fitment for Your Vehicle</li>
-                                <li>Precise and Correctwheel Offset for Your Vehicle</li>
-                                <li>Metal Decorative Rivets and Extra Thick Emblems Ensure Lasting Good Looks</li>
-                                <li>TSW provides a five-year structural warranty</li>
-                                <li>2-Year Warranty on Chrome and Silver Finish</li>
-                            </ul>
-                            <h6>Warranty</h6>
-                            <p>With regular care and regular road conditions, SG offers a two-year finish warranty on itswheels with chrome and painted finishes. SG provides a five-year structural warranty forwheels it manufactures that are structurally unsound because of a manufacturing defect caused by SG that makes the wheel unfit for its ordinary purpose. Damage or issues withwheels manufactured by SG that are not caused by, or the result of, a manufacturing defect by SG are not covered under the warranty.</p>
+                            {{--
+                                The theme's demo text here described ALLOY WHEELS — hub centering
+                                rings, TPMS sensor compatibility, a five-year structural warranty
+                                from "TSW", a finish warranty from "SG" — and it rendered on every
+                                product, so a brake fluid page promised a warranty on its chrome
+                                finish. Written by the theme's authors about their own sample data.
+
+                                Replaced with the product's real copy, and a description is not
+                                invented when there is none.
+                            --}}
+                            @if ($product->description || $product->short_description)
+                                {!! $product->description ?: e($product->short_description) !!}
+                            @else
+                                <p>No description has been written for this part yet. The
+                                    specification tab lists what we know about it.</p>
+                            @endif
+
+                            @php($featured = $product->attributeValues->filter(fn ($v) => $v->value_string)->take(8))
+
+                            @if ($featured->isNotEmpty())
+                                <h6>featured</h6>
+                                <ul>
+                                    @foreach ($featured as $value)
+                                        <li>{{ $value->attribute->name }}: {{ $value->value_string }}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         </div>
                         <div class="js-tabs__content brator-product-single-tab-item">
                             <div class="specification-product-area">
@@ -325,120 +308,62 @@
                         <div class="js-tabs__content brator-product-single-tab-item">
                             <div class="brator-review-comment-area">
                                 <div class="brator-review-comment">
+                                    {{-- Was a hardcoded "4.5/5", four-and-a-bit stars and "14 Reviews"
+                                         on every product regardless of its actual rating. --}}
                                     <div class="brator-review-pint-count">
-                                        <h6>4.5/5 </h6>
+                                        <h6>{{ $product->reviews_count > 0 ? number_format($product->rating_avg, 1).'/5' : 'Not rated' }} </h6>
                                     </div>
                                     <div class="brator-review-comment-count">
                                         <div class="brator-review">
-                                            <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                            </svg>
-                                            <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                            </svg>
-                                            <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                            </svg>
-                                            <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                            </svg>
-                                            <svg class="d-active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                            </svg>
+                                            @for ($i = 1; $i <= 5; $i++)
+                                                <svg class="{{ $i <= round($product->rating_avg) ? 'active' : 'd-active' }}" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
+                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
+                                                </svg>
+                                            @endfor
                                         </div>
                                         <div class="brator-review-text">
-                                            <p>14 Reviews</p>
+                                            <p>{{ number_format($product->reviews_count) }} {{ Str::plural('Review', $product->reviews_count) }}</p>
                                         </div>
                                     </div>
-                                </div>
                                 <div class="brator-review-comment-list">
-                                    <div class="brator-review-comment-single-item">
-                                        <div class="brator-review-comment-single-img"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/profile-01.jpg" alt="logo" /></div>
-                                        <div class="brator-review-comment-single-content">
-                                            <div class="brator-review">
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="d-active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                            </div>
-                                            <div class="brator-review-comment-single-title">
-                                                <h6>Quality product &amp; very comfortable!</h6>
-                                                <p>Location,fantastic. Accommodation, fantastic. Host, fantastic. If you have a chance to book this beautiful cottage do not hesitate.You will be glad you did. Thank you alison for a great stay and we will definitely be returning. Dave and sue.</p>
-                                            </div>
-                                            <div class="brator-review-comment-date">
-                                                <h6><a href="#_">Paulo Dybala </a>on 25 April, 2022 </h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="brator-review-comment-single-item">
-                                        <div class="brator-review-comment-single-img"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/profile-02.jpg" alt="logo" /></div>
-                                        <div class="brator-review-comment-single-content">
-                                            <div class="brator-review">
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="d-active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                            </div>
-                                            <div class="brator-review-comment-single-title">
-                                                <h6>Awesome product</h6>
-                                                <p>Location,fantastic. Accommodation, fantastic. Host, fantastic. If you have a chance to book this beautiful cottage do not hesitate.You will be glad you did. Thank you alison for a great stay and we will definitely be returning. Dave and sue.</p>
-                                            </div>
-                                            <div class="brator-review-comment-date">
-                                                <h6><a href="#_">Paulo Dybala </a>on 25 April, 2022 </h6>
+                                    {{--
+                                        Was three identical hardcoded reviews, all by "Paulo Dybala"
+                                        on 25 April 2022, praising a holiday cottage. Now the real
+                                        approved reviews, already eager-loaded on the detail query.
+
+                                        The theme ships three profile photographs and we have no
+                                        avatars, so they cycle — decorative, and the alternative is a
+                                        broken image.
+                                    --}}
+                                    @forelse ($product->reviews as $review)
+                                        <div class="brator-review-comment-single-item">
+                                            <div class="brator-review-comment-single-img"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/profile-0{{ ($loop->index % 3) + 1 }}.jpg" alt="{{ $review->author_name }}" /></div>
+                                            <div class="brator-review-comment-single-content">
+                                                <div class="brator-review">
+                                                    @for ($i = 1; $i <= 5; $i++)
+                                                        <svg class="{{ $i <= $review->rating ? 'active' : 'd-active' }}" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
+                                                            <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
+                                                        </svg>
+                                                    @endfor
+                                                </div>
+                                                <div class="brator-review-comment-single-title">
+                                                    <h6>{{ $review->title }}</h6>
+                                                    <p>{{ $review->body }}</p>
+                                                </div>
+                                                <div class="brator-review-comment-date">
+                                                    <h6>{{ $review->author_name }} on {{ $review->created_at?->format('j F, Y') }}</h6>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="brator-review-comment-single-item">
-                                        <div class="brator-review-comment-single-img"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/assets/images/profile-03.jpg" alt="logo" /></div>
-                                        <div class="brator-review-comment-single-content">
-                                            <div class="brator-review">
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                                <svg class="d-active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                                    <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                                </svg>
-                                            </div>
-                                            <div class="brator-review-comment-single-title">
-                                                <h6>Fast delivery &amp; quality product</h6>
-                                                <p>Location,fantastic. Accommodation, fantastic. Host, fantastic. If you have a chance to book this beautiful cottage do not hesitate.You will be glad you did. Thank you alison for a great stay and we will definitely be returning. Dave and sue.</p>
-                                            </div>
-                                            <div class="brator-review-comment-date">
-                                                <h6><a href="#_">Paulo Dybala </a>on 25 April, 2022 </h6>
+                                    @empty
+                                        <div class="brator-review-comment-single-item">
+                                            <div class="brator-review-comment-single-content">
+                                                <div class="brator-review-comment-single-title">
+                                                    <p>No reviews for this part yet.</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    @endforelse
                                 </div>
                             </div>
                             <div class="brator-contact-form-area product-review-form">

@@ -21,6 +21,18 @@ final class DeliveryCharge
 
     public const FLAT_MINOR = 19_000;
 
+    /**
+     * The free-delivery threshold as money, for display.
+     *
+     * The header advertises this figure. Exposed as a method so the promise on the page and
+     * the rule applied at checkout read the same constant — what it replaced was a hardcoded
+     * "50% off with code Brator50" that no code path had ever heard of.
+     */
+    public static function freeFrom(): Money
+    {
+        return Money::fromMinor(self::FREE_FROM_MINOR);
+    }
+
     public static function for(Money $netSubtotal): Money
     {
         if ($netSubtotal->isZero() || $netSubtotal->minor >= self::FREE_FROM_MINOR) {

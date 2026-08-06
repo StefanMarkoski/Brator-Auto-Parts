@@ -76,7 +76,9 @@ final class HomepageEditorTest extends TestCase
 
     public function test_a_hidden_section_can_be_brought_back(): void
     {
-        $section = HomepageSection::query()->where('section_type', 'articles')->firstOrFail();
+        // Was 'articles'. That section now renders nothing on purpose — it was hardcoded blog
+        // posts and blogs are out of scope — so it can never prove a heading came BACK.
+        $section = HomepageSection::query()->where('section_type', 'essential_items')->firstOrFail();
         $section->update(['is_visible' => false]);
 
         $this->actingAs($this->admin())->put("/admin/homepage/{$section->id}", [

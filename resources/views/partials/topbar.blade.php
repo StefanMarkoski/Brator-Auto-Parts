@@ -26,6 +26,6 @@
                     <p>Quick Search:</p><a href="{{ route('search', ['s' => 'Replacement'], false) }}">Replacement</a><a href="{{ route('search', ['s' => 'Parts'], false) }}">Parts</a><a href="{{ route('search', ['s' => 'Brakes'], false) }}">Brakes</a><a href="{{ route('search', ['s' => 'Tires'], false) }}">Tires</a><a href="{{ route('search', ['s' => 'Fluids'], false) }}">Fluids</a><a href="{{ route('search', ['s' => 'Filters'], false) }}">Filters</a><a href="{{ route('search', ['s' => 'Wipers'], false) }}">Wipers</a>
                 </div>
             </div>
-            <div class="brator-header-menu-info text-left"><a href="#_">Order Status</a><span>24/7 Support:</span><a class="phomeee" href="tel:18005001234">1800 500 1234</a></div>
+            <div class="brator-header-menu-info text-left">@if (config('shop.contact.phone'))<span>Support:</span><a class="phomeee" href="tel:{{ preg_replace('/[^0-9+]/', '', (string) config('shop.contact.phone')) }}">{{ config('shop.contact.phone') }}</a>@else<span>Support:</span><a class="phomeee" href="{{ route('contact', [], false) }}">Contact us</a>@endif</div>
         </div>
     </div>

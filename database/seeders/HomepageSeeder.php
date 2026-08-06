@@ -31,7 +31,9 @@ class HomepageSeeder extends Seeder
         ['type' => 'best_sellers', 'heading' => 'Best Seller', 'collection' => 'best-sellers'],
         ['type' => 'essential_items', 'heading' => 'Essential Items for New Car', 'collection' => 'essential-items'],
         ['type' => 'new_arrivals', 'heading' => 'New Arrivals', 'collection' => 'new-arrivals'],
-        ['type' => 'articles', 'heading' => 'Articles & Reviews', 'collection' => null],
+        // Hidden: blogs are out of scope, so there is nothing for it to render. Kept as a
+        // row so it can be switched on from the homepage editor the day there is.
+        ['type' => 'articles', 'heading' => 'Articles & Reviews', 'collection' => null, 'visible' => false],
         ['type' => 'featured_brands', 'heading' => 'Featured Brands', 'collection' => null],
         ['type' => 'newsletter', 'heading' => null, 'collection' => null],
     ];
@@ -53,7 +55,7 @@ class HomepageSeeder extends Seeder
                     : ($collections[$spec['collection']] ?? null),
                 'settings' => null,
                 'position' => $position,
-                'is_visible' => true,
+                'is_visible' => $spec['visible'] ?? true,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

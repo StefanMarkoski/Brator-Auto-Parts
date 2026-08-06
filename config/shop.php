@@ -22,4 +22,22 @@ return [
      | carries VAT like any other line. Flip this only on an accountant's word.
      */
     'vat_on_delivery' => (bool) env('SHOP_VAT_ON_DELIVERY', true),
+
+    /*
+     | The shop's own contact details.
+     |
+     | These lived as the THEME's invented values, hardcoded in three separate places: a
+     | phone number ("1800 500 1234 925"), an email (info@brator.com) and a US street
+     | address in Asheville, North Carolina — all presented to shoppers as this shop's real
+     | details, on every page, in a business based in North Macedonia.
+     |
+     | They are here so there is exactly one place to correct them, and so the footer, the
+     | header and the contact page can never disagree. Set the real values in .env before
+     | this goes anywhere near a customer.
+     */
+    'contact' => [
+        'phone' => env('SHOP_PHONE'),
+        'email' => env('SHOP_EMAIL', 'orders@brator.mk'),
+        'address' => env('SHOP_ADDRESS'),
+    ],
 ];

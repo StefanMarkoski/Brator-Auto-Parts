@@ -86,46 +86,7 @@
                                 <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"></path>
                             </svg>
                         </div>
-                        <div class="brator-sidebar-single-item">
-                            <div class="shop-sidebar-title">
-                                <h2>Categories</h2>
-                            </div>
-                            <div class="shop-sidebar-content">
-                                <div class="shop-cat-list">
-                                    <ul>
-                                        <li><a href="#_">All Categories</a></li>
-                                        <li><a href="#_">Auto Parts</a></li>
-                                        <li><a href="#_">Car Care</a></li>
-                                        <li><a href="#_">Fluids & Chemicals</a></li>
-                                        <li><a href="#_">Oils</a></li>
-                                        <li><a href="#_">Tools & Supplies</a></li>
-                                        <li class="sub-cat"><a href="{{ route('home', [], false) }}">wheels & Tires</a>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                            <ul>
-                                                <li><a href="#_">Tires</a></li>
-                                                <li><a href="#_">wheels</a></li>
-                                                <li><a href="#_">Tires</a></li>
-                                                <li><a href="#_">wheels</a></li>
-                                            </ul>
-                                        </li>
-                                        <li class="sub-cat"><a href="{{ route('home', [], false) }}">Tires</a>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                            </svg>
-                                            <ul>
-                                                <li><a href="#_">Tires</a></li>
-                                                <li><a href="{{ route('home', [], false) }}">wheels</a></li>
-                                                <li><a href="#_">Tires</a></li>
-                                                <li><a href="#_">wheels</a></li>
-                                            </ul>
-                                        </li>
-                                        <li><a href="#_">Clearance</a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
+                        @include('partials.shop-departments')
                         <div class="brator-sidebar-single-item">
                             <div class="shop-sidebar-title fillter-list-title">
                                 <h2>Filter</h2>
