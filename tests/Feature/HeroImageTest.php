@@ -178,6 +178,33 @@ final class HeroImageTest extends TestCase
         }
     }
 
+    public function test_the_cross_fade_layer_is_sized_by_the_banner_and_not_the_page(): void
+    {
+        $js = (string) file_get_contents(public_path('app/storefront.js'));
+
+        $positioned = strpos($js, "banner.style.position = 'relative'");
+        $inserted = strpos($js, 'banner.insertBefore(layer');
+
+        /*
+         | THE ONE THAT GOT AWAY, and why it is asserted here rather than left to a click.
+         |
+         | The fade layer is position: absolute with all four offsets at zero, so it fills its
+         | nearest POSITIONED ancestor. The banner carried an inline position: relative for as
+         | long as the dots were an overlay pinned to it; moving the dots into the flow removed
+         | it, and the layer quietly started sizing itself against the page — every switch threw
+         | the incoming picture across the whole screen and then snapped it back into the banner.
+         |
+         | Nothing in the markup looked wrong, both changes were correct on their own, and no
+         | test could see it: the defect lives entirely in which element is the containing block.
+         | So the rotator now guarantees it itself, next to the code that needs it.
+        */
+        $this->assertNotFalse($positioned,
+            'The hero rotator no longer makes the banner a containing block, so its fade layer will fill the page.');
+        $this->assertNotFalse($inserted, 'The hero rotator no longer inserts a fade layer.');
+        $this->assertLessThan($inserted, $positioned,
+            'The banner must be positioned before the fade layer is inserted into it.');
+    }
+
     public function test_a_switched_off_picture_is_not_shown(): void
     {
         $this->heroImage('storage/hero/live.jpg', 0);

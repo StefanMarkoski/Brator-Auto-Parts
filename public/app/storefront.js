@@ -359,6 +359,21 @@
             layer.style.pointerEvents = 'none';
             layer.style.zIndex = '0';
 
+            /*
+             | THE BANNER HAS TO BE THE LAYER'S CONTAINING BLOCK, and this is where that
+             | belongs — with the code that creates the layer, not in the markup.
+             |
+             | The four zero offsets above mean "fill my containing block", which is the
+             | nearest POSITIONED ancestor. The banner used to carry an inline
+             | position: relative for the dots; when the dots moved into the flow and it was
+             | removed, this layer silently started sizing itself against the page instead —
+             | so every switch flashed the incoming picture across the whole screen before
+             | committing it to the banner at the right size.
+            */
+            if (banded.position === 'static') {
+                banner.style.position = 'relative';
+            }
+
             banner.insertBefore(layer, banner.firstChild);
 
             /*
