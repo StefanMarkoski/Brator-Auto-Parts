@@ -145,6 +145,39 @@ final class HeroImageTest extends TestCase
             ->assertSee('splide__pagination__page', false);
     }
 
+    public function test_the_dots_sit_above_the_search_box_as_bare_dots(): void
+    {
+        $this->heroImage('storage/hero/one.jpg', 0);
+        $this->heroImage('storage/hero/two.jpg', 1);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $dots = strpos($html, 'data-hero-pagination');
+        $form = strpos($html, 'data-vehicle-picker');
+
+        /*
+         | ABOVE THE FILTER, and in the flow. They were an overlay pinned to the bottom of the
+         | banner — Splide's own positioning — which put the row on top of the search box.
+        */
+        $this->assertNotFalse($dots, 'The hero dots are gone.');
+        $this->assertLessThan($form, $dots, 'The hero dots render below the vehicle picker.');
+        $this->assertStringContainsString('position: static', substr($html, $dots, 200),
+            'The dots are absolutely positioned again, so they will float over the search box.');
+
+        /*
+         | And bare. The theme's CSS gives every <li> in a pagination list a 24px grey tile with
+         | rounded ends, which is where the grey pill came from — it is the list, not the dots.
+        */
+        preg_match_all('/<li style="([^"]*)"/', substr($html, $dots, 1200), $items);
+
+        $this->assertCount(2, $items[1], 'Expected one list item per picture.');
+
+        foreach ($items[1] as $style) {
+            $this->assertStringContainsString('background: none', $style,
+                'A dot has its grey tile back.');
+        }
+    }
+
     public function test_a_switched_off_picture_is_not_shown(): void
     {
         $this->heroImage('storage/hero/live.jpg', 0);

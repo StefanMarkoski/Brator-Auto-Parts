@@ -24,22 +24,12 @@
 
     <!-- Banner style two start -->
     {{--
-        THE ONE STYLE DECLARATION THIS FEATURE ADDS, and why it is not a design change.
-
-        The theme's own dot markup is `position: absolute; bottom: .5em; left: 50%` — it is
-        built to pin to the bottom centre of a positioned ancestor, which is how the theme's
-        other sliders use it. This banner is `position: static`, so without this the dots anchor
-        to a page-level wrapper and land in the middle of the page instead.
-
-        `position: relative` with no offsets has NO visual effect on the element or on anything
-        already inside it — it only creates a containing block. So every theme element still
-        paints exactly where it did; the only thing that moves is the dot row added below. Kept
-        inline rather than in a stylesheet so the purchased CSS files stay byte-identical, and
-        it introduces no new class.
+        This element carried an inline `position: relative` while the dots were an overlay
+        pinned to its bottom edge. They sit in the flow above the search box now, so it is gone
+        and the banner is back to exactly the theme's own markup.
     --}}
     <div class="brator-main-banner-area banner-style-two lazyload" data-bg="/{{ $first }}"
         @if ($heroImages->count() > 1)
-            style="position: relative"
             {{-- Only when there is something to rotate. One picture stays a plain background
                  with no timer running and no dots to click. --}}
             data-hero-rotate="{{ $heroImages->map(fn (string $path): string => '/'.$path)->values()->toJson() }}"
@@ -63,24 +53,37 @@
                             <h2>Search by Vehicle</h2>
                             <p>Filter your results by entering your Vehicle to ensure you find the parts that fit.</p>
                         </div>
+                        @if ($heroImages->count() > 1)
+                            {{--
+                                Rendered server-side rather than built in JavaScript, so the dots are
+                                in the HTML for anything that does not run scripts and the count is
+                                never out of step with the pictures.
+
+                                THE TWO INLINE STYLES, and what each one undoes. Splide's CSS pins
+                                this list to the bottom centre of a positioned ancestor as an overlay,
+                                and the theme's CSS gives every <li> a 24px grey tile with rounded
+                                ends — together, a grey pill sitting on top of the search box. Neither
+                                is wanted here: the dots belong above the box, in the flow, bare.
+
+                                Undone inline rather than by adding a class, so the purchased CSS
+                                stays byte-identical — and the dot itself, its size, its colour and
+                                its dark active state, is still entirely the theme's.
+                            --}}
+                            <ul class="splide__pagination" data-hero-pagination
+                                style="position: static; transform: none; width: 100%; margin-bottom: 14px">
+                                @foreach ($heroImages as $index => $path)
+                                    <li style="background: none; width: auto; padding: 0">
+                                        <button type="button"
+                                            class="splide__pagination__page{{ $index === 0 ? ' is-active' : '' }}"
+                                            data-hero-page="{{ $index }}"
+                                            aria-label="Show picture {{ $index + 1 }} of {{ $heroImages->count() }}"></button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+
                         @include('partials.vehicle-picker')
                     </div>
-
-                    @if ($heroImages->count() > 1)
-                        {{-- Rendered server-side rather than built in JavaScript, so the dots are
-                             in the HTML for anything that does not run scripts and the count is
-                             never out of step with the pictures. --}}
-                        <ul class="splide__pagination" data-hero-pagination>
-                            @foreach ($heroImages as $index => $path)
-                                <li>
-                                    <button type="button"
-                                        class="splide__pagination__page{{ $index === 0 ? ' is-active' : '' }}"
-                                        data-hero-page="{{ $index }}"
-                                        aria-label="Show picture {{ $index + 1 }} of {{ $heroImages->count() }}"></button>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
                 </div>
             </div>
         </div>
