@@ -203,6 +203,11 @@ final class HeroImageTest extends TestCase
         $this->assertNotFalse($inserted, 'The hero rotator no longer inserts a fade layer.');
         $this->assertLessThan($inserted, $positioned,
             'The banner must be positioned before the fade layer is inserted into it.');
+
+        // And re-checked on every switch, so a bad containing block can cost at most one frame
+        // instead of flashing the picture across the page on every rotation from then on.
+        $this->assertStringContainsString('layer.offsetWidth !== banner.offsetWidth', $js,
+            'The rotator no longer verifies the fade layer still matches the banner before fading.');
     }
 
     public function test_a_switched_off_picture_is_not_shown(): void

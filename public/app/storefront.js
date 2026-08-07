@@ -420,6 +420,17 @@
                     return;
                 }
 
+                /*
+                 | Checked on every switch, not once at startup, because the cost of getting
+                 | it wrong is the whole picture flashing across the page: the layer fills its
+                 | nearest positioned ancestor, and if anything ever leaves that ancestor being
+                 | something other than the banner, this puts it back BEFORE the fade rather
+                 | than after it. Two reads of a cached layout value; no work in the common case.
+                */
+                if (layer.offsetWidth !== banner.offsetWidth || layer.offsetHeight !== banner.offsetHeight) {
+                    banner.style.position = 'relative';
+                }
+
                 // Staged, and NOT collapsible into one block: the layer has to be
                 // transparent and carrying the new picture in one frame, and only then
                 // told to become opaque. Setting both in the same frame gives the browser
