@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\CatalogImport\Actions\PurgeImportSourceAction;
 use App\Domain\CatalogImport\Actions\RevertImportAction;
 use App\Domain\CatalogImport\Actions\RunImportAction;
 use App\Domain\CatalogImport\Actions\StageCsvImportAction;
@@ -31,6 +32,7 @@ final class ImportController
         private StageCsvImportAction $stage,
         private RunImportAction $runner,
         private RevertImportAction $revert,
+        private PurgeImportSourceAction $purge,
     ) {}
 
     public function upload(Request $request): RedirectResponse
@@ -156,5 +158,53 @@ final class ImportController
         }
 
         return redirect()->route('admin.imports.show', $model->id)->with('status', $message);
+    }
+
+    /**
+     * Erase a supplier: every part it created, its whole run history, and the supplier row.
+     *
+     * Separate from undoing a run, and both are wanted. Undo is for testing a feed — one run,
+     * most recent first, a marker left behind. This is for "that supplier was a trial, get rid of
+     * it": every run at once, in any order, nothing left for the next upload to trip over.
+     */
+    public function purgeSource(string $source): RedirectResponse
+    {
+        $model = ImportSource::query()->findOrFail($source);
+        $name = $model->name;
+
+        $result = $this->purge->execute($model);
+
+        $message = sprintf('%s is gone: %d part%s removed and %d run%s deleted.',
+            $name,
+            $result['deleted'], $result['deleted'] === 1 ? '' : 's',
+            $result['runs'], $result['runs'] === 1 ? '' : 's');
+
+        if ($result['kept'] > 0) {
+            // Said out loud: a purge that leaves products behind has to name how many and why.
+            $message .= sprintf(' %d product%s that the feed only UPDATED %s kept — %s existed '
+                .'before this supplier, and the feed does not record what it overwrote.',
+                $result['kept'], $result['kept'] === 1 ? '' : 's',
+                $result['kept'] === 1 ? 'was' : 'were',
+                $result['kept'] === 1 ? 'it' : 'they');
+        }
+
+        if ($result['receiptsUnlinked'] > 0) {
+            $message .= sprintf(' %d receipt line%s no longer links to a product; %s own record of '
+                .'the name, price and VAT is untouched.', $result['receiptsUnlinked'],
+                $result['receiptsUnlinked'] === 1 ? '' : 's',
+                $result['receiptsUnlinked'] === 1 ? 'its' : 'their');
+        }
+
+        if ($result['basketLines'] > 0) {
+            $message .= sprintf(' %d open basket line%s cleared.',
+                $result['basketLines'], $result['basketLines'] === 1 ? '' : 's');
+        }
+
+        if ($result['brandsRemoved'] !== []) {
+            $message .= ' Empty brand'.(count($result['brandsRemoved']) === 1 ? '' : 's')
+                .' removed too: '.implode(', ', $result['brandsRemoved']).'.';
+        }
+
+        return redirect()->route('admin.imports.index')->with('status', $message);
     }
 }

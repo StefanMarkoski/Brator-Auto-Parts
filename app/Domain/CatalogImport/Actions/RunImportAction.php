@@ -173,6 +173,29 @@ final class RunImportAction
 
         $existing = Product::withTrashed()->where('sku', $row->sku)->first();
 
+        /*
+         | A DELETED PRODUCT HOLDING THIS SKU, refused with the way out in the message. This is
+         | the failure that killed a live demo.
+         |
+         | The SKU lookup includes trashed rows deliberately — the unique index does too, so
+         | treating a deleted row as absent would just move the failure to a database error. But
+         | the update path then adjusts stock, and that runs findOrFail WITHOUT withTrashed, so
+         | every row of a re-imported file died on "No query results for model [Product] 01kz…",
+         | which tells nobody anything.
+         |
+         | Skipped rather than quietly restored: staff deleted that part on purpose, and a
+         | supplier feed does not get to undo that decision on their behalf.
+        */
+        if ($existing !== null && $existing->trashed()) {
+            return [
+                StagingRowOutcome::Skipped,
+                null,
+                "SKU {$row->sku} belongs to a deleted product. Restore it under Products → Deleted "
+                .'to let the feed update it, or erase the supplier and its parts outright from the '
+                .'Imports screen and import again.',
+            ];
+        }
+
         [$result, $productId, $error] = $existing === null
             ? $this->createFrom($row, $brandId, $categoryId, $dryRun, $actorId)
             : $this->updateFrom($row, $existing, $brandId, $categoryId, $dryRun, $actorId);

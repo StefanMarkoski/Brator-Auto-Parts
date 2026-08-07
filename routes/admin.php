@@ -165,5 +165,13 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
          | products would be fired by any link prefetcher that wandered into the panel.
          */
         Route::delete('imports/{run}', [ImportController::class, 'destroy'])->name('imports.destroy');
+
+        /*
+         | Erase a supplier and everything it created. Declared with its own segment so it cannot
+         | be confused with undoing a run, because the two are one careless click apart and only
+         | one of them is reversible by re-importing.
+         */
+        Route::delete('import-sources/{source}', [ImportController::class, 'purgeSource'])
+            ->name('imports.sources.purge');
     });
 });

@@ -67,14 +67,43 @@
     </x-admin.component-card>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <x-admin.component-card title="Sources" desc="Where catalogue data comes from.">
+        <x-admin.component-card title="Sources"
+            desc="Where catalogue data comes from. Erasing one removes every part it created, its whole run history and the supplier itself — so the same file imports cleanly again afterwards.">
             @forelse ($sources as $source)
+                @php($preview = $purgePreviews[$source->id])
+
                 <div class="flex items-center justify-between gap-3 text-sm">
                     <span class="text-gray-700 dark:text-gray-300">{{ $source->name }}
                         <span class="block text-xs text-gray-400">{{ strtoupper($source->type->value) }} &middot;
-                            last run {{ $source->last_run_at?->diffForHumans() ?? 'never' }}</span></span>
-                    <span class="rounded-full px-2 py-0.5 text-xs {{ $source->is_active ? 'bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-400' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06]' }}">
-                        {{ $source->is_active ? 'Active' : 'Paused' }}</span>
+                            last run {{ $source->last_run_at?->diffForHumans() ?? 'never' }} &middot;
+                            {{ number_format($preview['products']) }} part{{ $preview['products'] === 1 ? '' : 's' }} created</span></span>
+
+                    <div class="flex items-center gap-3">
+                        <span class="rounded-full px-2 py-0.5 text-xs {{ $source->is_active ? 'bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-400' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06]' }}">
+                            {{ $source->is_active ? 'Active' : 'Paused' }}</span>
+
+                        {{--
+                            The confirmation states NUMBERS rather than a warning. This is the one
+                            control on the screen that cannot be put back by re-importing, and "are
+                            you sure?" with no figures is a question nobody can answer.
+                        --}}
+                        <x-admin.confirm-action
+                            :action="route('admin.imports.sources.purge', $source->id, false)"
+                            method="DELETE"
+                            label="Erase everything"
+                            trigger-class="text-sm font-medium text-error-600 hover:underline dark:text-error-400"
+                            :title="'Erase '.$source->name.' and everything it created?'"
+                            :message="number_format($preview['products']).' part'.($preview['products'] === 1 ? '' : 's').' will be deleted permanently, along with '
+                                .number_format($preview['runs']).' run'.($preview['runs'] === 1 ? '' : 's').' and the supplier itself.'
+                                .($preview['kept'] > 0
+                                    ? ' '.number_format($preview['kept']).' product'.($preview['kept'] === 1 ? '' : 's').' that this feed only updated will be KEPT — they existed before it.'
+                                    : '')
+                                .($preview['sold'] > 0
+                                    ? ' '.number_format($preview['sold']).' receipt line'.($preview['sold'] === 1 ? '' : 's').' will stop linking to a product; the receipts keep their own record of name, price and VAT.'
+                                    : '')
+                                .' The same file can be imported again afterwards.'"
+                            confirm="Yes, erase it" />
+                    </div>
                 </div>
             @empty
                 <p class="text-sm text-gray-400">No sources configured yet.</p>

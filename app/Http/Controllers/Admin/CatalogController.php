@@ -9,6 +9,7 @@ use App\Domain\Catalog\Actions\SaveBrandAction;
 use App\Domain\Catalog\Actions\SaveCategoryAction;
 use App\Domain\Catalog\Models\Brand;
 use App\Domain\Catalog\Models\Category;
+use App\Domain\CatalogImport\Actions\PurgeImportSourceAction;
 use App\Domain\CatalogImport\Models\ImportRun;
 use App\Domain\CatalogImport\Models\ImportSource;
 use Illuminate\Http\RedirectResponse;
@@ -146,11 +147,18 @@ final class CatalogController
         return redirect()->route('admin.brands.index')->with('status', "{$model->name} was deleted.");
     }
 
-    public function imports(): View
+    public function imports(PurgeImportSourceAction $purge): View
     {
+        $sources = ImportSource::query()->orderBy('name')->get();
+
         return view('admin.pages.imports', [
-            'sources' => ImportSource::query()->orderBy('name')->get(),
+            'sources' => $sources,
             'runs' => ImportRun::query()->with('source')->orderByDesc('created_at')->limit(20)->get(),
+            // What erasing each supplier would take out, so the confirmation can state numbers
+            // rather than ask staff to trust a button labelled "erase".
+            'purgePreviews' => $sources->mapWithKeys(
+                fn (ImportSource $source): array => [$source->id => $purge->preview($source)]
+            ),
         ]);
     }
 

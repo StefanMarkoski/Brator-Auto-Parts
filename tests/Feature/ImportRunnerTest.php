@@ -9,6 +9,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\CatalogImport\Actions\RunImportAction;
 use App\Domain\CatalogImport\Enums\ImportRunStatus;
 use App\Domain\CatalogImport\Models\ImportRun;
+use App\Domain\CatalogImport\Models\ImportSource;
 use App\Models\Enums\UserRole;
 use App\Models\User;
 use Database\Seeders\CatalogStructureSeeder;
@@ -714,6 +715,117 @@ final class ImportRunnerTest extends TestCase
             ->join('vehicle_makes as mk', 'mk.id', '=', 'mo.make_id')
             ->where('mk.name', $make)->where('mo.name', $model)->where('v.name', $variant)
             ->value('v.id');
+    }
+
+    public function test_a_deleted_product_holding_the_sku_is_reported_not_crashed_into(): void
+    {
+        $csv = <<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-D1,XGate Brake Disc,XGate,brake-discs,2450.00,24
+            CSV;
+
+        $this->apply($this->stage($csv));
+
+        // Deleted the way the admin deletes: soft, so the SKU stays occupied.
+        $product = Product::query()->where('sku', 'XG-D1')->sole();
+        $this->actingAs($this->admin())->delete("/admin/products/{$product->id}")->assertRedirect();
+
+        $again = $this->apply($this->stage($csv));
+
+        /*
+         | THIS KILLED A LIVE DEMO. The SKU lookup includes trashed rows — it has to, the unique
+         | index does too — and the update path then adjusted stock through findOrFail WITHOUT
+         | withTrashed, so every row of the file died on "No query results for model [Product]
+         | 01kz…", which tells nobody anything. Now it is a skip that says what to do about it.
+        */
+        $this->assertSame(0, (int) $again->rows_failed, 'A deleted SKU still fails the row.');
+        $this->assertSame(1, (int) $again->rows_skipped);
+
+        $error = (string) DB::table('import_staging_rows')
+            ->where('import_run_id', $again->id)->value('error');
+
+        $this->assertStringContainsString('belongs to a deleted product', $error);
+        $this->assertStringContainsString('Restore it', $error);
+    }
+
+    public function test_erasing_a_supplier_removes_its_parts_runs_and_the_supplier_itself(): void
+    {
+        $csv = <<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-P1,XGate Brake Disc,XGate,brake-discs,2450.00,24
+            XG-P2,XGate Brake Pad Set,XGate,brake-pads,1450.00,40
+            CSV;
+
+        $this->apply($this->stage($csv));
+        // A second run, undone — because that is the state a real screen gets into, and undoing
+        // leaves staging rows pointing at products that no longer exist.
+        $second = $this->apply($this->stage($csv));
+        $this->actingAs($this->admin())->delete("/admin/imports/{$second->id}")->assertRedirect();
+
+        $source = ImportSource::query()->where('name', 'XGate')->sole();
+
+        $this->actingAs($this->admin())
+            ->delete(route('admin.imports.sources.purge', $source->id))
+            ->assertRedirect(route('admin.imports.index'))
+            ->assertSessionHas('status', fn (string $s): bool => str_contains($s, 'XGate is gone'));
+
+        // All of it, and hard: an occupied SKU is what made re-importing fail in the first place.
+        $this->assertSame(0, Product::withTrashed()->where('sku', 'like', 'XG-P%')->count());
+        $this->assertSame(0, ImportSource::query()->where('name', 'XGate')->count());
+        $this->assertSame(0, ImportRun::query()->count());
+        $this->assertSame(0, Brand::query()->where('name', 'XGate')->count());
+
+        // And the same file imports cleanly again, into a shop that has never heard of them.
+        $again = $this->apply($this->stage($csv));
+
+        $this->assertSame(2, (int) $again->rows_created);
+    }
+
+    public function test_erasing_a_supplier_keeps_products_it_only_updated(): void
+    {
+        $existing = Product::query()->firstOrFail();
+        $before = $existing->name;
+
+        $this->apply($this->stage(<<<CSV
+            sku,name,price_net
+            {$existing->sku},XGate Renamed This One,999.00
+            CSV));
+
+        $source = ImportSource::query()->where('name', 'XGate')->sole();
+
+        $this->actingAs($this->admin())
+            ->delete(route('admin.imports.sources.purge', $source->id))
+            // Named and explained, because a purge that leaves rows behind has to say which.
+            ->assertSessionHas('status', fn (string $s): bool => str_contains($s, 'only UPDATED'));
+
+        /*
+         | Kept, and this is the line between the two controls: the importer does not snapshot the
+         | values it overwrote, so there is nothing to put back — and deleting a part that existed
+         | before this supplier ever sent a file would destroy catalogue that was never theirs.
+        */
+        $survivor = Product::query()->find($existing->id);
+
+        $this->assertNotNull($survivor, 'A product the feed only updated was deleted.');
+        $this->assertNotSame($before, $survivor->name);
+    }
+
+    public function test_a_guest_cannot_erase_a_supplier(): void
+    {
+        $this->apply($this->stage(<<<'CSV'
+            sku,name,brand,price_net
+            XG-G1,XGate Brake Disc,XGate,2450.00
+            CSV));
+
+        $source = ImportSource::query()->where('name', 'XGate')->sole();
+
+        // Logged out explicitly: actingAs persists for the rest of the test, so without this the
+        // "guest" would still be the admin and this would pass while proving nothing.
+        Auth::logout();
+
+        $this->delete(route('admin.imports.sources.purge', $source->id))->assertRedirect('/admin/login');
+
+        $this->assertSame(1, ImportSource::query()->where('name', 'XGate')->count());
+        $this->assertSame(1, Product::query()->where('sku', 'XG-G1')->count());
     }
 
     /** Uploads a CSV and returns the staged run. Heredoc indentation is stripped. */
