@@ -59,32 +59,57 @@
         @endforeach
     </select>
 
+    {{--
+        "Start again" lives INSIDE the search box, next to Search.
+
+        It used to be a button in its own little form under the rectangle, which meant the
+        browser's default grey button sitting on top of the hero image — the theme styles
+        buttons per section, so a button outside its section gets no styling at all. In here
+        the theme's own rule (.brator-parts-search-box-area.design-two ... form button) gives
+        it exactly the Search button's look, with no CSS of ours involved.
+
+        formaction, because HTML forms cannot nest: the button posts the same form to the
+        clear route instead. reset_redirect_to travels with it so clearing keeps the shopper
+        on the page they are on, while Search still goes to the listing.
+
+        Always rendered and hidden with the theme's d-none when there is nothing to clear —
+        the in-place cascade only copies <option>s between pickers, so a button that had to
+        be created on the fly would not appear until a reload.
+    --}}
+    {{--
+        getRequestUri, not fullUrl. The old button posted the absolute URL, which SafeRedirect
+        refuses on sight — anything with a scheme or host is not a bare path — so it silently
+        fell back to /shop and "Start again" quietly moved the shopper off the page they were
+        on. Found by clicking it, not by reading it: both spellings look right.
+    --}}
+    <input type="hidden" name="reset_redirect_to" value="{{ request()->getRequestUri() }}" />
+
     <button type="submit">Search</button>
+
+    {{-- After Search, not before: below 1200px the theme lays the box out three to a row, and
+         in this order Search completes the grid while "Start again" takes the short last row.
+         Ahead of it, Search was the one left stranded on its own line. --}}
+    <button type="submit" formaction="{{ route('vehicle.clear', [], false) }}"
+        @class(['d-none' => ! $vehiclePicker['hasSelection']]) data-vehicle-reset>Start again</button>
 </form>
 
 {{--
-    Escape hatches. Without these a shopper who picked a year the catalogue does not
+    The dead-end note. Without it a shopper who picked a year the catalogue does not
     cover saw a nearly-empty Make list, no explanation, and no way back — a dead end
     reachable in one click.
 
-    Both depend on how far the cascade has got, so they are kept in one always-present
-    container the in-place update can refresh wholesale. It holds nothing the theme has
-    bound to — a message and a plain form — so unlike the selects it is safe to replace.
-    The container is an unclassed div and renders empty when neither applies, which
-    occupies no space.
+    It depends on how far the cascade has got, so it lives in an always-present container
+    the in-place update refreshes wholesale. The container holds nothing the theme has
+    bound to — just a message — so unlike the selects it is safe to replace. It is an
+    unclassed div and renders empty when the note does not apply, which occupies no space.
+
+    "Start again" used to live here too. It is inside the search box now, where the theme
+    styles it.
 --}}
 <div data-vehicle-extras>
     @if ($vehiclePicker['state']['year'] !== null && $vehiclePicker['makes'] === [])
         <div class="brator-current-vehicle-content">
             <p>No vehicles in the catalogue for {{ $vehiclePicker['state']['year'] }}. Try another year, or start again.</p>
         </div>
-    @endif
-
-    @if (array_filter($vehiclePicker['state'], fn ($v) => $v !== null) !== [])
-        <form method="post" action="{{ route('vehicle.clear', [], false) }}">
-            @csrf
-            <input type="hidden" name="redirect_to" value="{{ request()->fullUrl() }}" />
-            <button type="submit">Start again</button>
-        </form>
     @endif
 </div>

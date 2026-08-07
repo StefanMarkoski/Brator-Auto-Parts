@@ -120,11 +120,20 @@ final class VehicleController
     {
         $this->selection->clear();
 
-        // Through SafeRedirect: redirect_to is posted by the page, so it is user input, and
-        // reflecting it unchecked made this an open redirect — a link on this shop's domain
-        // that lands on somebody else's site.
+        /*
+         | reset_redirect_to first, then redirect_to.
+         |
+         | "Start again" is a button inside the picker form now, so it posts that form's
+         | fields — including redirect_to, which means "where Search goes" and is the shop
+         | listing. Honouring it here would throw a shopper clearing the box on the homepage
+         | into the catalogue. Its own field carries the page it was clicked on.
+         |
+         | Both go through SafeRedirect: they are posted by the page, so they are user input,
+         | and reflecting one unchecked made this an open redirect — a link on this shop's
+         | domain that lands on somebody else's site.
+        */
         return redirect()->to(SafeRedirect::path(
-            $request->input('redirect_to'),
+            $request->input('reset_redirect_to') ?: $request->input('redirect_to'),
             route('shop.categories', [], false),
         ));
     }

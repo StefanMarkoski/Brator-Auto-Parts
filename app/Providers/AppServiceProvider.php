@@ -86,6 +86,11 @@ class AppServiceProvider extends ServiceProvider
                 'engines' => ($state['model'] === null || $state['name'] === null)
                     ? []
                     : $picker->engines($state['model'], $state['name'], $state['year']),
+                // Whether there is anything to start again FROM. Computed here rather than in
+                // the view, because the "Start again" button is now inside the picker form and
+                // the in-place cascade reads this state off the response to show or hide it.
+                'hasSelection' => $selection->current() !== null
+                    || array_filter($state, fn ($level) => $level !== null) !== [],
             ]);
         });
 

@@ -209,6 +209,76 @@ final class ClearFiltersTest extends TestCase
         }
     }
 
+    public function test_start_again_sits_inside_the_search_box_where_the_theme_styles_it(): void
+    {
+        $html = $this->get('/shop')->assertOk()->getContent();
+
+        /*
+         | IT HAS TO BE INSIDE THE PICKER FORM, and that is the whole point of the change.
+         | The theme styles buttons per section — .brator-parts-search-box-area.design-two
+         | ... form button — so the same button in its own little form under the box got the
+         | browser's default grey, sitting on top of the hero image. Nothing about it looked
+         | broken to a test: it rendered, it worked, it was simply unstyled.
+        */
+        $this->assertStringContainsString('data-vehicle-reset', $html, 'The "Start again" button is gone.');
+        $this->assertStringContainsString('data-vehicle-reset', $this->pickerForm($html),
+            'The "Start again" button is outside the search box, so the theme gives it no styling.');
+
+        // And it is a button in THAT form via formaction, not a second form: forms cannot nest,
+        // so a nested one would be reparented by the browser and the button would sit outside
+        // the box again on screen while still looking correct in the source.
+        $this->assertSame(0, preg_match_all('/<form[^>]+action="[^"]*vehicle\/clear/', $html),
+            'A separate form posts to the clear route, which cannot live inside the search box.');
+    }
+
+    public function test_start_again_appears_only_once_there_is_something_to_clear(): void
+    {
+        // Nothing picked: rendered but hidden with the theme's own utility class, because the
+        // in-place cascade only copies <option>s and cannot conjure a button that is not there.
+        $this->assertMatchesRegularExpression('/class="d-none"[^>]*data-vehicle-reset/',
+            $this->pickerForm($this->get('/shop')->assertOk()->getContent()),
+            'With no vehicle chosen, "Start again" should be hidden rather than absent.');
+
+        $html = $this->withSession([VehicleSelection::PICKER_KEY => ['year' => 2019]])
+            ->get('/shop')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('d-none', $this->pickerForm($html),
+            'A year is chosen, so "Start again" should be showing.');
+    }
+
+    public function test_start_again_returns_to_the_page_it_was_clicked_on(): void
+    {
+        /*
+         | Both fields are posted now, because the button submits the picker's own form:
+         | redirect_to means "where Search goes" and is always the listing. Honouring that
+         | here threw a shopper clearing the box on the homepage into the catalogue — which
+         | is what the old button did, since it posted the ABSOLUTE url and SafeRedirect
+         | refuses anything with a host, falling back to /shop without a word.
+        */
+        $this->post(route('vehicle.clear'), [
+            'reset_redirect_to' => '/shop/braking?rating=4',
+            'redirect_to' => '/shop',
+        ])->assertRedirect('/shop/braking?rating=4');
+    }
+
+    public function test_start_again_cannot_be_used_to_send_a_shopper_off_site(): void
+    {
+        // Still user input, so still through SafeRedirect.
+        $this->post(route('vehicle.clear'), [
+            'reset_redirect_to' => 'https://evil.example.com/login',
+        ])->assertRedirect('/shop');
+    }
+
+    /** The picker form's own markup, so "inside the search box" can actually be asserted. */
+    private function pickerForm(string $html): string
+    {
+        preg_match('/<form[^>]*data-vehicle-picker.*?<\/form>/s', $html, $matches);
+
+        $this->assertNotEmpty($matches, 'No vehicle picker form on the page.');
+
+        return $matches[0];
+    }
+
     public function test_no_blade_directive_leaks_onto_the_listing_page(): void
     {
         $variant = (int) DB::table('product_vehicle_fitments')->value('vehicle_variant_id');

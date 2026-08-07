@@ -828,8 +828,22 @@
                 });
             });
 
-            // "Start again" and the "no vehicles for that year" note both depend on how far
-            // the cascade has got, so they move with it.
+            /*
+             | "Start again" appears the moment there is anything to clear. It is a button
+             | inside the form, so it is not carried by the <option> copying above — only its
+             | d-none is synced, from the same response. Copying the class rather than
+             | toggling it keeps the server the single judge of when it applies.
+            */
+            var freshReset = fresh.querySelector('[data-vehicle-reset]');
+
+            if (freshReset) {
+                document.querySelectorAll('[data-vehicle-reset]').forEach(function (reset) {
+                    reset.className = freshReset.className;
+                });
+            }
+
+            // The "no vehicles for that year" note also depends on how far the cascade has
+            // got, so it moves with it.
             var freshExtras = doc.querySelector('[data-vehicle-extras]');
 
             if (freshExtras) {
