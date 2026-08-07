@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductPhotoController;
 use App\Http\Controllers\Admin\ReceiptController;
+use App\Http\Controllers\Admin\VehicleController;
 use App\Http\Controllers\Admin\VehicleLookupController;
 use App\Http\Controllers\Admin\WhatsHotController;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -112,6 +113,16 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
             ->name('homepage.whats-hot.update');
         Route::delete('homepage/whats-hot/{box}', [WhatsHotController::class, 'destroy'])
             ->name('homepage.whats-hot.destroy');
+
+        /*
+         | Vehicles — the fitment tree itself, the rows the storefront's picker is built from.
+         | No collision with the lookup endpoints below: each of those has a further segment
+         | ("vehicles/years"), and this is the bare collection.
+         */
+        Route::get('vehicles', [VehicleController::class, 'index'])->name('vehicles.index');
+        Route::post('vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
+        Route::put('vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
+        Route::delete('vehicles/{vehicle}', [VehicleController::class, 'destroy'])->name('vehicles.destroy');
 
         /*
          | The fitment picker's cascade. Read-only JSON, staff-only like everything else in

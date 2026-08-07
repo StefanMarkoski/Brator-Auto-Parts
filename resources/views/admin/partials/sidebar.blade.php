@@ -13,6 +13,7 @@
             ['name' => 'Product photos', 'route' => 'admin.product-photos.index'],
             ['name' => 'Categories', 'route' => 'admin.categories.index'],
             ['name' => 'Brands', 'route' => 'admin.brands.index'],
+            ['name' => 'Vehicles', 'route' => 'admin.vehicles.index'],
         ]],
         ['label' => 'Storefront', 'items' => [
             ['name' => 'Homepage', 'route' => 'admin.homepage.index'],
