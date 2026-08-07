@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductPhotoController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\VehicleLookupController;
+use App\Http\Controllers\Admin\WhatsHotController;
 use App\Http\Middleware\EnsureUserIsStaff;
 use Illuminate\Support\Facades\Route;
 
@@ -98,6 +99,19 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
             ->name('homepage.hero-images.store');
         Route::delete('homepage/hero-images/{banner}', [HeroImageController::class, 'destroy'])
             ->name('homepage.hero-images.destroy');
+
+        /*
+         | The "What's Hot" promo boxes. Throttled on store/update because both may fetch an image
+         | from an address the poster chose.
+         */
+        Route::post('homepage/whats-hot', [WhatsHotController::class, 'store'])
+            ->middleware('throttle:20,1')
+            ->name('homepage.whats-hot.store');
+        Route::put('homepage/whats-hot/{box}', [WhatsHotController::class, 'update'])
+            ->middleware('throttle:60,1')
+            ->name('homepage.whats-hot.update');
+        Route::delete('homepage/whats-hot/{box}', [WhatsHotController::class, 'destroy'])
+            ->name('homepage.whats-hot.destroy');
 
         /*
          | The fitment picker's cascade. Read-only JSON, staff-only like everything else in

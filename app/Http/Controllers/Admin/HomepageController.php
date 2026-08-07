@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\ProductCollection;
 use App\Domain\Content\Actions\ImportHeroImageAction;
 use App\Domain\Content\Actions\SaveHomepageSectionAction;
+use App\Domain\Content\Actions\SaveWhatsHotBoxAction;
 use App\Domain\Content\Models\Banner;
 use App\Domain\Content\Models\HomepageSection;
 use Illuminate\Http\RedirectResponse;
@@ -46,6 +48,20 @@ final class HomepageController
                 ->orderBy('id')
                 ->get(),
             'comfortableWidth' => ImportHeroImageAction::COMFORTABLE_WIDTH,
+            // The What's Hot promo boxes, and the categories a box may point at. Every link is
+            // chosen from this list rather than typed, so a box cannot advertise a department the
+            // shop does not have.
+            'whatsHot' => Banner::query()
+                ->where('placement', SaveWhatsHotBoxAction::PLACEMENT)
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get(),
+            'linkableCategories' => Category::query()
+                ->where('is_active', true)
+                ->orderBy('depth')
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug', 'depth']),
+            'whatsHotVisible' => SaveWhatsHotBoxAction::VISIBLE_AT_ONCE,
         ]);
     }
 

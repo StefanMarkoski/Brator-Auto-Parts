@@ -7,6 +7,13 @@
                         <div class="brator-section-header all-item-left">
                             <div class="brator-section-header-title">
                                 <h2>{{ $section->heading ?? 'Best Seller' }}</h2>
+                                {{-- The subheading, beside the heading. Its 15px bottom margin is zeroed so it
+                                     centres against a 30px h2, and it takes a left gap because the theme drops the
+                                     h2's own margin-right inside this container. Inline, so the purchased CSS stays
+                                     byte-identical and no class is introduced. --}}
+                                @if ($section->subheading)
+                                    <p style="margin: 0 0 0 14px">{{ $section->subheading }}</p>
+                                @endif
                             </div>
                             <a href="{{ route('shop.categories', [], false) }}">See All Products
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">

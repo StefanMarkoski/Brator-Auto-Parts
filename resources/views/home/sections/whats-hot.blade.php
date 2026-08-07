@@ -4,7 +4,25 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="brator-section-header">
-                        <h2>{{ $section->heading ?? "What's Hot" }}</h2>
+                        {{--
+                            THE SUBHEADING NOW RENDERS. It was being saved and shown nowhere — the
+                            editor offered a Subheading field that every single section ignored, so
+                            typing one looked like a save that had silently failed.
+
+                            It goes inside brator-section-header-title, which the theme styles as a
+                            flex-wrap row precisely so it can carry a second element beside the
+                            heading (its other use holds a countdown). Dropped straight into
+                            brator-section-header it would be flung to the far right instead, because
+                            that container is justify-content: space-between.
+
+                            No new class — both of these ship with the theme.
+                        --}}
+                        <div class="brator-section-header-title">
+                            <h2>{{ $section->heading ?? "What's Hot" }}</h2>
+                            @if ($section->subheading)
+                                <p style="margin: 0 0 0 14px">{{ $section->subheading }}</p>
+                            @endif
+                        </div>
                     </div>
                     <div class="brator-offer-slider brator-whats-hot-slider splide js-splide p-splide" data-splide='{"autoplay":false, "arrows":true,"pagination":false,"type":"loop","perPage":4,"perMove":"1","gap":15, "breakpoints":{ "520" :{ "perPage": "1" },"767" :{ "perPage": "1" }, "991" :{ "perPage" : "2" }, "1090":{ "perPage" : "2" }, "1366":{ "perPage" : "3" }, "1500":{ "perPage" : "4" }, "1920":{ "perPage" : "4" }}}'>
                         <div class="splide__arrows style-two">
