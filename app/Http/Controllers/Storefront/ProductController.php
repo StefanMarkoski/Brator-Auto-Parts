@@ -49,7 +49,20 @@ final class ProductController
          | pages get nothing and the section is hidden rather than claiming a pairing that has
          | never happened.
         */
-        $boughtTogether = $this->cards->forIds($this->boughtWith->execute($product->id, 5));
+        $companionIds = $this->boughtWith->execute($product->id, 5);
+
+        /*
+         | The bundle is the current part FIRST, then its companions — one uniform list, because
+         | the theme's markup is a row of identical cards each carrying its own checkbox. The
+         | first version rendered the current part as a bare <label> beside the cards, which is
+         | why the section looked broken: the theme's checkbox styling is scoped to a checkbox
+         | INSIDE a card, so a label outside one gets none of it.
+         |
+         | Empty when there are no companions: a bundle of one is not a bundle.
+        */
+        $bundle = $companionIds === []
+            ? collect()
+            : $this->cards->forIds([$product->id, ...$companionIds]);
 
         $primary = $product->categories->firstWhere('pivot.is_primary', true)
             ?? $product->categories->first();
@@ -77,16 +90,18 @@ final class ProductController
                 $product->name => null,
             ], fn ($_, $label) => $label !== '', ARRAY_FILTER_USE_BOTH),
             // The two recommendation blocks the theme already ships.
-            'boughtTogether' => $boughtTogether,
+            'bundle' => $bundle,
             'similar' => $this->detail->recommendations($product->id, 'similar', 5),
             'fitments' => $this->detail->fitments($product->id),
             'fitsChosenVehicle' => $fitsChosenVehicle,
             'chosenVehicleName' => $this->vehicle->picker()['name'],
             'recentlyViewed' => $recent,
             // Rendered server-side too, so the figure is correct before Alpine boots.
-            'boughtTogetherTotal' => $boughtTogether->reduce(
+            // Summed over the bundle itself, which now includes the current part — so the total
+            // and the ticked boxes can never disagree about what is in it.
+            'bundleTotal' => $bundle->reduce(
                 fn (Money $carry, $card) => $carry->add($card->price),
-                $product->sale_price_minor ?? $product->price_minor
+                Money::zero()
             ),
         ]);
     }

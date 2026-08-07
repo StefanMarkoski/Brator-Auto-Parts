@@ -8,9 +8,24 @@
 
     @param  \App\Domain\Catalog\DTOs\ProductCardData  $product
     @param  string|null  $variant  wrapper classes; defaults to the slider variant
+    @param  array|null  $bundleCheckbox  turns the card into a bundle row: name, value, price,
+            label, and optionally checked/disabled
+
+    The parameter is NOT called $bundle, and that is not fussiness. @include leaks the including
+    view's variables into every nested card, and the product page already has a $bundle collection
+    — so a card in an unrelated strip on the same page inherited it and tried to read a Collection
+    as this array. Every product page with a Recently Viewed or You May Also Like strip 500'd.
 --}}
                                 <div class="brator-product-single-item-area {{ $variant ?? 'splide__slide design-two' }}">
-                                    <div class="brator-product-single-item-info info-content-flex">
+                                    {{--
+                                        d-none in a bundle, which is what the theme's own bundle cards
+                                        do. This row holds the badges, and on the current part it
+                                        carried a "20% OFF" tag that made that one card 28px taller
+                                        than its neighbours and started it 14px higher — so the row of
+                                        three sat visibly ragged. A discount badge is also beside the
+                                        point in a "tick these to add them" list.
+                                    --}}
+                                    <div class="brator-product-single-item-info @isset($bundleCheckbox)d-none @endisset info-content-flex">
                                         <div class="brator-product-single-item-info-left">
                                             @foreach ($product->badges as $badge)
                                                 <div class="{{ $badge['class'] }}">{{ $badge['label'] }}</div>
@@ -45,6 +60,38 @@
                                                 <p class="brator-price-black-text"><sub>{{ $product->price->format() }}</sub></p>
                                             @endif
                                         </div>
-                                        <div class="brator-product-single-item-btn"><form method="post" action="{{ route('cart.add', [], false) }}">@csrf<input type="hidden" name="product_id" value="{{ $product->id }}" /><button type="submit" @disabled(! $product->inStock)>Add to cart</button></form></div>
+                                        @isset($bundleCheckbox)
+                                            {{--
+                                                THE BUNDLE CHECKBOX, in the theme's own place: inside the
+                                                card, straight after the price.
+
+                                                It has to be here. The CSS that turns this input into the
+                                                theme's box-and-tick, and draws the "+" between cards, is
+                                                scoped to
+
+                                                  .check-box-product .…item-area.design-two .…item-checkbox
+
+                                                so a checkbox placed outside the card gets none of it. That is
+                                                what this section looked like before: raw browser checkboxes
+                                                with plain text labels, sitting beside cards they did not
+                                                belong to, in a 2,175px-tall block.
+
+                                                The theme gives the input no visible label, because the card
+                                                names the product. An unlabelled checkbox is still wrong for a
+                                                screen reader, so it carries an aria-label — an attribute, so
+                                                nothing about the design changes.
+                                            --}}
+                                            <div class="brator-product-single-item-checkbox">
+                                                <input type="checkbox" name="{{ $bundleCheckbox['name'] }}"
+                                                    value="{{ $bundleCheckbox['value'] }}"
+                                                    data-bundle-price="{{ $bundleCheckbox['price'] }}"
+                                                    aria-label="{{ $bundleCheckbox['label'] }}"
+                                                    @checked($bundleCheckbox['checked'] ?? true)
+                                                    @disabled($bundleCheckbox['disabled'] ?? false) />
+                                                <div class="arow-check-right"></div>
+                                            </div>
+                                        @else
+                                            <div class="brator-product-single-item-btn"><form method="post" action="{{ route('cart.add', [], false) }}">@csrf<input type="hidden" name="product_id" value="{{ $product->id }}" /><button type="submit" @disabled(! $product->inStock)>Add to cart</button></form></div>
+                                        @endisset
                                     </div>
                                 </div>

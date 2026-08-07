@@ -155,6 +155,48 @@ final class BoughtTogetherTest extends TestCase
         );
     }
 
+    public function test_each_bundle_checkbox_sits_inside_its_own_card(): void
+    {
+        [$part, $companion] = Product::query()->visible()->take(2)->get()->all();
+        $part->update(['published_at' => now()]);
+
+        $this->order([$part, $companion]);
+
+        $html = $this->get("/product/{$part->slug}")->assertOk()->getContent();
+
+        $bundle = substr($html, (int) strpos($html, 'check-box-product'));
+        $bundle = substr($bundle, 0, (int) strpos($bundle, 'brator-product-single-frequently-total'));
+
+        /*
+         | THE STYLE FIX, pinned. The theme's CSS for this checkbox — the box, the tick, and the
+         | "+" drawn between cards — is scoped to
+         |   .check-box-product .…item-area.design-two .…item-checkbox
+         | so a checkbox rendered OUTSIDE the card gets none of it. That is what the section
+         | looked like: raw browser checkboxes with plain text labels, beside cards they did not
+         | belong to, in a 2,175px-tall block.
+         |
+         | Asserted by position: every checkbox must appear after a card opens and before the
+         | next one does.
+        */
+        $cards = preg_split('/(?=<div class="brator-product-single-item-area)/', $bundle);
+        $cards = array_values(array_filter($cards, fn (string $chunk): bool => str_contains($chunk, 'item-area')));
+
+        $this->assertCount(2, $cards, 'Expected one card for the part and one for its companion.');
+
+        foreach ($cards as $index => $card) {
+            $this->assertStringContainsString('brator-product-single-item-checkbox', $card,
+                "Card {$index} has no checkbox inside it, so the theme's styling will not apply.");
+            $this->assertStringContainsString('arow-check-right', $card,
+                "Card {$index} is missing the element the theme draws the box and the + with.");
+        }
+
+        // And no stray checkbox outside a card, which is what the first version rendered.
+        $outside = preg_replace('/<div class="brator-product-single-item-area.*/s', '', $bundle);
+
+        $this->assertStringNotContainsString('type="checkbox"', (string) $outside,
+            'There is a bundle checkbox sitting outside the cards.');
+    }
+
     public function test_the_strip_is_hidden_when_nothing_was_ever_bought_with_the_part(): void
     {
         $part = Product::query()->visible()->firstOrFail();

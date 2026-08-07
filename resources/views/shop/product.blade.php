@@ -238,7 +238,7 @@
         strip anyway would leave "Frequently Bought Together" above the product on its own, which
         both looks broken and claims a pairing that has never happened.
     --}}
-    @if ($boughtTogether->isNotEmpty())
+    @if (count($bundle) > 1)
     <div class="brator-product-frequently-area">
         <div class="container-xxxl container-xxl container">
             <div class="row">
@@ -252,22 +252,45 @@
                             class="brator-product-single-frequently-list"
                             data-bundle data-currency="{{ config('shop.currency_symbol') }}">
                             @csrf
-                            <div class="product-list-items check-box-product">
-                                <label class="brator-product-single-item-checkbox">
-                                    <input type="checkbox" name="product_ids[]" value="{{ $product->id }}" checked data-bundle-price="{{ ($product->sale_price_minor ?? $product->price_minor)->toPrimitive() }}" />
-                                    <span>This item: {{ $product->name }}</span>
-                                </label>
-                                @foreach ($boughtTogether as $related)
-                                    <label class="brator-product-single-item-checkbox">
-                                        <input type="checkbox" name="product_ids[]" value="{{ $related->id }}" checked data-bundle-price="{{ $related->price->toPrimitive() }}"
-                                            @disabled(! $related->inStock) />
-                                        <span>{{ $related->name }}</span>
-                                    </label>
-                                    @include('partials.product-card', ['product' => $related, 'variant' => 'design-two'])
+                            {{--
+                                align-items: stretch, overriding the theme's "center".
+
+                                The cards are boxes with visible borders, and the theme centres them
+                                vertically — so a card that is taller than its neighbours sits proud of
+                                the row at both ends. That happens to any discounted part: the sale
+                                price and the struck-through original do not fit on one line at 235px,
+                                making its price block 56px instead of 28px and lifting the whole card
+                                14px above the others.
+
+                                Stretch is the flex default, and it lines the boxes up top and bottom.
+                                Inline rather than in a stylesheet, so the purchased CSS stays
+                                byte-identical, and it introduces no new class.
+                            --}}
+                            <div class="product-list-items check-box-product" style="align-items: stretch">
+                                {{--
+                                    One card per item, the current part first, each carrying its own
+                                    checkbox — which is exactly the theme's structure for this block.
+                                    The "+" between cards is drawn by the checkbox's own CSS, so it
+                                    only appears when the checkbox sits inside the card.
+                                --}}
+                                @foreach ($bundle as $index => $item)
+                                    @include('partials.product-card', [
+                                        'product' => $item,
+                                        'variant' => 'design-two',
+                                        'bundleCheckbox' => [
+                                            'name' => 'product_ids[]',
+                                            'value' => $item->id,
+                                            'price' => $item->price->toPrimitive(),
+                                            // The theme shows no text beside the box, so this is where
+                                            // "this is the part you are looking at" has to live.
+                                            'label' => ($index === 0 ? 'This item: ' : 'Also add: ').$item->name,
+                                            'disabled' => ! $item->inStock,
+                                        ],
+                                    ])
                                 @endforeach
                             </div>
                             <div class="brator-product-single-frequently-total">
-                                <h6>Total:</h6><span data-bundle-total>{{ $boughtTogetherTotal->format() }}</span>
+                                <h6>Total:</h6><span data-bundle-total>{{ $bundleTotal->format() }}</span>
                                 <button type="submit">Add All To Cart</button>
                             </div>
                         </form>
