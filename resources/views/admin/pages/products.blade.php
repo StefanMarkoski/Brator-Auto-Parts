@@ -9,6 +9,23 @@
         <x-admin.alert variant="success" class="mb-6">{{ session('status') }}</x-admin.alert>
     @endif
 
+    {{--
+        Arrived from a vehicle. Says which car, and how to get back out — a filtered list with no
+        statement of what it is filtered by is how staff conclude the catalogue has shrunk.
+    --}}
+    @if ($fitsVehicle !== null)
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 dark:border-brand-500/30 dark:bg-brand-500/10">
+            <p class="text-sm text-gray-700 dark:text-gray-300">
+                Parts that fit <span class="font-medium">{{ $fitsVehicle['label'] }}</span>
+                <span class="text-gray-400">({{ $fitsVehicle['years'] }})</span>.
+                Open a part to add or remove this car — fitment is set per part.
+            </p>
+
+            <a href="{{ route('admin.products.index', request()->except(['fits', 'page']), false) }}"
+                class="text-sm font-medium text-brand-500 hover:underline">Show all parts</a>
+        </div>
+    @endif
+
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap gap-2">
             <x-admin.button size="sm" :variant="$showDeleted ? 'outline' : 'primary'"
@@ -56,6 +73,7 @@
                         <th class="pb-3 pr-4">Brand</th>
                         <th class="pb-3 pr-4 text-right">Price (net)</th>
                         <th class="pb-3 pr-4 text-right">Stock</th>
+                        <th class="pb-3 pr-4 text-right">Fits</th>
                         <th class="pb-3 pr-4">Status</th>
                         <th class="pb-3 pr-4"></th>
                     </tr>
@@ -77,6 +95,23 @@
                             </td>
                             <td class="py-3 pr-4 text-right {{ $product->stock_quantity <= 5 ? 'font-medium text-warning-600' : 'text-gray-500' }}">
                                 {{ $product->stock_quantity }}
+                            </td>
+                            {{--
+                                How many cars this part fits, linking straight to the Fitment
+                                card on its own screen. Fitment was editable there all along and
+                                nothing on this list said so, which is a control nobody can find.
+                                A part fitting nothing is called out, because that part is
+                                invisible to every shopper who filters by their vehicle.
+                            --}}
+                            <td class="py-3 pr-4 text-right">
+                                <a href="{{ route('admin.products.edit', $product->id, false) }}#fitment"
+                                    class="{{ $product->vehicle_variants_count === 0
+                                        ? 'font-medium text-warning-600 hover:underline'
+                                        : 'text-gray-500 hover:text-brand-500 hover:underline' }}">
+                                    {{ $product->vehicle_variants_count === 0
+                                        ? 'No cars'
+                                        : number_format($product->vehicle_variants_count).' cars' }}
+                                </a>
                             </td>
                             <td class="py-3 pr-4">
                                 @if ($product->trashed())
@@ -126,7 +161,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-6 text-center text-gray-400">
+                            <td colspan="7" class="py-6 text-center text-gray-400">
                                 {{ $showDeleted ? 'Nothing has been deleted.' : 'No products match.' }}
                             </td>
                         </tr>

@@ -65,7 +65,7 @@
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div class="xl:col-span-2">
             <x-admin.component-card title="Vehicles"
-                :desc="number_format($vehicles->total()).' sub model and engine combinations'">
+                :desc="number_format($vehicles->total()).' sub model and engine combinations. Which parts fit a car is set on each part\'s own screen — the Parts number opens that list.'">
 
                 <form method="get" action="{{ route('admin.vehicles.index', [], false) }}" class="mb-5 flex gap-3">
                     <x-admin.input name="q" :value="$search" placeholder="Search make, model, sub model or engine" />
@@ -103,8 +103,18 @@
                                     <td class="py-3 pr-4 text-gray-400">
                                         {{ $vehicle->year_from }} – {{ $vehicle->year_to ?? 'present' }}
                                     </td>
-                                    <td class="py-3 pr-4 text-right text-gray-400">
-                                        {{ number_format((int) $vehicle->parts_count) }}
+                                    {{-- The way through to the parts. Fitment is set per part on
+                                         the part's own screen, so this lists them rather than
+                                         offering to assign in bulk from here. --}}
+                                    <td class="py-3 pr-4 text-right">
+                                        @if ((int) $vehicle->parts_count > 0)
+                                            <a href="{{ route('admin.products.index', ['fits' => $vehicle->id], false) }}"
+                                                class="text-gray-500 hover:text-brand-500 hover:underline">
+                                                {{ number_format((int) $vehicle->parts_count) }}
+                                            </a>
+                                        @else
+                                            <span class="text-gray-400">0</span>
+                                        @endif
                                     </td>
                                     <td class="py-3 pr-4">
                                         {{-- "Active", not "In the filter": the badge capitalises

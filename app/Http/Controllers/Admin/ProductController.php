@@ -17,6 +17,7 @@ use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\CatalogImport\Actions\RecordFieldOverridesAction;
 use App\Domain\CatalogImport\Models\ProductFieldOverride;
 use App\Domain\Fitment\Actions\SetProductFitmentAction;
+use App\Domain\Fitment\Queries\Internal\GetVehiclePickerQuery;
 use App\Support\Database\LikePattern;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,9 @@ final class ProductController
         // Fitment's own action. Which vehicles exist, and what it means for a part to fit one,
         // is Fitment's business — this controller only passes on what staff chose.
         private SetProductFitmentAction $setFitment,
+        // Only to spell out the vehicle in "parts that fit …". Reading the vehicle tree by hand
+        // here would be this context guessing at another one's joins.
+        private GetVehiclePickerQuery $picker,
     ) {}
 
     public function index(Request $request): View
@@ -46,12 +50,29 @@ final class ProductController
         // mistaken delete would be a database client. This filter is the way back.
         $showDeleted = $request->query('status') === 'deleted';
 
+        /*
+         | "Which parts fit this car" — the way in from the Vehicles screen.
+         |
+         | Fitment is still set one part at a time on the part's own screen; this only answers
+         | the question adding a vehicle raises. Without it the only direction on offer was part
+         | → vehicles, so reaching the parts for a new car meant already knowing which parts.
+        */
+        $fits = $request->integer('fits') ?: null;
+
         return view('admin.pages.products', [
             'search' => $search,
             'showDeleted' => $showDeleted,
             'deletedCount' => Product::onlyTrashed()->count(),
+            'fitsVehicle' => $fits === null ? null : $this->picker->selection($fits),
             'products' => ($showDeleted ? Product::onlyTrashed() : Product::query())
                 ->with('brand')
+                // The count, so the list can say which parts fit no car at all — the state that
+                // makes a part invisible to every shopper who filters by their vehicle.
+                ->withCount('vehicleVariants')
+                ->when($fits !== null, fn ($q) => $q->whereHas(
+                    'vehicleVariants',
+                    fn ($w) => $w->where('vehicle_variants.id', $fits)
+                ))
                 ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
                     ->where('name', 'like', LikePattern::contains($search))
                     ->orWhere('sku', 'like', LikePattern::contains($search))))

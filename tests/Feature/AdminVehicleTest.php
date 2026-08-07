@@ -336,6 +336,50 @@ final class AdminVehicleTest extends TestCase
         );
     }
 
+    public function test_a_vehicle_leads_to_the_parts_that_fit_it(): void
+    {
+        $variantId = (int) DB::table('product_vehicle_fitments')->value('vehicle_variant_id');
+        $fitting = DB::table('product_vehicle_fitments')->where('vehicle_variant_id', $variantId)
+            ->pluck('product_id');
+        $other = DB::table('products')->whereNotIn('id', $fitting)->value('id');
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.products.index', ['fits' => $variantId]))
+            ->assertOk()
+            // Says what it is filtered by, and where fitment is actually edited. A filtered list
+            // that does not announce its filter reads as "the catalogue has shrunk".
+            ->assertSee('Parts that fit', false)
+            ->assertSee('fitment is set per part', false)
+            ->getContent();
+
+        /*
+         | The route IN from a vehicle, which is what was missing: fitment was editable per part
+         | all along, but the only direction on offer was part → vehicles, so reaching the parts
+         | for a car you had just added meant already knowing which parts they were.
+        */
+        $this->assertStringContainsString((string) $fitting->first(), $html);
+        $this->assertStringNotContainsString((string) $other, $html);
+    }
+
+    public function test_the_product_list_says_how_many_cars_each_part_fits(): void
+    {
+        $bare = DB::table('products')
+            ->whereNotIn('id', DB::table('product_vehicle_fitments')->select('product_id'))
+            ->value('id');
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.products.index'))->assertOk()->getContent();
+
+        // Deep-linked to the Fitment card, because it sits below a long form and was being
+        // missed — a control nobody can find is a control that does not exist.
+        $this->assertStringContainsString('/edit#fitment', $html);
+
+        if ($bare !== null) {
+            $this->assertStringContainsString('No cars', $html,
+                'A part that fits nothing should be called out: no shopper filtering by car can see it.');
+        }
+    }
+
     public function test_the_search_box_finds_a_vehicle_by_make_model_or_engine(): void
     {
         $variant = VehicleVariant::query()->whereNotNull('engine_code')->firstOrFail();

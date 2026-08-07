@@ -46,7 +46,9 @@
                     what the part will fit. Removing a chip is the whole point of the control, so
                     it has to actually remove — including fitment that arrived from a feed.
                 --}}
-                <x-admin.component-card class="mt-6" title="Fitment"
+                {{-- id, so the products list and the Vehicles screen can link straight to it: the
+                     card sits under a long Details form and was being missed entirely. --}}
+                <x-admin.component-card id="fitment" class="mt-6" title="Fitment"
                     :desc="'Which cars this part fits — '.$fitment->count().' recorded. Removing one here removes it, including fitment that came from a feed.'">
                     <x-admin.fitment-picker :chosen="$fitment" />
                 </x-admin.component-card>
