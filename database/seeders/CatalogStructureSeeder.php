@@ -37,6 +37,33 @@ class CatalogStructureSeeder extends Seeder
         'Interior' => ['Floor Mats', 'Seat Covers', 'Steering Wheels', 'Mirrors'],
     ];
 
+    /**
+     * The icon each department shows, chosen to match the part rather than by counting.
+     *
+     * This used to be `categories-((position % 18) + 1).png`, which handed out whatever
+     * file happened to be next: Engine got the alloy wheel, Wheels & Tires got the battery,
+     * Filters got a tyre — and Lighting and Interior got numbers 07 and 08, which are not
+     * icons at all but the theme's grey "98X96" placeholders.
+     *
+     * The theme ships six real part icons (01 brake pad, 02 battery, 03 alloy wheel,
+     * 04 tyre, 05 headlight, 06 air filter) and the shop has eight departments, so the
+     * remaining three are ours — drawn to match, see scripts/generate-category-icons.php.
+     * Number 04, the tyre, is left unused: the alloy wheel already says Wheels & Tires
+     * better, and a second wheel on another department would be the same mistake again.
+     *
+     * @var array<string, string>
+     */
+    private const ICONS = [
+        'Braking' => 'assets/images/categories/categories-01.png',       // brake pad
+        'Wheels & Tires' => 'assets/images/categories/categories-03.png', // alloy wheel
+        'Engine' => 'app/images/categories/engine.png',                   // piston (ours)
+        'Filters' => 'assets/images/categories/categories-06.png',        // air filter
+        'Suspension' => 'app/images/categories/suspension.png',           // coil spring (ours)
+        'Electrical' => 'assets/images/categories/categories-02.png',     // battery
+        'Lighting' => 'assets/images/categories/categories-05.png',       // headlight
+        'Interior' => 'app/images/categories/interior.png',               // car seat (ours)
+    ];
+
     /** @var array<string, array{label: string, type: AttributeType, widget: FilterWidget, unit: ?string, options: list<string>}> */
     private const ATTRIBUTES = [
         'origins' => [
@@ -98,7 +125,7 @@ class CatalogStructureSeeder extends Seeder
                 'name' => $parentName,
                 'slug' => Str::slug($parentName),
                 'description' => "Everything under {$parentName}.",
-                'image_path' => sprintf('assets/images/categories/categories-%02d.png', ($position % 18) + 1),
+                'image_path' => self::ICONS[$parentName],
                 'path' => '/'.Str::slug($parentName).'/',
                 'depth' => 0,
                 'position' => $position++,
@@ -112,7 +139,10 @@ class CatalogStructureSeeder extends Seeder
                     'name' => $childName,
                     'slug' => Str::slug($childName),
                     'description' => "Shop {$childName} for your vehicle.",
-                    'image_path' => sprintf('assets/images/categories/categories-%02d.png', ($childPosition % 18) + 1),
+                    // A subcategory inherits its department's icon. Nothing renders these
+                    // today, and "Brake Fluid shows an air filter" is the exact trap the
+                    // round-robin fell into — the parent's icon is at least always true.
+                    'image_path' => self::ICONS[$parentName],
                     'path' => $parent->path.Str::slug($childName).'/',
                     'depth' => 1,
                     'position' => $childPosition++,

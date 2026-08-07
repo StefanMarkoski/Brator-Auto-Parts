@@ -301,6 +301,69 @@ final class NoTemplatePlaceholdersTest extends TestCase
             ->assertSee('Materials', false);
     }
 
+    public function test_every_department_icon_is_artwork_and_not_a_dimensions_placeholder(): void
+    {
+        $offenders = [];
+
+        foreach (Category::query()->where('depth', 0)->get() as $category) {
+            $file = public_path($category->image_path);
+
+            if (! is_file($file)) {
+                $offenders[] = "{$category->name}: {$category->image_path} does not exist";
+
+                continue;
+            }
+
+            if ($this->isDimensionsPlaceholder($file)) {
+                $offenders[] = "{$category->name}: {$category->image_path} is a grey placeholder";
+            }
+        }
+
+        /*
+         | Lighting and Interior showed "98X96" and "184X120" on the homepage — the theme's own
+         | filler, because it ships six part icons and the shop has eight departments while the
+         | seeder handed them out by counting. A 200 response proves nothing here: the <img> tag
+         | was perfectly valid and pointed at a real file.
+        */
+        $this->assertSame([], $offenders,
+            "Departments showing filler instead of an icon:\n  ".implode("\n  ", $offenders));
+    }
+
+    public function test_no_two_departments_share_an_icon(): void
+    {
+        $icons = Category::query()->where('depth', 0)->pluck('image_path', 'name');
+
+        // The round-robin also meant a wheel on Engine and a battery on Wheels & Tires. Distinct
+        // icons is the property that breaks the moment somebody goes back to counting.
+        $this->assertCount($icons->count(), $icons->unique(),
+            'Two departments share an icon: '.$icons->duplicates()->implode(', '));
+    }
+
+    /**
+     * The theme's filler images are flat opaque grey with their own dimensions printed on them.
+     *
+     * Told apart from artwork by transparency, not by filename: every real icon here is line art
+     * on a transparent background, and every placeholder is opaque edge to edge. That keeps the
+     * check working for icons we draw ourselves as well as the theme's.
+     */
+    private function isDimensionsPlaceholder(string $file): bool
+    {
+        $image = imagecreatefrompng($file);
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $transparent = 0;
+
+        for ($y = 0; $y < $height; $y++) {
+            for ($x = 0; $x < $width; $x++) {
+                if (((imagecolorat($image, $x, $y) >> 24) & 0x7F) > 100) {
+                    $transparent++;
+                }
+            }
+        }
+
+        return $transparent < ($width * $height) * 0.2;
+    }
+
     /** @return list<string> */
     private function pages(): array
     {
