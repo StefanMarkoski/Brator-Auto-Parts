@@ -249,6 +249,51 @@ final class FitmentPickerTest extends TestCase
         );
     }
 
+    public function test_a_rejected_save_keeps_the_vehicles_that_were_just_added(): void
+    {
+        $product = Product::query()->firstOrFail();
+        $variant = (int) DB::table('vehicle_variants')->orderByDesc('id')->value('id');
+
+        $names = DB::table('vehicle_variants as v')
+            ->join('vehicle_models as mo', 'mo.id', '=', 'v.model_id')
+            ->join('vehicle_makes as mk', 'mk.id', '=', 'mo.make_id')
+            ->where('v.id', $variant)
+            ->first(['mk.name as make', 'mo.name as model', 'v.name as variant']);
+
+        /*
+         | THE ONE THAT LOOKS LIKE "IT WILL NOT STICK". A save rejected on some unrelated field
+         | redisplayed the form with the STORED fitment: every text box kept what had been typed,
+         | and the one control rendered by JavaScript quietly reverted to what was on file. The car
+         | just added was gone with nothing saying so — indistinguishable from a broken picker.
+         |
+         | A blank name, so validation fails while the fitment field itself is perfectly valid.
+        */
+        $this->actingAs($this->admin())
+            ->from("/admin/products/{$product->id}/edit")
+            ->put("/admin/products/{$product->id}", [
+                ...$this->productFields(),
+                'name' => '',
+                'sku' => $product->sku,
+                'fitment_managed' => '1',
+                'fitment_variant_ids' => [$variant],
+            ])
+            ->assertRedirect("/admin/products/{$product->id}/edit")
+            ->assertSessionHasErrors('name');
+
+        // Followed as its own request, which is what a browser does: the redisplayed form has to
+        // read the flashed input, not the database.
+        $html = $this->get("/admin/products/{$product->id}/edit")->assertOk()->getContent();
+
+        foreach ([$names->make, $names->model, $names->variant] as $part) {
+            $this->assertStringContainsString(e($part), $html,
+                'A rejected save dropped the vehicle that had just been added.');
+        }
+
+        // And nothing was written, because the save really did fail.
+        $this->assertSame(0, DB::table('product_vehicle_fitments')
+            ->where('product_id', $product->id)->where('vehicle_variant_id', $variant)->count());
+    }
+
     private function someVariant(): int
     {
         return (int) DB::table('vehicle_variants')->orderBy('id')->value('id');

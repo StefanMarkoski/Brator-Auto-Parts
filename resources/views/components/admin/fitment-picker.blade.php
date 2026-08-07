@@ -113,6 +113,19 @@
 
     <p x-show="error" x-text="error" class="text-xs text-error-600 dark:text-error-400"></p>
 
+    {{--
+        Says it out loud: what is on screen is not saved until the product is.
+
+        Adding a car writes nothing by itself — these are hidden inputs that post with the
+        product's own Save button — so the page looked identical whether that had happened or not.
+        That is how "I added the fitment and the shop still will not list it" happens, and this
+        line is the difference between a mystery and an instruction.
+    --}}
+    <p x-show="dirty" x-cloak
+        class="rounded-lg bg-warning-50 px-3 py-2 text-xs font-medium text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">
+        Not saved yet — press Save changes to keep these vehicles.
+    </p>
+
     <div class="border-t border-gray-100 pt-4 dark:border-gray-800">
         <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
             <span class="font-medium text-gray-700 dark:text-gray-300"

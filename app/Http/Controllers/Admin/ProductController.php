@@ -90,7 +90,12 @@ final class ProductController
 
     public function create(): View
     {
-        return view('admin.pages.product-create', $this->formOptions());
+        return view('admin.pages.product-create', [
+            ...$this->formOptions(),
+            // Kept across a rejected save, the same as every text field. There is nothing on file
+            // yet, so without this a bounce on the SKU threw away the vehicles as well.
+            'fitment' => $this->fitmentByIds(array_map('intval', (array) old('fitment_variant_ids', []))),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -318,13 +323,47 @@ final class ProductController
      *
      * @return Collection<int, array{id: int, label: string}>
      */
+    /**
+     * The chips for the fitment picker.
+     *
+     * WHAT THIS RETURNS AFTER A REJECTED SAVE, and why it matters: the vehicles the operator had
+     * just added, not the ones on file. Previously it always read the database, so a save that
+     * bounced on an unrelated field — a blank price, a duplicate SKU — redisplayed the form with
+     * the stored fitment and the new car simply gone. Every text field was preserved by old();
+     * the one control rendered by JavaScript was not, and it said nothing about the loss. That is
+     * the exact shape of "I added it, it will not stick".
+     */
     private function fitmentFor(string $productId): Collection
     {
-        return DB::table('product_vehicle_fitments as f')
-            ->join('vehicle_variants as v', 'v.id', '=', 'f.vehicle_variant_id')
+        $submitted = old('fitment_variant_ids');
+
+        if (is_array($submitted)) {
+            return $this->fitmentByIds(array_map('intval', $submitted));
+        }
+
+        return $this->fitmentByIds(
+            DB::table('product_vehicle_fitments')
+                ->where('product_id', $productId)
+                ->pluck('vehicle_variant_id')
+                ->map(fn ($id): int => (int) $id)
+                ->all()
+        );
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return Collection<int, array{id: int, label: string}>
+     */
+    private function fitmentByIds(array $ids): Collection
+    {
+        if ($ids === []) {
+            return collect();
+        }
+
+        return DB::table('vehicle_variants as v')
             ->join('vehicle_models as mo', 'mo.id', '=', 'v.model_id')
             ->join('vehicle_makes as mk', 'mk.id', '=', 'mo.make_id')
-            ->where('f.product_id', $productId)
+            ->whereIn('v.id', $ids)
             ->orderBy('mk.name')->orderBy('mo.name')->orderBy('v.name')
             ->get(['v.id', 'mk.name as make', 'mo.name as model', 'v.name as variant', 'v.engine_code'])
             ->map(fn ($row): array => [

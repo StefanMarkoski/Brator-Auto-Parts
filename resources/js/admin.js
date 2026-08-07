@@ -105,6 +105,20 @@ Alpine.data('fitmentPicker', (config = {}) => ({
     fieldName: (config.name || 'fitment_variant_ids') + '[]',
     chosen: config.chosen || [],
 
+    /*
+     | The list as the page loaded it, so the control can say it holds UNSAVED changes.
+     |
+     | Adding a car here writes nothing by itself — the ids post with the product's own Save —
+     | and without this the screen looks identical whether or not that ever happened. That is
+     | precisely the confusion this cost: a vehicle added, the shop still not listing the part,
+     | and nothing on the page to say which half had gone wrong.
+    */
+    initial: (config.chosen || []).map((v) => String(v.id)).sort().join(','),
+
+    get dirty() {
+        return this.chosen.map((v) => String(v.id)).sort().join(',') !== this.initial;
+    },
+
     years: [],
     makes: [],
     models: [],

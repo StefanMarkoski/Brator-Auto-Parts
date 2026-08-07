@@ -37,7 +37,9 @@
 
                 <x-admin.component-card title="Fitment"
                     desc="Which cars this part fits. Narrow down the same way a shopper does, then add — or set it in bulk from a feed's fits column.">
-                    <x-admin.fitment-picker />
+                    {{-- Seeded from what was posted, so a save rejected on some other field does
+                         not quietly throw away the vehicles that were chosen here. --}}
+                    <x-admin.fitment-picker :chosen="$fitment" />
 
                     <p class="mt-4 border-t border-gray-100 pt-4 text-xs text-gray-400 dark:border-gray-800">
                         For more than a handful of parts, the <code>fits</code> column in an import
