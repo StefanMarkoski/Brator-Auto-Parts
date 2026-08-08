@@ -37,35 +37,44 @@
                                 <div class="brator-product-img-tab-header js-tabs__header">
                                     <ul>
                                         {{--
-                                            Two bugs in four lines. The paths were RELATIVE —
-                                            url(./assets/images/…) — so on /product/{slug} the
-                                            browser asked for /product/assets/… and got four 404s
-                                            in the console on every product page. And they were the
-                                            theme's placeholder files rather than this product's
-                                            photographs, so the thumbnail strip never matched the
-                                            large image it switches between.
+                                            AS MANY PHOTOGRAPHS AS THE PART HAS, and no more.
 
-                                            Root-relative now, and driven by the same image list as
-                                            the panes below.
+                                            Three bugs lived in these four lines. The paths were
+                                            relative — url(./assets/images/…) — so on
+                                            /product/{slug} the browser asked for /product/assets/…
+                                            and logged four 404s on every product page. That was
+                                            fixed. What was not: the loop was `range(0, 3)`, so a
+                                            part with one photograph had its strip PADDED with the
+                                            theme's demo pictures — an alloy wheel and a set of
+                                            wipers on a brake-fluid page, presented as photographs
+                                            of the part in front of you. Worse than a missing
+                                            picture, because it is a plausible one.
+
+                                            A part with no photograph at all still gets one
+                                            placeholder rather than an empty frame; the theme's
+                                            layout needs something in the slot.
                                         --}}
-                                        @foreach (range(0, 3) as $slot)
-                                            @php($thumb = $product->images[$slot]->path ?? 'assets/images/product-tab-img-0'.($slot + 1).'.jpeg')
+                                        @php
+                                            $gallery = $product->images->isNotEmpty()
+                                                ? $product->images->pluck('path')->values()
+                                                : collect(['assets/images/product-tab-img-01.jpeg']);
+                                        @endphp
+                                        @foreach ($gallery as $thumb)
                                             <li><a class="js-tabs__title" href="#" style="background-image:url(/{{ $thumb }})"></a></li>
                                         @endforeach
                                     </ul>
                                 </div>
-                                <div class="js-tabs__content brator-product-img-tab-item"><img data-action="zoom" class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->images[0]->path ?? 'assets/images/product-tab-img-01.jpeg' }}" alt="{{ $product->name }}" />
-                                    <p>click image to zoom in</p>
-                                </div>
-                                <div class="js-tabs__content brator-product-img-tab-item"><img data-action="zoom" class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->images[1]->path ?? 'assets/images/product-tab-img-02.jpeg' }}" alt="{{ $product->name }}" />
-                                    <p>click image to zoom in</p>
-                                </div>
-                                <div class="js-tabs__content brator-product-img-tab-item"><img data-action="zoom" class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->images[2]->path ?? 'assets/images/product-tab-img-03.jpeg' }}" alt="{{ $product->name }}" />
-                                    <p>click image to zoom in</p>
-                                </div>
-                                <div class="js-tabs__content brator-product-img-tab-item"><img data-action="zoom" class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->images[3]->path ?? 'assets/images/product-tab-img-04.jpeg' }}" alt="{{ $product->name }}" />
-                                    <p>click image to zoom in</p>
-                                </div>
+                                @foreach ($gallery as $index => $path)
+                                    {{-- Every pane but the first starts hidden. tab.js only hides
+                                         them once it runs, so all four used to render stacked and
+                                         then collapse — a several-thousand-pixel jump on a page
+                                         whose first paint is the product photograph. The inline
+                                         style is what tab.js itself sets, so it clears the moment
+                                         a thumbnail is clicked. --}}
+                                    <div class="js-tabs__content brator-product-img-tab-item" @if ($index > 0) style="display:none" @endif><img data-action="zoom" class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $path }}" alt="{{ $product->name }}" />
+                                        <p>click image to zoom in</p>
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
                         <div class="brator-product-layout-header-content">
@@ -322,7 +331,6 @@
                                 <li><a class="js-tabs__title" href="#">Description </a></li>
                                 <li><a class="js-tabs__title" href="#">Specification </a></li>
                                 <li><a class="js-tabs__title" href="#">Reviews ({{ number_format($product->reviews_count) }}) </a></li>
-                                <li><a class="js-tabs__title" href="#">Product Q&A</a></li>
                             </ul>
                         </div>
                         <div class="js-tabs__content brator-product-single-tab-item">
@@ -441,63 +449,38 @@
                                     @endforelse
                                 </div>
                             </div>
-                            <div class="brator-contact-form-area product-review-form">
-                                <div class="brator-contact-form-header">
-                                    <h2>Write Your Review</h2>
-                                </div>
-                                <div class="brator-contact-form"><span class="info-text">Your email address will not be b.published. Required fields are marked *</span></div>
-                                <div class="product-review-tag">
-                                    <p>Your Rating</p>
-                                    <div class="brator-review">
-                                        <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                            <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                        </svg>
-                                        <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                            <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                        </svg>
-                                        <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                            <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                        </svg>
-                                        <svg class="active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                            <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                        </svg>
-                                        <svg class="d-active" fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
-                                            <path d="M59.7,23.9l-18.1-2.8L33.4,3.9c-0.6-1.2-2.2-1.2-2.8,0l-8.2,17.3L4.4,23.9c-1.3,0.2-1.8,1.9-0.8,2.8l13.1,13.5l-3.1,18.9  c-0.2,1.3,1.1,2.4,2.3,1.6l16.3-8.9l16.2,8.9c1.1,0.6,2.5-0.4,2.2-1.6l-3.1-18.9l13.1-13.5C61.4,25.8,61,24.1,59.7,23.9z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="brator-contact-form-fields">
-                                <div class="brator-contact-form-field">
-                                    <input type="text" name="sub" placeholder="Give your review a tittle (Optional)" />
-                                </div>
-                                <div class="brator-contact-form-field">
-                                    <textarea name="sms" placeholder="Write your review here"></textarea>
-                                </div>
-                                <div class="brator-contact-form-field-two-items">
-                                    <div class="brator-contact-form-field">
-                                        <input type="text" name="name" placeholder="Your Email *" />
-                                    </div>
-                                    <div class="brator-contact-form-field">
-                                        <input type="text" name="name" placeholder="Name" />
-                                    </div>
-                                </div>
-                                <div class="brator-contact-form-field-info">
-                                    <input type="checkbox" name="condcion" /><span>Save my name & email in this browser for next time i comment</span>
-                                </div>
-                                <div class="brator-contact-form-field">
-                                    <button type="submit">Submit Review</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="js-tabs__content brator-product-single-tab-item">
-                            <p>pug</p>
+                            {{--
+                                THE FAKE REVIEW FORM IS GONE — 48 lines of it.
+
+                                It was not a form. There was no <form> element, no action, no
+                                CSRF and no route: "Submit Review" was a submit button with
+                                nothing to submit to, so a shopper could write a review, press it,
+                                and watch nothing happen at all. The fields were the theme's own
+                                too — name="sub", name="sms", TWO inputs both called "name" (one of
+                                them placeheld "Your Email *"), a checkbox called "condcion", a
+                                hardcoded four-of-five "Your Rating" that could not be clicked, and
+                                "will not be b.published".
+
+                                Reviews are read-only in this shop: they are seeded and shown, and
+                                there is no moderation queue to put a submission in. Better to not
+                                offer it than to offer it and drop it on the floor. When it is
+                                real, it goes here.
+                            --}}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    {{--
+        This close was missing.
+
+        .brator-product-single-tab-area opened above the tab list and was never closed, so "You
+        May Also Like", "Recently Viewed" and the whole footer were parsed INSIDE the tab block.
+        Same shape as the four missing closes on the cart page, and the same reason it survived:
+        nothing errors, it just nests everything below it one level too deep.
+    --}}
+    </div>{{-- .brator-product-single-tab-area --}}
     <!-- bread start-->
     {{--
         HIDDEN WHEN THERE IS NOTHING TO RECOMMEND.

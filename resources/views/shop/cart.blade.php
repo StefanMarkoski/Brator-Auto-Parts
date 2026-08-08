@@ -198,11 +198,9 @@
                                         <h2>Checkout</h2>
                                         <p>No card is charged — this shop takes payment on delivery or by phone. You will get a receipt by email.</p>
                                     </div>
-                                    @if (session('error'))
-                                        <div class="brator-contact-form-field-info">
-                                            <p>{{ session('error') }}</p>
-                                        </div>
-                                    @endif
+                                    {{-- session('error') is NOT repeated here. It is already
+                                         rendered at the top of the cart, so a rejected checkout
+                                         printed the same sentence twice on one page. --}}
                                     @if ($errors->any())
                                         <div class="brator-contact-form-field-info">
                                             @foreach ($errors->all() as $message)
@@ -266,6 +264,22 @@
                             </div>
                         </div>
                     </div>
+                    {{--
+                        These four closes were missing.
+
+                        The page opened .brator-cart-area, its container, the .row and the
+                        .col-xl-8 and closed none of them, and layouts/shop.blade.php yields the
+                        content immediately before the footer — so the entire footer and the
+                        scroll-to-top button were parsed INSIDE a two-thirds-width grid column,
+                        inside a second container's padding. On the checkout page. The browser
+                        recovered enough to render, which is exactly why it survived: nothing
+                        errored, the footer was just visibly squashed and left-aligned.
+                    --}}
+                </div>{{-- .col-xl-8 --}}
+            </div>{{-- .row --}}
+        </div>{{-- .container --}}
+    </div>{{-- .brator-cart-area --}}
+
     @if ($basket->coupon !== null)
         {{-- Outside every other form: a nested <form> is invalid HTML, the browser drops the inner
              one, and that is how the clear-filters button ended up submitting the wrong form. --}}
