@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Catalog\Models;
 
+use App\Domain\Catalog\Queries\Public\GetNavigationQuery;
 use App\Models\Concerns\HasSeoMeta;
 use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,6 +34,25 @@ class Category extends Model
         'position' => 'integer',
         'products_count' => 'integer',
     ];
+
+    /**
+     * Any change to a category drops the cached navigation tree.
+     *
+     * GetNavigationQuery caches that tree for an hour and it is injected into every page by a
+     * view composer, so a rename used to leave the mega menu, the mobile menu and the footer
+     * all linking the OLD slug — and the department page resolves by slug, so the shop's own
+     * primary navigation 404'd for up to an hour with no control in the panel to fix it.
+     *
+     * Hooked on the MODEL rather than called from SaveCategoryAction/DeleteCategoryAction on
+     * purpose. Those are the two write paths today; the reason this bug existed at all is that
+     * `forget()` has to be remembered, and the icon migration was the only caller that did.
+     * Here it cannot be forgotten by whatever writes a category next.
+     */
+    protected static function booted(): void
+    {
+        static::saved(static fn () => GetNavigationQuery::forget());
+        static::deleted(static fn () => GetNavigationQuery::forget());
+    }
 
     /** @return BelongsTo<Category, $this> */
     public function parent(): BelongsTo

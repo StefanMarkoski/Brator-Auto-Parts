@@ -115,6 +115,47 @@ final class CatalogStructureAdminTest extends TestCase
             'The department lost products when its slug changed.');
     }
 
+    public function test_a_rename_updates_the_shops_own_navigation_immediately(): void
+    {
+        $parent = Category::query()->where('depth', 0)->firstOrFail();
+        $oldSlug = $parent->slug;
+
+        /*
+         | The two GETs are the whole point. GetNavigationQuery caches the tree for an hour and a
+         | view composer puts it on every storefront page, so the first request is what FILLS the
+         | cache — and before this was fixed, the second request still rendered the OLD slug in
+         | the mega menu, the mobile menu and the footer. Those links resolve a department by
+         | slug, so the shop's primary navigation 404'd for up to an hour and nothing in the
+         | panel could clear it.
+         |
+         | Every other rename test in this file asks for the NEW url directly, so it passes
+         | without the cache ever being consulted. This one asks the shop.
+        */
+        $this->get('/')->assertOk()->assertSee("/shop/{$oldSlug}", escape: false);
+
+        $this->actingAs($this->admin())->put("/admin/categories/{$parent->id}", [
+            'name' => $parent->name,
+            'slug' => 'renamed-in-the-menu',
+            'is_active' => 1,
+        ]);
+
+        $this->get('/')->assertOk()
+            ->assertSee('/shop/renamed-in-the-menu', escape: false)
+            ->assertDontSee("/shop/{$oldSlug}", escape: false);
+    }
+
+    public function test_a_new_department_shows_up_in_the_menu_without_waiting_for_the_cache(): void
+    {
+        // The other half of the same bug, and the half that makes staff create a duplicate: the
+        // department they just added was invisible in the nav, so they added it again and got
+        // bodywork-2.
+        $this->get('/')->assertOk()->assertDontSee('/shop/bodywork', escape: false);
+
+        $this->actingAs($this->admin())->post('/admin/categories', ['name' => 'Bodywork', 'is_active' => 1]);
+
+        $this->get('/')->assertOk()->assertSee('/shop/bodywork', escape: false);
+    }
+
     public function test_moving_a_category_into_its_own_subtree_is_refused(): void
     {
         $parent = Category::query()->where('depth', 0)->with('children')->firstOrFail();
