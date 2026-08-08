@@ -53,15 +53,39 @@
         <div class="brator-filter-item-content-area">
             @foreach ($group['options'] as $option)
                 @php($count = $facets['attributes'][$group['code']][$option['value']] ?? 0)
+                {{--
+                    The id is derived from the group code and the VALUE, never from the loop index.
+
+                    storefront.js's syncFilterOptions() patches this sidebar row by row after an
+                    in-place filter change: it pairs old and new rows by name + value and MOVES the
+                    survivors with appendChild, so a row's position changes while the node itself is
+                    reused. An index-derived id would travel with a moved row and end up naming a
+                    different option — the label would then tick the wrong box. Keyed on the value,
+                    the id follows the row wherever it lands.
+
+                    The group code is in the id because the same value can legitimately appear in two
+                    groups, and two inputs sharing an id would send both labels to whichever came
+                    first in the document.
+                --}}
+                @php($optionId = 'filter-attr-'.$group['code'].'-'.Str::slug($option['value']))
                 <div class="brator-filter-item-content">
                     <input type="checkbox"
+                           id="{{ $optionId }}"
                            name="attr[{{ $group['code'] }}][]"
                            value="{{ $option['value'] }}"
                            data-auto-submit
                            @checked($filter->hasAttribute($group['code'], $option['value']))
                            @disabled($count === 0 && ! $filter->hasAttribute($group['code'], $option['value'])) />
                     <div class="brator-filter-item-check-box-content">
-                        <span class="brator-name" @if ($option['swatch']) style="border-left:12px solid {{ $option['swatch'] }};padding-left:6px" @endif>{{ $option['value'] }}</span>
+                        {{--
+                            The <label> goes INSIDE brator-name, which the theme already styles (and
+                            which carries the swatch's inline border), so the purchased CSS still does
+                            all the work and no new class is introduced.
+
+                            The count stays OUTSIDE the label on purpose: wrapping "(147)" in it would
+                            make a screen reader announce the number as part of the option's name.
+                        --}}
+                        <span class="brator-name" @if ($option['swatch']) style="border-left:12px solid {{ $option['swatch'] }};padding-left:6px" @endif><label for="{{ $optionId }}">{{ $option['value'] }}</label></span>
                         <span class="brator-count">({{ number_format($count) }})</span>
                     </div>
                 </div>

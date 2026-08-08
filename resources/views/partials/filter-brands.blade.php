@@ -24,11 +24,28 @@
             @php($count = $facets['brands'][$brand->slug] ?? 0)
             @continue($count === 0 && ! $filter->hasBrand($brand->slug))
             <div class="brator-filter-item-content" data-filter-label="{{ $brand->name }}">
-                <input type="checkbox" name="brand[]" value="{{ $brand->slug }}"
+                {{--
+                    The id is derived from the SLUG, never from the loop index.
+
+                    storefront.js's syncFilterOptions() patches this sidebar row by row after an
+                    in-place filter change: it pairs old and new rows by name + value and MOVES
+                    the survivors with appendChild, so a row's position in the list changes while
+                    the node itself is reused. An index-derived id would travel with a moved row
+                    and end up naming a different brand — the label would then tick the wrong
+                    box. Keyed on the value, the id follows the row wherever it lands.
+                --}}
+                <input type="checkbox" id="filter-brand-{{ $brand->slug }}" name="brand[]" value="{{ $brand->slug }}"
                        data-auto-submit
                        @checked($filter->hasBrand($brand->slug)) />
                 <div class="brator-filter-item-check-box-content">
-                    <span class="brator-name">{{ $brand->name }}</span>
+                    {{--
+                        The <label> goes INSIDE brator-name, which the theme already styles, so the
+                        purchased CSS still does all the work and no new class is introduced.
+
+                        The count stays OUTSIDE the label on purpose: wrapping "(147)" in it would
+                        make a screen reader announce the number as part of the brand's name.
+                    --}}
+                    <span class="brator-name"><label for="filter-brand-{{ $brand->slug }}">{{ $brand->name }}</label></span>
                     <span class="brator-count">({{ number_format($count) }})</span>
                 </div>
             </div>
