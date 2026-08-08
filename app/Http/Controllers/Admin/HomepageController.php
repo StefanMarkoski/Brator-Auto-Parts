@@ -40,6 +40,11 @@ final class HomepageController
                 ->get(),
             'collections' => ProductCollection::query()->orderBy('name')->get(['id', 'name']),
             'collectionBacked' => SaveHomepageSectionAction::COLLECTION_BACKED,
+            // Which sections actually print a heading / subheading. The editor offered both to
+            // every section and four of them printed neither, so the box took the text, went
+            // green, and changed nothing on the shop.
+            'headingBacked' => SaveHomepageSectionAction::HEADING_BACKED,
+            'subheadingBacked' => SaveHomepageSectionAction::SUBHEADING_BACKED,
             // Every hero picture, not only the live ones, so a switched-off or scheduled image
             // is still visible to whoever manages them rather than silently absent.
             'heroImages' => Banner::query()

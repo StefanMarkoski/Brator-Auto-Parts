@@ -27,6 +27,30 @@ final class SaveHomepageSectionAction
     /** Types that render a product strip, and therefore need a collection behind them. */
     public const COLLECTION_BACKED = ['best_sellers', 'essential_items', 'new_arrivals'];
 
+    /*
+     | Which types actually PRINT the text fields, so the editor can stop offering a box that
+     | does nothing.
+     |
+     | This is here because four sections used to take a heading, flash "The homepage was
+     | updated", and change nothing on the shop — the hero worst of all, since its words are the
+     | first thing anybody asks to change. Three of those four now render it; `articles` renders
+     | no markup at all, and `featured_makes` has one tab title and no room for a second line
+     | without new CSS.
+     |
+     | Listed as what DOES render rather than what does not, so a section type added later
+     | defaults to hiding the field until somebody wires it up. That default is the whole point:
+     | an unoffered field is honest, an offered dead one is a lie.
+    */
+    public const HEADING_BACKED = [
+        'hero_banner', 'categories_strip', 'whats_hot', 'featured_makes', 'best_sellers',
+        'essential_items', 'new_arrivals', 'featured_brands', 'newsletter',
+    ];
+
+    public const SUBHEADING_BACKED = [
+        'hero_banner', 'categories_strip', 'whats_hot', 'best_sellers',
+        'essential_items', 'new_arrivals', 'featured_brands', 'newsletter',
+    ];
+
     /** @param array<string, mixed> $attributes */
     public function update(HomepageSection $section, array $attributes): HomepageSection
     {
@@ -40,8 +64,18 @@ final class SaveHomepageSectionAction
         }
 
         $section->update([
-            'heading' => $attributes['heading'] ?? null,
-            'subheading' => $attributes['subheading'] ?? null,
+            /*
+             | Kept as-is for a type that cannot print them, rather than nulled. The editor no
+             | longer sends those fields, and `?? null` would then quietly erase a heading
+             | somebody had typed — a save wiping a value it never showed you is worse than the
+             | dead field it replaced. A field that IS offered and arrives empty still clears.
+            */
+            'heading' => in_array($section->section_type, self::HEADING_BACKED, true)
+                ? ($attributes['heading'] ?? null)
+                : $section->heading,
+            'subheading' => in_array($section->section_type, self::SUBHEADING_BACKED, true)
+                ? ($attributes['subheading'] ?? null)
+                : $section->subheading,
             'product_collection_id' => $this->takesCollection($section)
                 ? ($collectionId === '' ? null : $collectionId)
                 : null,

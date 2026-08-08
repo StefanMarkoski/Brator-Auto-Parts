@@ -3,9 +3,17 @@
         <div class="container-xxxl container-xxl container">
             <div class="row">
                 <div class="col-lg-5">
+                    {{--
+                        From the homepage editor, like every other section. Both lines were Blade
+                        literals while the editor offered boxes for them and printed neither.
+
+                        The subheading keeps a default here rather than disappearing when blank:
+                        this one is the promise about what subscribing signs you up for, and the
+                        theme's design puts an empty gap where it used to be.
+                    --}}
                     <div class="brator-newsletter-content">
-                        <h2>Subscribe To Our Newsletter</h2>
-                        <p>Get new arrivals and discount codes by email. No more than one message a week, and you can stop any time.</p>
+                        <h2>{{ $section->heading ?? 'Subscribe To Our Newsletter' }}</h2>
+                        <p>{{ $section->subheading ?? 'Get new arrivals and discount codes by email. No more than one message a week, and you can stop any time.' }}</p>
                     </div>
                 </div>
                 <div class="col-lg-1"></div>

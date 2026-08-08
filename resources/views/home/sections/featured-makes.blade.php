@@ -1,11 +1,30 @@
+{{--
+    "Shop by Make" — the vehicle makes the shop actually has parts for.
+
+    WHAT WAS REMOVED, and why it was not just cosmetic:
+
+    Thirteen hardcoded tiles sat after the real ones — Chevy, Ford, Dodge, Huyndai, Kia,
+    Mercerdess, BMW, Audi, Lexus, Jaguar, Volvo 2, Rangover, Porsche, the theme's typos
+    included. They carry the theme's `disable` class, which is `display: none` until its own
+    script adds `current`, so "view more 2" revealed thirteen manufacturers this shop does not
+    stock, every one of them linking to the whole catalogue rather than a make filter. The
+    button went with them: there is nothing left to reveal, and the real makes are all shown.
+
+    The second tab, "Featured Models", was worse than fiction. tab.js counts TITLES and then
+    indexes into CONTENT panes, so clicking a second title with only one pane threw a
+    TypeError after hiding every pane — one click blanked the whole section. There is no
+    models pane to show, so the title is gone.
+
+    The heading now comes from the homepage editor, which offered a Heading box for this
+    section and printed it nowhere.
+--}}
     <!-- Brator featured makes list start -->
     <div class="brator-makes-list-area design-two">
         <div class="container-xxxl container-xxl container">
             <div class="brator-brator-makes-list-tab-list js-tabs" id="tabs-product-content">
                 <div class="brator-makes-list-tab-header js-tabs__header">
                     <ul>
-                        <li><a class="js-tabs__title" href="{{ route('shop.categories', [], false) }}">Featured Makes</a></li>
-                        <li><a class="js-tabs__title" href="{{ route('shop.categories', [], false) }}">Featured Models</a></li>
+                        <li><a class="js-tabs__title" href="{{ route('shop.categories', [], false) }}">{{ $section->heading ?? 'Featured Makes' }}</a></li>
                     </ul>
                 </div>
                 <div class="row js-tabs__content">
@@ -21,76 +40,6 @@
                                     </a>
                                 </div>
                             @endforeach
-                            
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Chevy</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Ford</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Dodge</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Huyndai</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Kia</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Mercerdess</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>BMW</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Audi</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Lexus</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Jaguar</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable"><a href="{{ route('shop.categories', [], false) }}"><span>Volvo 2</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></a></div>
-                            <div class="brator-makes-list-single disable">
-                                <a href="{{ route('shop.categories', [], false) }}">
-                                    <span>Rangover</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg>
-                                </a>
-                            </div>
-                            <div class="brator-makes-list-single disable">
-                                <a href="{{ route('shop.categories', [], false) }}">
-                                    <span>Porsche</span>
-                                    <svg class="bi bi-chevron-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"></path>
-                                    </svg>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-12">
-                        <div class="brator-makes-list-view-more">
-                            <button> <span><b>view more 2</b>
-                                    <svg class="bi bi-chevron-down" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"></path>
-                                    </svg></span>
-                            </button>
                         </div>
                     </div>
                 </div>

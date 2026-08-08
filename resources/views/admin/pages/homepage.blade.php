@@ -24,6 +24,8 @@
         @foreach ($sections as $section)
             @php
                 $takesCollection = in_array($section->section_type, $collectionBacked, true);
+                $takesHeading = in_array($section->section_type, $headingBacked, true);
+                $takesSubheading = in_array($section->section_type, $subheadingBacked, true);
                 $label = ucwords(str_replace('_', ' ', $section->section_type));
             @endphp
 
@@ -65,16 +67,43 @@
                     @csrf
                     @method('PUT')
 
-                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                        <x-admin.field label="Heading" :name="'heading-'.$section->id"
-                            hint="Leave blank to render the section with no heading.">
-                            <x-admin.input name="heading" :value="old('heading', $section->heading)" />
-                        </x-admin.field>
+                    {{--
+                        Only the boxes this section actually prints.
 
-                        <x-admin.field label="Subheading" :name="'subheading-'.$section->id">
-                            <x-admin.input name="subheading" :value="old('subheading', $section->subheading)" />
-                        </x-admin.field>
-                    </div>
+                        Both were shown on every card, and four sections printed neither — so
+                        changing the hero's headline saved, went green, and left the homepage
+                        exactly as it was. An unoffered field is honest; an offered dead one is a
+                        lie the success message backs up.
+                    --}}
+                    @if ($takesHeading || $takesSubheading)
+                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                            @if ($takesHeading)
+                                <x-admin.field label="Heading" :name="'heading-'.$section->id"
+                                    hint="Leave blank to fall back to the theme's own wording.">
+                                    <x-admin.input name="heading" :value="old('heading', $section->heading)" />
+                                </x-admin.field>
+                            @endif
+
+                            @if ($takesSubheading)
+                                <x-admin.field label="Subheading" :name="'subheading-'.$section->id"
+                                    hint="The smaller line above or below the heading. Blank leaves it out.">
+                                    <x-admin.input name="subheading" :value="old('subheading', $section->subheading)" />
+                                </x-admin.field>
+                            @endif
+                        </div>
+                    @endif
+
+                    @unless ($takesHeading && $takesSubheading)
+                        <p class="text-xs text-gray-400">
+                            {{ match (true) {
+                                $section->section_type === 'articles'
+                                    => 'This section renders nothing at all — blog pages are out of scope — so there is no heading or subheading to set. It can still be reordered and hidden.',
+                                $section->section_type === 'featured_makes'
+                                    => 'This section has one tab title and no second line beneath it, so it takes a heading but no subheading.',
+                                default => 'This section does not print both text lines.',
+                            } }}
+                        </p>
+                    @endunless
 
                     @if ($takesCollection)
                         <x-admin.field label="Products shown" :name="'collection-'.$section->id"

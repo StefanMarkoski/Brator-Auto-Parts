@@ -43,9 +43,25 @@
         <div class="container-xxxl container-xxl container">
             <div class="row">
                 <div class="col-md-12">
+                    {{--
+                        The hero's words, from the homepage editor.
+
+                        They were two Blade literals: "#1 Online Marketplace" and "Car Spares OEM
+                        & Atermarkets" — the theme's own typo included. The editor offered a
+                        Heading and a Subheading box for this section, took the text, and printed
+                        neither, so the first thing anybody asks to change was the one thing that
+                        could not be changed.
+
+                        Same pattern as every other section: the heading falls back to a default
+                        so the banner is never wordless, the subheading is simply left out when
+                        blank. The default is not the theme's wording — "#1" is a claim this shop
+                        cannot make.
+                    --}}
                     <div class="brator-main-banner-content">
-                        <p>#1 Online Marketplace</p>
-                        <h2>Car Spares OEM & Atermarkets</h2>
+                        @if ($section->subheading)
+                            <p>{{ $section->subheading }}</p>
+                        @endif
+                        <h2>{{ $section->heading ?? 'Car Spares — OEM & Aftermarket' }}</h2>
                     </div>
                     <!-- Search by Vehicle -->
                     <div class="brator-parts-search-box-area search-box-with-banner design-two">

@@ -55,6 +55,103 @@ final class HomepageEditorTest extends TestCase
             ->assertDontSee('Best Seller', false);
     }
 
+    /*
+     | The four sections whose Heading box did nothing at all.
+     |
+     | The editor rendered a Heading and a Subheading for every section, and hero_banner,
+     | featured_makes, newsletter and articles printed neither — so the save went green and the
+     | homepage did not move. The hero was the worst of them: its words were Blade literals
+     | ("#1 Online Marketplace" / "Car Spares OEM & Atermarkets", typo included), which is the
+     | first thing any client asks to change.
+     |
+     | One test per section rather than a loop, so a failure names the section.
+    */
+    public function test_the_hero_prints_the_heading_and_subheading_from_the_editor(): void
+    {
+        $this->retitle('hero_banner', 'Parts for your car, in Skopje', 'Delivered across Macedonia');
+
+        $this->get('/')->assertOk()
+            ->assertSee('Parts for your car, in Skopje', false)
+            ->assertSee('Delivered across Macedonia', false)
+            // The literals it replaced. "#1" is a claim a single-seller shop cannot make, and
+            // "Atermarkets" is the template author's spelling.
+            ->assertDontSee('#1 Online Marketplace', false)
+            ->assertDontSee('Atermarkets', false);
+    }
+
+    public function test_shop_by_make_prints_the_heading_from_the_editor(): void
+    {
+        $this->retitle('featured_makes', 'Pick your manufacturer');
+
+        $this->get('/')->assertOk()
+            ->assertSee('Pick your manufacturer', false)
+            ->assertDontSee('Featured Makes', false)
+            // The second tab was worse than fiction: tab.js counts titles and then indexes into
+            // panes, so clicking a second title with only one pane threw and blanked the whole
+            // section. And "view more 2" revealed 13 makes this shop does not stock.
+            ->assertDontSee('Featured Models', false)
+            ->assertDontSee('view more 2', false)
+            ->assertDontSee('Huyndai', false)
+            ->assertDontSee('Mercerdess', false)
+            ->assertDontSee('Rangover', false);
+    }
+
+    public function test_the_newsletter_prints_the_heading_and_subheading_from_the_editor(): void
+    {
+        $this->retitle('newsletter', 'Get the deals first', 'One email a week, no more');
+
+        $this->get('/')->assertOk()
+            ->assertSee('Get the deals first', false)
+            ->assertSee('One email a week, no more', false)
+            ->assertDontSee('Subscribe To Our Newsletter', false);
+    }
+
+    public function test_a_section_that_prints_no_text_keeps_the_heading_it_has(): void
+    {
+        // `articles` renders nothing at all — blog pages are out of scope — so the editor no
+        // longer offers it a Heading or a Subheading, and therefore posts neither. The save must
+        // not read those absent fields as "clear them": a save silently erasing a value it never
+        // showed you is worse than the dead box it replaced.
+        $section = HomepageSection::query()->where('section_type', 'articles')->firstOrFail();
+        $this->assertNotNull($section->heading, 'This test needs a seeded heading to preserve.');
+
+        $this->actingAs($this->admin())
+            ->put("/admin/homepage/{$section->id}", ['is_visible' => 1])
+            ->assertRedirect(route('admin.homepage.index'));
+
+        $this->assertSame($section->heading, $section->fresh()->heading);
+    }
+
+    public function test_the_editor_only_offers_a_text_box_the_section_can_print(): void
+    {
+        $screen = $this->actingAs($this->admin())->get('/admin/homepage')->assertOk();
+
+        $hero = HomepageSection::query()->where('section_type', 'hero_banner')->firstOrFail();
+        $articles = HomepageSection::query()->where('section_type', 'articles')->firstOrFail();
+        $makes = HomepageSection::query()->where('section_type', 'featured_makes')->firstOrFail();
+
+        // The ids come from x-admin.field, which is what pairs a <label> with its input.
+        $screen->assertSee('heading-'.$hero->id, false)
+            ->assertSee('subheading-'.$hero->id, false)
+            // Articles prints nothing, so neither box is offered.
+            ->assertDontSee('heading-'.$articles->id, false)
+            ->assertDontSee('subheading-'.$articles->id, false)
+            // Shop by Make has one tab title and nowhere to put a second line.
+            ->assertSee('heading-'.$makes->id, false)
+            ->assertDontSee('subheading-'.$makes->id, false);
+    }
+
+    private function retitle(string $sectionType, string $heading, ?string $subheading = null): void
+    {
+        $section = HomepageSection::query()->where('section_type', $sectionType)->firstOrFail();
+
+        $this->actingAs($this->admin())->put("/admin/homepage/{$section->id}", [
+            'heading' => $heading,
+            'subheading' => $subheading,
+            'is_visible' => 1,
+        ])->assertRedirect(route('admin.homepage.index'));
+    }
+
     public function test_hiding_a_section_removes_it_from_the_homepage(): void
     {
         $section = HomepageSection::query()->where('section_type', 'new_arrivals')->firstOrFail();
