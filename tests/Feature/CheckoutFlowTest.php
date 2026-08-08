@@ -276,6 +276,26 @@ final class CheckoutFlowTest extends TestCase
             ->assertSee('Ana', false);
     }
 
+    public function test_the_checkout_form_carries_the_double_submit_hook(): void
+    {
+        // BE CLEAR ABOUT WHAT THIS DOES NOT DO. The double-submit guard is JavaScript —
+        // PHPUnit never runs it, so nothing here proves that a second click is swallowed
+        // or that the button is re-enabled coming back from the back/forward cache. That
+        // is verified in a browser.
+        //
+        // What it does pin is the contract storefront.js binds to: bindSubmitOnce finds
+        // its forms by data-submit-once and takes its busy text from
+        // data-submit-once-label. Drop either attribute while editing this template and
+        // the guard is still there, bound to nothing, silently. Asserted against the
+        // checkout action so it cannot pass by matching some other form on the page.
+        $this->post('/cart/add', ['product_id' => $this->buyable()->id]);
+
+        $this->get('/cart')->assertOk()->assertSee(
+            'action="'.route('checkout.place', [], false).'" data-submit-once data-submit-once-label="Placing your order…"',
+            false
+        );
+    }
+
     /**
      * A product with pinned, known values.
      *

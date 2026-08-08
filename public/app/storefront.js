@@ -1045,6 +1045,119 @@
         });
     }
 
+    /* ------------------------------------------------------------------ *
+     | One order per click.
+     |
+     | Nothing stopped a shopper pressing "Place order" twice. POST /checkout has no
+     | throttle and no idempotency token, and PlaceReceiptAction loads the basket lines
+     | and runs its empty-basket guard OUTSIDE the transaction without locking them — so
+     | two requests that arrive together both pass that guard and both go on to write a
+     | receipt. Two receipts is stock decremented twice, two confirmation emails, and a
+     | coupon counted twice against its usage.
+     |
+     | THIS IS A CLIENT-SIDE GUARD ONLY, AND IT DOES NOT FIX THE DOUBLE-RECEIPT BUG.
+     | Read that sentence before treating this as done. All it removes is the ACCIDENT —
+     | the shopper who cannot tell whether their click registered and helps it along with
+     | a second one. Everything the server would need is still missing: no idempotency
+     | key on the checkout request, no lock on the basket lines inside the transaction,
+     | and no rate limit on POST /checkout (routes/web.php declares it bare). A second
+     | post that never goes through this handler — a script, a replayed request, the same
+     | cart open in two tabs — still writes two receipts, decrements stock twice and
+     | sends two emails. That fix is a separate, larger piece of work.
+     |
+     | What this DOES buy: the form will not submit a second time from this page, and the
+     | button says what it is doing so nobody feels the need to press it again.
+     |
+     | THE FIRST SUBMIT IS NEVER SWALLOWED — the order still has to be placed.
+     |
+     | WHEN THE BUTTON IS DISABLED, and why that is two cases rather than one.
+     |
+     | A disabled control's name and value are left out of the submitted body. The checkout
+     | button carries neither — checked, it is a bare <button type="submit"> — so disabling
+     | it in the submit handler drops nothing, and the handler is the right place: the
+     | browser has already built the entry list by the time submit fires.
+     |
+     | A NAMED button is one attribute away on this very page: the cart's +/- controls are
+     | real submits posting name="step". The entry list is built first there too, so in a
+     | spec-following engine disabling it synchronously is still safe — but this is exactly
+     | the kind of edge older engines have got wrong, and the cost of being wrong is a
+     | checkout that posts without the field the server branches on. So a named button is
+     | disabled from a zero-delay timeout instead: after the submission has left, never
+     | during it. It still gets its busy label, which is the whole point of the guard.
+     |
+     | AND THE BACK BUTTON, which is not optional. Check out, press Back, and the
+     | browser hands over this page from its back/forward cache exactly as it was left:
+     | button disabled, reading "Placing your order…", this closure still believing a
+     | submit is in flight. Without re-enabling on pageshow, a shopper who goes back to
+     | change a line finds a dead button and no way to order at all. A server-side
+     | validation failure needs nothing — that comes back as a fresh document.
+     * ------------------------------------------------------------------ */
+    function bindSubmitOnce() {
+        document.querySelectorAll('[data-submit-once]').forEach(function (form) {
+            if (form.dataset.submitOnceBound) return;
+            form.dataset.submitOnceBound = '1';
+
+            var button = form.querySelector('button[type="submit"], button:not([type])');
+            var busyLabel = form.getAttribute('data-submit-once-label') || '';
+            var submitting = false;
+
+            // Stashed now, not read back off the button when it is time to restore it: by
+            // then it says "Placing your order…". innerHTML rather than text, so a button
+            // holding an icon comes back whole.
+            var original = button ? button.innerHTML : '';
+
+            function release() {
+                submitting = false;
+
+                if (!button) return;
+
+                button.disabled = false;
+                button.innerHTML = original;
+            }
+
+            function markBusy() {
+                // The named-button path defers this, so a pageshow can have released the guard
+                // in between. Re-disabling after that would hand the shopper the dead button
+                // release() exists to prevent — with no second submit left to re-enable it.
+                if (!submitting) return;
+
+                button.disabled = true;
+
+                // textContent, not innerHTML: the label is plain text from an attribute and
+                // must never be parsed as markup.
+                if (busyLabel !== '') button.textContent = busyLabel;
+            }
+
+            form.addEventListener('submit', function (event) {
+                if (submitting) {
+                    event.preventDefault();
+
+                    return;
+                }
+
+                submitting = true;
+
+                if (!button) return;
+
+                // See above: a named button is disabled only once the submission is on its
+                // way, so its name/value cannot be dropped from the body.
+                if (button.name) {
+                    window.setTimeout(markBusy, 0);
+                } else {
+                    markBusy();
+                }
+            });
+
+            /*
+             | Unconditional rather than only when event.persisted is true. A restore that
+             | did not come from the back/forward cache re-parses the document, so this runs
+             | against a button nothing has touched yet and does nothing at all — and that
+             | is cheaper than being wrong about which restores kept the DOM.
+            */
+            window.addEventListener('pageshow', release);
+        });
+    }
+
     function init() {
         bindAutoSubmit();
         bindListFilters();
@@ -1055,6 +1168,7 @@
         bindHeroRotation();
         bindSmoothListing();
         bindVehicleCascade();
+        bindSubmitOnce();
         releaseStuckPreloader();
     }
 

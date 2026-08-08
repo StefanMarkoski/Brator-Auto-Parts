@@ -208,7 +208,14 @@
                                             @endforeach
                                         </div>
                                     @endif
-                                    <form method="post" action="{{ route('checkout.place', [], false) }}">
+                                    {{-- data-submit-once is the hook storefront.js binds the
+                                         double-submit guard to: a shopper who double-clicks
+                                         "Place order" would otherwise post /checkout twice, and
+                                         nothing on the server side stops that becoming two
+                                         receipts, two stock decrements and two emails. The
+                                         action and method are untouched, so with JavaScript off
+                                         this is the same plain form it was. --}}
+                                    <form method="post" action="{{ route('checkout.place', [], false) }}" data-submit-once data-submit-once-label="Placing your order…">
                                         @csrf
                                         <div class="brator-contact-form-fields">
                                             <div class="brator-contact-form-field-two-items">

@@ -270,6 +270,51 @@ final class ImportRunnerTest extends TestCase
         $this->assertSame(1, Product::query()->where('sku', 'XG-1')->count());
     }
 
+    public function test_the_apply_button_says_it_is_busy_and_refuses_a_second_click(): void
+    {
+        $run = $this->stage(<<<'CSV'
+            sku,name,brand,category,price_net,stock
+            XG-1,XGate Brake Disc Front,XGate,brake-discs,2450.00,24
+            XG-2,XGate Brake Pad Set Front,XGate,brake-pads,1450.00,40
+            CSV);
+
+        $html = $this->actingAs($this->admin())
+            ->get("/admin/imports/{$run->id}")
+            ->assertOk()
+            ->getContent();
+
+        /*
+         | Applying runs the whole feed inside the web request with no progress feedback, so a
+         | staff member sees nothing for tens of seconds and clicks again. The one above proves
+         | the server refuses the second APPLY; this one only pins the markup that stops the
+         | second CLICK ever being sent, and tells the person something is happening.
+         |
+         | Honest about its reach: PHPUnit renders a string. It cannot boot Alpine, cannot click,
+         | and therefore cannot assert that `busy` ever flips or that the button really goes
+         | disabled. This is a contract test — it fails if somebody removes or renames the
+         | binding, which is the realistic regression, and says nothing about the behaviour.
+        */
+        $this->assertStringContainsString('x-data="{ busy: false }"', $html);
+        $this->assertStringContainsString('x-on:submit="busy = true"', $html);
+
+        // `busy || false` and not plain `busy`: the false is the nothing-to-apply case folded in,
+        // so Alpine cannot re-enable a button PHP disabled on purpose.
+        $this->assertStringContainsString('x-bind:disabled="busy || false"', $html);
+        $this->assertStringContainsString("x-text=\"busy ? 'Applying…' : 'Apply 2 changes'\"", $html);
+
+        // Progressive enhancement, not a dependency: a real submit button in a real POST form,
+        // labelled in the HTML, so the page still applies if Alpine never boots.
+        $this->assertStringContainsString('<form method="post" action="/admin/imports/'.$run->id.'/apply"', $html);
+        $this->assertStringContainsString('type="submit"', $html);
+        $this->assertStringContainsString('>Apply 2 changes</button>', $html);
+
+        // House rule: full directive names, never the @ or : shorthands — Blade owns @, and `:` on a
+        // component means "PHP expression", which would collide with the button's own disabled prop.
+        // The leading space matters: it separates a bare ` :disabled` from our `x-bind:disabled`.
+        $this->assertStringNotContainsString('@submit', $html);
+        $this->assertStringNotContainsString(' :disabled="busy', $html);
+    }
+
     public function test_re_running_a_feed_does_not_stack_duplicate_part_numbers(): void
     {
         $csv = <<<'CSV'

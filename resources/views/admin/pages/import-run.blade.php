@@ -49,11 +49,43 @@
                         </div>
                     @endif
 
-                    <form method="post" action="{{ route('admin.imports.apply', $run->id, false) }}">
+                    @php($changes = $preview['created'] + $preview['updated'])
+                    @php($applyLabel = 'Apply '.number_format($changes).' change'.($changes === 1 ? '' : 's'))
+
+                    {{--
+                        DOUBLE-SUBMIT GUARD. Applying writes thousands of rows synchronously inside
+                        this request, with no progress feedback and no enclosing transaction — so a
+                        staff member who sees nothing happen for tens of seconds clicks again, and
+                        the second run overlaps the first against the same staging rows. `busy`
+                        disables the button on the first submit and swaps the label, so the click
+                        that produced nothing visible now says it is working.
+
+                        Inline Alpine rather than resources/js/admin.js on purpose: public/build is
+                        gitignored, so anything added there does nothing until somebody runs
+                        `npm run build`. This needs no build step.
+
+                        It is only an enhancement — the form is a plain POST with a real submit
+                        button, so it still works if Alpine never boots, and the controller refuses
+                        a second apply anyway because the run is no longer Queued.
+
+                        x-bind:disabled, not the `:disabled` shorthand: on a Blade component `:` means
+                        "PHP expression", and this component already has its own `disabled` prop.
+                        The house rule is full directive names for exactly this reason. The static
+                        nothing-to-apply case is folded into the expression so Alpine cannot re-enable
+                        a button PHP deliberately disabled.
+
+                        NO x-cloak, deliberately — this introduces no element whose first paint would
+                        be wrong. The label is rendered by PHP as the slot and x-text's boot value is
+                        the same string, so Alpine replacing it changes nothing on screen; the panel's
+                        flash-before-boot problem needs an element whose initial state DIFFERS from
+                        its Alpine state, and there is none here.
+                    --}}
+                    <form method="post" action="{{ route('admin.imports.apply', $run->id, false) }}"
+                        x-data="{ busy: false }" x-on:submit="busy = true">
                         @csrf
-                        <x-admin.button type="submit" :disabled="$preview['created'] + $preview['updated'] === 0">
-                            Apply {{ number_format($preview['created'] + $preview['updated']) }} change{{ $preview['created'] + $preview['updated'] === 1 ? '' : 's' }}
-                        </x-admin.button>
+                        <x-admin.button type="submit" :disabled="$changes === 0"
+                            x-bind:disabled="busy || {{ $changes === 0 ? 'true' : 'false' }}"
+                            x-text="busy ? 'Applying…' : '{{ $applyLabel }}'">{{ $applyLabel }}</x-admin.button>
                     </form>
                 </x-admin.component-card>
             @else
