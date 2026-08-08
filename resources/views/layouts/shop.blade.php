@@ -6,7 +6,10 @@
     <title>@yield("title", "Brator Auto Parts")</title>
     <!-- Meta Data        -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=0 shrink-to-fit=no" />
+    {{-- The theme shipped `maximum-scale=1.0, user-scalable=0` (and a malformed attribute
+         list — no comma before shrink-to-fit). Pinch-zoom was therefore blocked on the whole
+         shop, on a site where people zoom in to read a part number off a photograph. --}}
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Favicons-->
     <link rel="shortcut icon" href="/assets/images/favicon.png" type="image/png" />
     <!-- Google Font-->
@@ -19,6 +22,21 @@
     <link rel="stylesheet" type="text/css" href="/assets/css/select2.min.css" />
     <!-- Theme style-->
     <link rel="stylesheet" type="text/css" href="/assets/css/theme-style.css" />
+    {{--
+        WITH JAVASCRIPT OFF, THE SHOP WAS A BLANK WHITE PAGE.
+
+        The theme's .preloader-area is a fixed, full-screen, white, z-index:11 sheet, and the
+        only thing that ever removes it is $(window).load(... fadeOut()) in brator-script.js.
+        No script, no fade — so every page was a white rectangle with a logo, forever, and
+        every form underneath it that this project was careful to keep working was unreachable.
+
+        This targets the theme's own class and only applies when scripts are off, so the
+        purchased stylesheet is untouched and the preloader still behaves exactly as designed
+        for everybody else.
+    --}}
+    <noscript>
+        <style>.preloader-area { display: none !important; }</style>
+    </noscript>
     @stack('styles')
     <link rel="stylesheet" type="text/css" href="/assets/css/url.css" />
 <!--    <link rel="stylesheet" type="text/css" href="/assets/css/rtl.css" />-->
