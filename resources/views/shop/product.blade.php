@@ -357,7 +357,12 @@
                                 <h6>featured</h6>
                                 <ul>
                                     @foreach ($featured as $value)
-                                        <li>{{ $value->attribute->name }}: {{ $value->value_string }}</li>
+                                        {{-- ->label, not ->name. There is no `name` column on
+                                             attributes, so this printed ": OEM", ": Aluminium",
+                                             ": Gloss Black" — a bullet list of values with the
+                                             thing they describe missing. The specification tab
+                                             below reads ->label and always did. --}}
+                                        <li>{{ $value->attribute->label }}: {{ $value->value_string }}</li>
                                     @endforeach
                                 </ul>
                             @endif

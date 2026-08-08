@@ -290,6 +290,35 @@
     }
 
     /* ------------------------------------------------------------------ *
+     | Paint the hero's first picture straight away.
+     |
+     | FOUND BY SCREENSHOTTING THE HOMEPAGE, not by reading it: the hero was BLANK WHITE for
+     | the first five seconds, with the white headline invisible on it, and then the picture
+     | appeared — because the first rotation tick was what finally set it.
+     |
+     | The theme lazy-loads this background: the banner carries data-bg and the theme's own
+     | `lazybeforeunveil` listener copies it onto style.backgroundImage. Measured, that listener
+     | never landed — the element ends up with lazysizes' `lazyloaded` class and
+     | backgroundImage: none — so nothing painted the hero until commit() ran at the five-second
+     | mark and removed data-bg out from under it.
+     |
+     | Rather than chase that race, the hero stops being lazy. It is the first thing above the
+     | fold on the landing page, so there was never anything to gain by deferring it, and every
+     | rotation picture is preloaded a few lines below anyway. data-bg is cleared for the same
+     | reason commit() clears it: so the theme's listener cannot later repaint picture one over
+     | whichever one is showing.
+     *------------------------------------------------------------------ */
+    function paintHeroBackground() {
+        document.querySelectorAll('.brator-main-banner-area[data-bg]').forEach(function (banner) {
+            var src = banner.getAttribute('data-bg');
+            if (!src) return;
+
+            banner.style.backgroundImage = 'url("' + src + '")';
+            banner.removeAttribute('data-bg');
+        });
+    }
+
+    /* ------------------------------------------------------------------ *
      | The homepage hero: rotate its background picture.
      |
      | The theme renders this banner as a background with the headings and the
@@ -1021,6 +1050,8 @@
         bindListFilters();
         bindBundleTotals();
         bindQuantitySteppers();
+        // Before the rotation: it reads the banner's computed style to build its fade layer.
+        paintHeroBackground();
         bindHeroRotation();
         bindSmoothListing();
         bindVehicleCascade();
