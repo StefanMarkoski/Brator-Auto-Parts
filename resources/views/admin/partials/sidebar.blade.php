@@ -25,8 +25,21 @@
     ];
 @endphp
 
+{{--
+    The two state classes in the static list — `w-[290px]` and `-translate-x-full
+    xl:translate-x-0` — are the pre-boot state, and they matter.
+
+    Alpine arrives as a deferred Vite module, and every width and transform on this element came
+    only from the `:class` below. So until Alpine booted, the aside rendered `fixed left-0 top-0
+    h-screen` with no transform at all: on a phone it sat fully open on top of the page content
+    on every single admin page load.
+
+    These two are keys in the same `:class` object, so Alpine removes them itself the moment the
+    state says otherwise — the static values are the desktop default (expanded, on screen) and
+    the mobile default (off screen), which is exactly what a cold page should look like.
+--}}
 <aside id="sidebar"
-    class="fixed flex flex-col mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-99999 border-r border-gray-200"
+    class="fixed flex flex-col mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-99999 border-r border-gray-200 w-[290px] -translate-x-full xl:translate-x-0"
     :class="{
         'w-[290px]': $store.sidebar.isExpanded || $store.sidebar.isMobileOpen || $store.sidebar.isHovered,
         'w-[90px]': !$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen,

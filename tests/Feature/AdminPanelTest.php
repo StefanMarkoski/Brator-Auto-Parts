@@ -433,6 +433,45 @@ final class AdminPanelTest extends TestCase
         $this->assertStringContainsString("documentElement.classList.toggle('dark'", $head);
     }
 
+    public function test_nothing_alpine_controls_is_visible_before_alpine_boots(): void
+    {
+        $html = $this->actingAs($this->admin())->get('/admin')->assertOk()->getContent();
+
+        /*
+         | Alpine ships as a deferred Vite module, so there is a real window between first paint
+         | and Alpine running. Anything whose hidden state lives ONLY in `:class` is therefore
+         | visible during it — and the backdrop's static classes said "cover the whole screen in
+         | 50% black", so every admin page flashed a full-screen dark sheet on load.
+         |
+         | x-cloak is the fix rather than a static `hidden`, because admin.css already declares
+         | [x-cloak] { display: none !important } once for the panel, and !important beats
+         | whatever Alpine's binding puts on afterwards until Alpine removes the attribute.
+        */
+        $backdrop = (string) preg_replace('#\{\{--.*?--\}\}#s', '', $html);
+        $backdrop = (string) (preg_match('#<div[^>]*bg-gray-900/50[^>]*>#', $backdrop, $m) ? $m[0] : '');
+
+        $this->assertNotSame('', $backdrop, 'The mobile backdrop was not found at all.');
+        $this->assertStringContainsString('x-cloak', $backdrop,
+            'The backdrop can paint before Alpine boots, which is a full-screen black flash.');
+
+        // And it must be dismissable. The original had a click handler; the version that
+        // shipped dropped it, so on a phone the drawer could only be closed with the
+        // hamburger it was covering.
+        $this->assertStringContainsString('toggleMobileOpen', $backdrop,
+            'Tapping outside the mobile drawer does not close it.');
+
+        // The sidebar takes the other approach: its default state is in the static class list,
+        // because x-cloak would hide the whole sidebar on desktop until Alpine arrived. Both
+        // classes are keys in its own :class object, so Alpine removes them when it disagrees.
+        $aside = (string) (preg_match('#<aside[^>]*id="sidebar"[^>]*>#s', $html, $m) ? $m[0] : '');
+        $staticClass = (string) (preg_match('#\sclass="([^"]*)"#', $aside, $m) ? $m[1] : '');
+
+        $this->assertStringContainsString('-translate-x-full', $staticClass,
+            'The sidebar renders on top of the page on mobile until Alpine boots.');
+        $this->assertStringContainsString('xl:translate-x-0', $staticClass,
+            'The sidebar would stay off screen on desktop before Alpine boots.');
+    }
+
     private function admin(): User
     {
         return User::factory()->create(['role' => UserRole::Admin]);
