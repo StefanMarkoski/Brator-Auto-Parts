@@ -215,14 +215,34 @@
                 Math.round(values[1]).toLocaleString('mk-MK') + ' ' + symbol;
         }
 
-        mount.noUiSlider.on('update', function (values) {
+        function writeInputs(values) {
             minInput.value = Math.round(values[0]);
             maxInput.value = Math.round(values[1]);
-            label(values);
-        });
+        }
+
+        /*
+         | THE READOUT ON EVERY UPDATE; THE INPUTS ONLY WHEN A HUMAN MOVES THE SLIDER.
+         |
+         | Both inputs used to be written from 'update' — which noUiSlider also fires on init,
+         | before anyone has touched anything. So the inputs always held the current bounds, and
+         | since they sit inside the filter form that apply() serialises whole, every filter
+         | request carried a price band nobody had asked for. hasAnyNarrowing() then stayed true
+         | forever, and because the bounds are computed from the FILTERED set, unticking your
+         | only filter re-applied that filter's price range to the whole catalogue.
+         |
+         | The view now renders these inputs empty unless a price filter is really set. This is
+         | the other half of that fix: without it the slider fills them straight back in.
+         |
+         | 'slide' is drag only, 'change' is release-or-tap — both user-driven. 'update' covers
+         | those AND programmatic changes, so it is right for the label and wrong for the inputs.
+        */
+        mount.noUiSlider.on('update', label);
+        mount.noUiSlider.on('slide', writeInputs);
 
         // Apply only when the handle is released, not on every pixel of the drag.
-        mount.noUiSlider.on('change', function () {
+        mount.noUiSlider.on('change', function (values) {
+            writeInputs(values);
+
             if (typeof form.requestSubmit === 'function') {
                 form.requestSubmit();
             } else {
@@ -653,7 +673,56 @@
                         if (row) row.remove();
                     }
                 });
+
+                /*
+                 | Radios (the rating filter) keep their rows — a rating is never absent from
+                 | the list, unlike a brand — but their COUNTS go stale otherwise, and a count
+                 | that contradicts the result it produces is the bug this project has spent
+                 | the most time removing.
+                */
+                area.querySelectorAll('input[type="radio"][name]').forEach(function (input) {
+                    var freshInput = freshArea.querySelector(
+                        'input[type="radio"][name="' + input.name + '"][value="' + input.value + '"]');
+                    if (!freshInput) return;
+
+                    var row = rowOf(input);
+                    var freshRow = rowOf(freshInput);
+                    var count = row && row.querySelector('.brator-count');
+                    var freshCount = freshRow && freshRow.querySelector('.brator-count');
+
+                    if (count && freshCount) count.textContent = freshCount.textContent;
+                });
             });
+
+            /*
+             | The "Clear all filters" row, which appears and disappears with hasAnyNarrowing()
+             | and whose label changes when a car is selected.
+             |
+             | It is not a checkbox row, so the loop above never touched it. That was invisible
+             | while the price inputs kept hasAnyNarrowing() permanently true — the row was
+             | simply always there. With the price trap fixed, the row genuinely toggles, and
+             | without this it would only ever appear after a full page load: apply a filter in
+             | place and there would be no way to clear it.
+            */
+            var freshClear = freshFilters.querySelector('[data-clear-filters-row]');
+            var liveClear = filters.querySelector('[data-clear-filters-row]');
+
+            if (freshClear && liveClear) {
+                // Still needed, but the label may have changed ("…, including your car").
+                liveClear.innerHTML = freshClear.innerHTML;
+            } else if (freshClear && !liveClear) {
+                // Find which group it belongs to in the fresh document, and put it in the same
+                // group here — by index, which is safe because the group count was checked.
+                for (var g = 0; g < freshGroups.length; g++) {
+                    if (!freshGroups[g].contains(freshClear)) continue;
+
+                    var host = groups[g].querySelector('.brator-filter-item-content-area');
+                    if (host) host.appendChild(freshClear.cloneNode(true));
+                    break;
+                }
+            } else if (!freshClear && liveClear) {
+                liveClear.remove();
+            }
 
             /*
              | Re-apply whatever is typed in the brand search box. Rows that just arrived
@@ -750,7 +819,21 @@
         // button are untouched, so with JavaScript off this is a normal form.
         if (filters) {
             filters.addEventListener('submit', function (event) {
-                var query = new URLSearchParams(new FormData(filters)).toString();
+                /*
+                 | Empty fields are dropped rather than submitted as `price_min=`.
+                 |
+                 | The server reads an empty value as "no filter" either way, so this is not a
+                 | correctness fix — it is an honesty one. This form's whole design is that the
+                 | URL describes exactly what is on screen, and ?price_min=&price_max= on a page
+                 | with no price filter is a URL that describes something else.
+                */
+                var params = new URLSearchParams();
+
+                new FormData(filters).forEach(function (value, key) {
+                    if (String(value) !== '') params.append(key, value);
+                });
+
+                var query = params.toString();
                 var url = window.location.pathname + (query ? '?' + query : '');
 
                 if (apply(url, true)) event.preventDefault();
@@ -941,6 +1024,36 @@
         bindHeroRotation();
         bindSmoothListing();
         bindVehicleCascade();
+        releaseStuckPreloader();
+    }
+
+    /* ------------------------------------------------------------------ *
+     | A dead man's handle on the theme's preloader.
+     |
+     | .preloader-area is a fixed, full-screen, white, z-index:11 sheet, and the theme removes
+     | it in $(window).load(). window.load waits for EVERY subresource — every font, every
+     | image, and every iframe. The contact page embeds a Google map, so one slow third-party
+     | response holds the whole shop behind a white rectangle with no way for the visitor to
+     | know anything is wrong.
+     |
+     | This does not change the normal path: if load fires first the timer is cancelled and the
+     | theme's own fade runs. It only covers the case where load never comes.
+     *------------------------------------------------------------------ */
+    function releaseStuckPreloader() {
+        var preloader = document.querySelector('.preloader-area');
+        if (!preloader) return;
+
+        var timer = window.setTimeout(function () {
+            // offsetParent is null once the theme has faded it out, so a normal page that
+            // simply took a while is left alone.
+            if (preloader.offsetParent !== null) {
+                preloader.style.display = 'none';
+            }
+        }, 4000);
+
+        window.addEventListener('load', function () {
+            window.clearTimeout(timer);
+        });
     }
 
     if (document.readyState === 'loading') {

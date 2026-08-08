@@ -30,7 +30,13 @@
                 The basket is deliberately untouched: it lives in the session as well, and
                 losing somebody's shopping to a filter control would be worse than the bug.
             --}}
-            <div class="brator-filter-item-content">
+            {{-- data-clear-filters-row so the in-place update can add and remove this row. It
+                 appears and disappears with hasAnyNarrowing(), and syncFilterOptions only ever
+                 patched checkbox rows — which nobody noticed, because the price inputs used to
+                 make hasAnyNarrowing() permanently true, so this row was always present.
+                 Fixing that is what exposed this. A data attribute, not a class, so the theme's
+                 stylesheet is still the only thing that styles anything here. --}}
+            <div class="brator-filter-item-content" data-clear-filters-row>
                 <div class="brator-filter-item-check-box-content">
                     <span class="brator-name">
                         {{--

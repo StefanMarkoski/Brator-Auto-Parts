@@ -33,7 +33,19 @@
 @endif
 
 @foreach ($filterGroups as $group)
-    @continue($group['options'] === [] && $group['widget'] !== 'range')
+    {{--
+        A group with no options is skipped, INCLUDING a range one.
+
+        The condition used to keep range groups on the grounds that a range renders a control
+        rather than a list — but no range control is rendered anywhere in this loop, so
+        Diameter, Width and Offset (the three seeded `range` attributes, attached to every
+        department) each drew a filter heading with nothing whatsoever underneath it. Three
+        empty boxes in the sidebar of every listing page.
+
+        When a real min/max control is built for numeric attributes, the exception comes back
+        with the control — not before it.
+    --}}
+    @continue($group['options'] === [])
     <div class="brator-filter-item-area">
         <div class="brator-filter-item-title current">
             <h4>{{ $group['label'] }}@if ($group['unit']) ({{ $group['unit'] }})@endif</h4>
@@ -80,16 +92,36 @@
             The inputs still carry the values, so the form submits a usable range with
             JavaScript off.
         --}}
+        {{--
+            EMPTY UNLESS A PRICE FILTER IS ACTUALLY SET. This is the fix for a trap.
+
+            These inputs used to fall back to the current bounds when no price filter was
+            applied — and they live inside this GET form, which the in-place filtering
+            serialises whole. So every submit carried a price_min and a price_max, which made
+            ProductFilter::hasAnyNarrowing() true forever: "Clear all filters, including your
+            car" never went away again once you had touched anything.
+
+            Worse, the bounds are computed from the FILTERED set. Tick "Gates", and the inputs
+            render Gates's own cheapest and dearest. Untick it, and the request goes out
+            carrying Gates's price band against the whole catalogue — so removing your only
+            filter left you looking at a narrower list than before, with the slider visibly
+            not at its ends and nothing on screen explaining why.
+
+            An empty value submits as '' and ProductFilter::minor() reads that as null, so a
+            no-JavaScript submit means "no price filter" rather than "this exact band".
+        --}}
         <div class="brator-rang-item-input">
             <div class="brator-rang-item-input-single">
                 <input type="number" name="price_min" data-price-min
-                       value="{{ $filter->priceMinMinor === null ? $priceBounds['min'] : (int) ($filter->priceMinMinor / 100) }}"
+                       value="{{ $filter->priceMinMinor === null ? '' : (int) ($filter->priceMinMinor / 100) }}"
+                       placeholder="{{ $priceBounds['min'] }}"
                        min="{{ $priceBounds['min'] }}" max="{{ $priceBounds['max'] }}" />
                 <div class="brator-rang-item-input-single-text">{{ config('shop.currency_symbol') }} min</div>
             </div>
             <div class="brator-rang-item-input-single">
                 <input type="number" name="price_max" data-price-max
-                       value="{{ $filter->priceMaxMinor === null ? $priceBounds['max'] : (int) ($filter->priceMaxMinor / 100) }}"
+                       value="{{ $filter->priceMaxMinor === null ? '' : (int) ($filter->priceMaxMinor / 100) }}"
+                       placeholder="{{ $priceBounds['max'] }}"
                        min="{{ $priceBounds['min'] }}" max="{{ $priceBounds['max'] }}" />
                 <div class="brator-rang-item-input-single-text">{{ config('shop.currency_symbol') }} max</div>
             </div>
