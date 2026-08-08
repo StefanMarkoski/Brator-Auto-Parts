@@ -52,8 +52,11 @@
                                             <path d="M41.9,38h6.6c1,0,1.8-0.8,1.8-1.8s-0.8-1.8-1.8-1.8h-6.6c-1,0-1.8,0.8-1.8,1.8S41,38,41.9,38z"></path>
                                             <path d="M61,21.6h-3.4l-5-12.7C52,7.2,50.3,6,48.5,6H15.1c-1.8,0-3.4,1.1-4.1,2.8L6,21.6H3c-1,0-1.8,0.8-1.8,1.8S2,25.1,3,25.1h1.4    v17.8c0,2.6,2.1,4.7,4.6,4.7v5.6c0,2.6,2.1,4.8,4.8,4.8h4.4c2.6,0,4.8-2.1,4.8-4.8v-5.6h17.3v5.6c0,2.6,2.1,4.8,4.8,4.8h4.4    c2.6,0,4.8-2.1,4.8-4.8v-5.6h0.4c2.6,0,4.8-2.1,4.8-4.8V25.1H61c1,0,1.8-0.8,1.8-1.8S62,21.6,61,21.6z M14.3,10.1    c0.1-0.4,0.5-0.6,0.8-0.6h33.4c0.4,0,0.7,0.2,0.8,0.6l5.6,14.1H8.7L14.3,10.1z M19.4,53.3c0,0.7-0.6,1.3-1.3,1.3h-4.4    c-0.7,0-1.3-0.6-1.3-1.3v-5.6h6.9V53.3z M50.6,53.3c0,0.7-0.6,1.3-1.3,1.3h-4.4c-0.7,0-1.3-0.6-1.3-1.3v-5.6h6.9V53.3z M55.8,42.9    c0,0.7-0.6,1.3-1.3,1.3h-0.4H40.2H22.9H9.1c-0.7,0-1.3-0.6-1.3-1.3V27.6h47.9V42.9z"></path>
                                         </g>
-                                    </svg><span>0</span>
-                                </div><b>Add Vehicle</b>
+                                    {{-- Was a hardcoded 0, and stayed 0 with a car selected — in
+                                         the header of the shop whose selling point is that you
+                                         pick your car. --}}
+                                    </svg><span>{{ ($hasVehicleSelected ?? false) ? 1 : 0 }}</span>
+                                </div><b>{{ ($hasVehicleSelected ?? false) ? 'Your Vehicle' : 'Add Vehicle' }}</b>
                             </a>
                             <div class="vehicle-list-wapper">
                                 @include('partials.vehicle-picker')
@@ -74,7 +77,7 @@
                             </a>
                             <div class="brator-cart-item-list">
                                 <div class="brator-cart-item-list-header">
-                                    <h2>Cart<span> (5 items)</span></h2>
+                                    <h2>Cart<span> ({{ $basketCount ?? 0 }} item{{ ($basketCount ?? 0) === 1 ? '' : 's' }})</span></h2>
                                     <button class="brator-cart-close">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                             <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"></path>

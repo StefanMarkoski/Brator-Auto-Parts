@@ -94,6 +94,21 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
+        /*
+         | Whether a car is chosen, for the header's "Add Vehicle" badge — which was a hardcoded
+         | 0 and stayed 0 with a vehicle selected, in the header of the page whose whole point is
+         | that you pick your car.
+         |
+         | A session read and nothing else, so it costs no query. Deliberately NOT served by
+         | adding the header to the vehicle-picker composer above: that one builds the entire
+         | cascade, and the picker is included INSIDE the header, so every page would have run
+         | those five lookups twice.
+        */
+        View::composer(
+            ['partials.header', 'partials.header-shop'],
+            fn ($view) => $view->with('hasVehicleSelected', app(VehicleSelection::class)->current() !== null)
+        );
+
         // The cart badge AND the mini-cart panel, on every page. The theme shipped the
         // panel with two hardcoded wheels in it, so every visitor was told they had a
         // basket they had never touched.

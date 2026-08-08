@@ -75,6 +75,51 @@ final class NoTemplatePlaceholdersTest extends TestCase
         // The theme's broken English, in copy a shopper reads.
         'not spam',
         'accepted the our',
+
+        /*
+         | FOUND THE SAME WAY AGAIN — by an adversarial read of every page rather than by the
+         | suite, which is the second time that is how it happened. Each of these was live on a
+         | page a client opens in the first five minutes:
+         |
+         | (5 items)     the mini-cart heading, hardcoded, sitting directly above "Your cart is
+         |               empty" on every page of the shop.
+         | pug / tittle / b.published / condcion
+         |               the product page's fourth tab was literally "<p>pug</p>", and beneath
+         |               the reviews sat a whole "Write Your Review" block with no <form> around
+         |               it — so the Submit button did nothing at all — with name="sub",
+         |               name="sms", two inputs both called "name", and the theme's typos.
+         | Asheville / Bald Hill / info@brator.com / 800 500 1234 / Coffeyville
+         |               the contact page still gave a North Carolina address (twice, as "store"
+         |               and "warehouse 925") and a Google map pinned to a hospital in Kansas,
+         |               while the footer of the SAME page gave the real Skopje address.
+         | #1 Online Marketplace / Atermarkets
+         |               the hero's two Blade literals: a claim this shop cannot make, and the
+         |               template author's spelling of "aftermarket".
+         | Huyndai / Mercerdess / Rangover / Volvo 2 / view more 2 / Featured Models
+         |               13 hidden makes the shop does not stock, revealed by "view more 2", and
+         |               a second tab that threw a TypeError and blanked the section.
+         |
+         | The lesson worth keeping: this test only catches a string once somebody has thought
+         | to add it. It is a ratchet, not a net.
+        */
+        '(5 items)',
+        '<p>pug</p>',
+        'a tittle',
+        'b.published',
+        'condcion',
+        'Asheville',
+        'Bald Hill',
+        'info@brator.com',
+        '800 500 1234',
+        'Coffeyville',
+        '#1 Online Marketplace',
+        'Atermarkets',
+        'Huyndai',
+        'Mercerdess',
+        'Rangover',
+        'Volvo 2',
+        'view more 2',
+        'Featured Models',
     ];
 
     public function test_no_storefront_page_shows_the_themes_demo_content(): void
