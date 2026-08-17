@@ -71,7 +71,18 @@ final readonly class ProductFilter
         $attributes = [];
 
         foreach ((array) $request->query('attr', []) as $code => $values) {
-            $clean = array_values(array_filter(array_map('strval', (array) $values), fn ($v) => $v !== ''));
+            /*
+             | is_scalar BEFORE strval, and that is not defensive habit.
+             |
+             | ?attr[a][b][c]=1 is a legal query string. strval() on the nested array raised
+             | "Array to string conversion", which the handler promotes to a 500 — measured on
+             | /shop/brake-pads. No shopper types that, but a crawler following a mangled link
+             | does, and it filled the log with errors on an unauthenticated public URL.
+            */
+            $clean = array_values(array_filter(
+                array_map('strval', array_filter((array) $values, 'is_scalar')),
+                fn ($v) => $v !== '',
+            ));
 
             if (is_string($code) && $clean !== []) {
                 $attributes[$code] = $clean;
@@ -95,6 +106,32 @@ final readonly class ProductFilter
                 ? (int) $request->query('per_page')
                 : 12,
             listView: $request->query('view') === 'list',
+        );
+    }
+
+    /**
+     * The same filter, on a different page.
+     *
+     * Exists so a listing can pull the page number back to the last real one once it knows
+     * how many there are — which fromRequest() cannot do, because the total is not known
+     * until the query has run.
+     */
+    public function withPage(int $page): self
+    {
+        return new self(
+            categoryPath: $this->categoryPath,
+            categorySlug: $this->categorySlug,
+            brandSlugs: $this->brandSlugs,
+            priceMinMinor: $this->priceMinMinor,
+            priceMaxMinor: $this->priceMaxMinor,
+            attributes: $this->attributes,
+            minRating: $this->minRating,
+            vehicleVariantId: $this->vehicleVariantId,
+            searchTerm: $this->searchTerm,
+            sort: $this->sort,
+            page: max(1, $page),
+            perPage: $this->perPage,
+            listView: $this->listView,
         );
     }
 

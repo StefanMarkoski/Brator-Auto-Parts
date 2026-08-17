@@ -65,6 +65,27 @@ final class ListingPayload
 
         $total = $this->products->count($filter);
         $perPage = $filter->perPage;
+        $lastPage = max(1, (int) ceil($total / $perPage));
+
+        /*
+         | PULL A PAST-THE-END PAGE BACK TO THE LAST REAL ONE. This is the whole finding.
+         |
+         | fromRequest() clamps ?page at the bottom and never at the top, and window() below
+         | assumes its $current is a page that exists. When it is not, range()'s start exceeds
+         | its end, PHP silently counts DOWNWARDS, and every one of those numbers renders as a
+         | link. MEASURED before this fix, on an unauthenticated GET:
+         |
+         |   /shop/braking?page=1            210 728 bytes   (normal)
+         |   /shop/braking?page=1000         950 pagination links
+         |   /shop/braking?page=100000    23 195 106 bytes   — a 110x amplification
+         |   /shop/braking?page=2147483647       HTTP 500    "range exceeds maximum array size"
+         |
+         | Clamping rather than 404ing because it also makes the two lines below honest: an
+         | out-of-range page used to print "637 - 628 of 628 results" over an empty grid.
+        */
+        if ($filter->page > $lastPage) {
+            $filter = $filter->withPage($lastPage);
+        }
 
         return [
             'filter' => $filter,
@@ -72,14 +93,14 @@ final class ListingPayload
             'total' => $total,
             'page' => $filter->page,
             'perPage' => $perPage,
-            'lastPage' => max(1, (int) ceil($total / $perPage)),
+            'lastPage' => $lastPage,
             // The range actually shown, for the theme's results line — which shipped
             // hardcoded as "1 - 40 of 1,652 results".
             'shownFrom' => $total === 0 ? 0 : (($filter->page - 1) * $perPage) + 1,
             'shownTo' => min($total, $filter->page * $perPage),
             // A short window rather than every page number: 13 pages is fine to list,
             // 400 is not, and the theme's markup has room for about seven.
-            'paginationWindow' => $this->window($filter->page, max(1, (int) ceil($total / $perPage))),
+            'paginationWindow' => $this->window($filter->page, $lastPage),
             'listView' => $filter->listView,
             'filterGroups' => $filters,
             'facets' => $this->products->facets($filter, $codes),
