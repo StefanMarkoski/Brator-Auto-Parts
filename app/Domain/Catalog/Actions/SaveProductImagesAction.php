@@ -86,7 +86,14 @@ final class SaveProductImagesAction
             $stored = 0;
 
             foreach ($files as $file) {
-                $path = $file->store(self::DIRECTORY, 'public');
+                // The second argument is the DISK, not a visibility — easy to read past, and
+                // hardcoding 'public' here was how admin uploads kept landing on the local
+                // filesystem while every other write followed the configured disk.
+                //
+                // No visibility argument on purpose: Laravel Cloud's buckets are Cloudflare
+                // R2, which manages visibility per BUCKET and rejects per-object ACL headers
+                // outright with NotImplemented.
+                $path = $file->store(self::DIRECTORY, ImageUrl::disk());
 
                 if ($path === false) {
                     // Do not record a row for a file that is not on disk: the storefront

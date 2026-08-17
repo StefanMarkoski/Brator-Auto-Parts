@@ -218,12 +218,54 @@ Three things this does **not** do for you:
   bucket (or the `AWS_URL` domain in front of it) has to serve them publicly.
 - **`storage:link` becomes pointless.** Harmless to run, does nothing useful.
 
-Per-platform notes:
+### Laravel Cloud — the specifics
 
-| | What changes |
-|---|---|
-| **Laravel Cloud** | Managed MySQL, so no database port. Deploys from Git rather than compose, so `compose.prod.yaml` and the Caddyfile are unused there. Every plan includes an object-storage bucket. Mailpit does not exist — set `MAIL_MAILER=log`, or point the four `MAIL_*` values at a real provider |
-| **Render** | No managed MySQL. Either bring your own MySQL or port to Postgres, which is **not** a config flip — a MySQL-only `FULLTEXT` migration, `DATE_FORMAT`, two seeders using `UPDATE … JOIN … SET`, and the quiet one: MySQL's `LIKE` is case-insensitive and Postgres's is not, so search silently returns fewer results without erroring |
+This is the intended target. It has managed **MySQL**, so there is no database port to do.
+It deploys from Git rather than from compose, which means `compose.prod.yaml`, the Caddyfile
+and everything in the VM section above are simply unused there — Cloud provides the web
+server and TLS itself.
+
+Four things are easy to get wrong, all of them ten-second fixes if you know them first:
+
+1. **Name the bucket's disk `s3`.** Cloud asks you to name the disk when you create the
+   bucket, and it injects `FILESYSTEM_DISK` set to that name. `config/filesystems.php`
+   already has an `s3` block wired to the `AWS_*` variables Cloud injects, so calling it
+   `s3` makes everything line up with no config change. Any other name means adding a
+   matching disk block yourself.
+2. **Create it as a Public bucket.** The shop builds plain image URLs, not signed temporary
+   ones, so a private bucket returns nothing to visitors.
+3. **`AWS_URL` is NOT injected.** Cloud injects the credentials, the endpoint, the region
+   and the bucket, but the public base URL is only *shown* on the bucket settings page. Copy
+   it into the environment's custom variables by hand. Without it, Laravel builds URLs from
+   the S3 API endpoint instead of the public one and every image 404s while the upload
+   itself reports success.
+4. **Never set `visibility` on a write.** Cloud's buckets are Cloudflare R2, which manages
+   visibility per bucket and rejects per-object ACL headers with `NotImplemented`. The code
+   here deliberately passes none — worth knowing before you add an upload path.
+
+`UPLOADS_DISK` does not need to be set at all: it defaults to `s3` as soon as `AWS_BUCKET`
+is present, precisely so that attaching a bucket cannot leave uploads writing to a disk that
+is wiped on the next deploy.
+
+**Mail.** Mailpit does not exist on Cloud. Set `MAIL_MAILER=log` — receipts then land in the
+log viewer, and the on-screen receipt page is the shopper's actual confirmation anyway. If
+you want real email, the four `MAIL_*` values point at Resend, Postmark or Brevo and nothing
+else changes; the app sends exactly one message.
+
+**Seeding.** Run `php artisan db:seed --force` once from Cloud's command runner, with
+`ADMIN_LOGIN_EMAIL` and `ADMIN_PASSWORD` already set in the environment — see the seeder note
+above. `storage:link` is pointless once uploads are on the bucket.
+
+**Existing images.** The 5,000 seeded products reference files the seeder writes, so a fresh
+seed on Cloud fills the bucket by itself. Only hand-uploaded photos from your laptop would
+need copying up, and Cloud's bucket credentials work with any R2-compatible client.
+
+### Render
+
+No managed MySQL. Either bring your own MySQL or port to Postgres, and that port is **not** a
+config flip: a MySQL-only `FULLTEXT` migration, `DATE_FORMAT` in the admin dashboard, two
+seeders using `UPDATE … JOIN … SET`, and the quiet one — MySQL's `LIKE` is case-insensitive
+and Postgres's is not, so search silently returns fewer results without erroring anywhere.
 
 ## What is deliberately not done
 

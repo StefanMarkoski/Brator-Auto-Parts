@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Support\Http;
 
+use App\Support\ImageUrl;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
-use App\Support\ImageUrl;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;

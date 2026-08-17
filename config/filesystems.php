@@ -36,9 +36,17 @@ return [
     |
     | Changing this does NOT move files that are already stored. See docs/DEPLOY.md.
     |
+    | THE DEFAULT FOLLOWS AWS_BUCKET ON PURPOSE. Laravel Cloud injects the whole AWS_* set
+    | the moment a bucket is attached to an environment — including FILESYSTEM_DISK — but
+    | it knows nothing about a setting of ours. Defaulting to 'public' regardless would
+    | mean a Cloud deployment with a bucket sitting right there still writing uploads to a
+    | filesystem that is wiped on the next deploy, and nothing would look wrong until the
+    | images vanished. So: a bucket configured means uploads belong in it. UPLOADS_DISK
+    | still overrides, either way.
+    |
     */
 
-    'uploads_disk' => env('UPLOADS_DISK', 'public'),
+    'uploads_disk' => env('UPLOADS_DISK', env('AWS_BUCKET') ? 's3' : 'public'),
 
     /*
     |--------------------------------------------------------------------------
