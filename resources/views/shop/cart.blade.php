@@ -207,9 +207,14 @@
                                     <div class="brator-cart-list-items-title">
                                         <div class="prodct-info">
                                             <h5>VAT ({{ (int) config('shop.vat_rate') }}%)</h5>
-                                            {{-- VAT is charged on the DISCOUNTED goods, so say so
-                                                 rather than leaving the shopper to check the sum. --}}
-                                            <p>{{ $basket->hasDiscount() ? 'On '.$basket->discountedSubtotal()->format().' after discount' : 'Added at checkout' }}</p>
+                                            {{-- Name the base the figure was ACTUALLY computed on.
+                                                 This said "On 900,00 after discount" beside a VAT of
+                                                 196,20 — which is 162,00 on the goods plus 34,20 on
+                                                 delivery, so the sentence described two thirds of its
+                                                 own number and anyone checking it found a shop that
+                                                 could not add up. vatBase() carries the real rule,
+                                                 including the case where delivery is not taxed. --}}
+                                            <p>On {{ $basket->vatBase()->format() }}{{ $basket->hasDiscount() ? ', after discount' : '' }}</p>
                                         </div>
                                     </div>
                                     <div class="brator-cart-list-items-subtotal">

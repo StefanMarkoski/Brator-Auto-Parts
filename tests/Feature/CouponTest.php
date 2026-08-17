@@ -136,9 +136,17 @@ final class CouponTest extends TestCase
          | this assertion looked for a bare 162,00 and failed — forgetting delivery VAT is the
          | exact mistake an earlier checkout test was written to catch, and I made it again in
          | the test rather than the code.
+         |
+         | AND THEN I PINNED THE MISTAKE. This asserted the page showed "900,00", which it did,
+         | inside the label "On 900,00 after discount" — a sentence sitting beside a VAT figure
+         | of 196,20 that was computed on 1.090,00. So the test was holding in place a label
+         | that named two thirds of its own number, having noted the delivery VAT two lines
+         | above. The label now states the base the figure was actually computed on, and this
+         | asserts that instead: 900,00 of discounted goods plus 190,00 of delivery.
         */
         $this->assertStringContainsString('100,00', $html, 'The discount is not shown.');
-        $this->assertStringContainsString('900,00', $html, 'The discounted goods total is not shown.');
+        $this->assertStringContainsString('1.090,00', $html,
+            'The VAT label should name the base it was computed on: goods after discount, plus delivery.');
         $this->assertStringContainsString('196,20', $html,
             'VAT should be 162,00 on the discounted goods plus 34,20 on delivery.');
     }

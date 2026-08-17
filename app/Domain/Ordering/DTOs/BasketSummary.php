@@ -104,6 +104,23 @@ final readonly class BasketSummary
         return ! $this->discount->isZero();
     }
 
+    /**
+     * The amount the VAT figure was actually charged on.
+     *
+     * Exists because the summaries kept naming a base the number was not computed on. The
+     * cart printed "On 900,00 after discount" beside a VAT of 196,20 — which is 162,00 on
+     * the goods PLUS 34,20 on delivery, so the sentence was describing two thirds of its
+     * own figure. Delivery is a taxable supply here (see DeliveryCharge::vatOn), so the
+     * base is the discounted goods and the delivery charge together, and it drops back to
+     * the goods alone if an accountant ever flips shop.vat_on_delivery.
+     */
+    public function vatBase(): Money
+    {
+        return config('shop.vat_on_delivery', true)
+            ? $this->discountedSubtotal()->add($this->shipping)
+            : $this->discountedSubtotal();
+    }
+
     public function isEmpty(): bool
     {
         return $this->lines->isEmpty();

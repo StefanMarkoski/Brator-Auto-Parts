@@ -93,10 +93,7 @@
                                 <div data-mini-cart-scroll style="max-height: 296px; overflow-y: auto; overflow-x: hidden">
                                     @include('partials.mini-cart-items')
                                 </div>
-                                <div class="brator-cart-item-list-money-area">
-                                    <div class="brator-cart-item-money"><span>Subtotal (excl. VAT)</span><span>{{ $miniCart->subtotal->format() }}</span></div>
-                                    <div class="brator-cart-item-money"><span>VAT ({{ (int) config('shop.vat_rate') }}%)</span><span>{{ $miniCart->vat->format() }}</span></div>
-                                </div>
+                                @include('partials.mini-cart-totals')
                                 <div class="brator-cart-total-money">
                                     <div class="brator-cart-total-header"><span>total</span><span>{{ $miniCart->total->format() }}</span></div>
                                     <div class="brator-cart-total-action"><a href="{{ route('cart', [], false) }}">View Cart</a><a href="{{ route('cart', [], false) }}#checkout">Checkout</a></div>
