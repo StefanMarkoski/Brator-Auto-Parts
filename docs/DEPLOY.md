@@ -256,9 +256,18 @@ else changes; the app sends exactly one message.
 `ADMIN_LOGIN_EMAIL` and `ADMIN_PASSWORD` already set in the environment — see the seeder note
 above. `storage:link` is pointless once uploads are on the bucket.
 
-**Existing images.** The 5,000 seeded products reference files the seeder writes, so a fresh
-seed on Cloud fills the bucket by itself. Only hand-uploaded photos from your laptop would
-need copying up, and Cloud's bucket credentials work with any R2-compatible client.
+**Images, and a correction to what this file used to claim.** The seeder writes NO image
+files. Every path it sets points at something committed in the repo — `assets/images/shop/…`
+for products, `assets/images/slider/…` for the hero, `assets/images/hot/…`, and three
+category icons under `app/images/`. So a freshly seeded deployment has working images with
+no bucket attached at all, and `UPLOADS_DISK` only starts to matter the moment somebody
+uploads something through the admin panel.
+
+That is worth knowing before you spend an afternoon on object storage you do not yet need.
+The bucket is for what happens AFTER the seed: hero banners, "What's Hot" images, department
+photos and product photos added through the admin. Without it, those land on the ephemeral
+disk and disappear on the next deploy — the uploads appear to succeed and the images vanish
+later, which is the confusing version of this failure.
 
 ### Render
 
