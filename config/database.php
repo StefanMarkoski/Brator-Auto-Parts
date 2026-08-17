@@ -19,7 +19,24 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    /*
+    | THE FALLBACK IS mysql, NOT LARAVEL'S sqlite DEFAULT, AND THAT IS DELIBERATE.
+    |
+    | This application cannot run on SQLite at all. The products migration issues
+    | `ALTER TABLE products ADD FULLTEXT`, which SQLite cannot parse, and the test suite
+    | runs against MySQL because the schema depends on fulltext, enum and index selection.
+    | So sqlite is not a lesser default here — it is a guaranteed failure.
+    |
+    | It cost a real afternoon. Laravel Cloud injects DB_HOST, DB_USERNAME, DB_PASSWORD and
+    | DB_DATABASE when a database is attached, but NOT DB_CONNECTION. With the stock default
+    | the app therefore ignored a perfectly good MySQL database, silently created an SQLite
+    | file, ran five migrations into it and died on the sixth — while `db:show` reported
+    | sqlite and every credential on the dashboard looked correct.
+    |
+    | Setting DB_CONNECTION explicitly still overrides this. The point is only that the
+    | fallback should be the one database this app can actually use.
+    */
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
