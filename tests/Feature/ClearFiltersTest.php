@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Domain\Catalog\Enums\StockStatus;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Fitment\Services\VehicleSelection;
 use Database\Seeders\CatalogStructureSeeder;
@@ -102,7 +103,21 @@ final class ClearFiltersTest extends TestCase
     {
         // "Filters" must mean filters. The vehicle and the basket both live in the session,
         // and clearing the wrong one loses somebody's shopping.
-        $product = Product::query()->visible()->firstOrFail();
+        /*
+         | PICKED SO IT CAN ACTUALLY BE BOUGHT, which is not what visible() promises.
+         |
+         | This was `visible()->firstOrFail()`. visible() is the READ rule — active, not deleted,
+         | published — and says nothing about stock, while adding to a basket goes through
+         | isPurchasable(), which also wants a buyable stock_status. So the row this picked was
+         | free to be out of stock, the add would then put nothing in the basket, and the
+         | assertion below would fail while blaming the filter-clearing it was written to test.
+         |
+         | Seen once in a full run and never in isolation, which is the signature of a fixture
+         | that depends on which row happens to come back first. Pinned rather than left to luck:
+         | the point of this test is the session, not the catalogue.
+        */
+        $product = Product::query()->visible()->where('stock_status', StockStatus::InStock)->firstOrFail();
+        $product->update(['stock_quantity' => 25]);
 
         $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 2]);
         $this->post('/filters/clear', ['redirect_to' => '/shop']);
