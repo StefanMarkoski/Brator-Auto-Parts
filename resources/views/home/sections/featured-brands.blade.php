@@ -22,7 +22,7 @@
                              companies' logos, so an empty slot is more honest than a wrong mark. --}}
                         <div class="brator-brand-img">
                             @if ($brand->logo_path)
-                                <a href="{{ route('search', ['brand' => [$brand->slug]], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="/{{ $brand->logo_path }}" alt="{{ $brand->name }}" /></a>
+                                <a href="{{ route('search', ['brand' => [$brand->slug]], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="{{ \App\Support\ImageUrl::for($brand->logo_path) }}" alt="{{ $brand->name }}" /></a>
                             @else
                                 <a href="{{ route('search', ['brand' => [$brand->slug]], false) }}">{{ $brand->name }}</a>
                             @endif

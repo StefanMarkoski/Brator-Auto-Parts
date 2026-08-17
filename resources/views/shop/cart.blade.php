@@ -98,7 +98,7 @@
                             @forelse ($basket->lines as $line)
                                 <div class="brator-cart-list-items">
                                     <div class="brator-cart-list-items-title">
-                                        <div class="img-cart"><a href="{{ route('shop.product', $line->productSlug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $line->imagePath }}" alt="{{ $line->productName }}" /></a></div>
+                                        <div class="img-cart"><a href="{{ route('shop.product', $line->productSlug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="{{ \App\Support\ImageUrl::for($line->imagePath) }}" alt="{{ $line->productName }}" /></a></div>
                                         <div class="prodct-info">
                                             <h5><a href="{{ route('shop.product', $line->productSlug, false) }}">{{ $line->productName }}</a></h5>
                                             <p>{{ $line->brandName }} &middot; SKU {{ $line->productSku }}</p><a href="{{ route('shop.product', $line->productSlug, false) }}">Edit </a>

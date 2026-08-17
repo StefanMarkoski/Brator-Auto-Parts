@@ -37,7 +37,7 @@
     a time behind this one rather than racing it.
 --}}
 @push('head')
-    <link rel="preload" as="image" href="/{{ $first }}" fetchpriority="high" />
+    <link rel="preload" as="image" href="{{ \App\Support\ImageUrl::for($first) }}" fetchpriority="high" />
 @endpush
 
     <!-- Banner style two start -->
@@ -46,11 +46,14 @@
         pinned to its bottom edge. They sit in the flow above the search box now, so it is gone
         and the banner is back to exactly the theme's own markup.
     --}}
-    <div class="brator-main-banner-area banner-style-two lazyload" data-bg="/{{ $first }}"
+    <div class="brator-main-banner-area banner-style-two lazyload" data-bg="{{ \App\Support\ImageUrl::for($first) }}"
         @if ($heroImages->count() > 1)
             {{-- Only when there is something to rotate. One picture stays a plain background
                  with no timer running and no dots to click. --}}
-            data-hero-rotate="{{ $heroImages->map(fn (string $path): string => '/'.$path)->values()->toJson() }}"
+            {{-- Through ImageUrl like every other picture: these are handed straight to the
+                 browser by the rotation script, so a hardcoded '/' prefix here would keep
+                 pointing at the app server after the uploads move to object storage. --}}
+            data-hero-rotate="{{ $heroImages->map(fn (string $path): string => \App\Support\ImageUrl::for($path))->values()->toJson() }}"
             data-hero-interval="5000"
             {{-- How long one picture takes to dissolve into the next. Well under the
                  interval, so a picture is fully itself for most of its turn rather than

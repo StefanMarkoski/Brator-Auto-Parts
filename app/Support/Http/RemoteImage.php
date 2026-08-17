@@ -6,6 +6,7 @@ namespace App\Support\Http;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use App\Support\ImageUrl;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -83,7 +84,7 @@ final class RemoteImage
 
         $path = trim($directory, '/').'/'.Str::ulid()->toString().'.'.self::ALLOWED_TYPES[$info['mime']];
 
-        if (! Storage::disk('public')->put($path, $body)) {
+        if (! Storage::disk(ImageUrl::disk())->put($path, $body)) {
             throw new RuntimeException('The image downloaded but could not be saved. Try again.');
         }
 

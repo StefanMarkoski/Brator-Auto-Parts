@@ -6,6 +6,7 @@ namespace App\Domain\Catalog\Actions;
 
 use App\Domain\Catalog\Models\Category;
 use App\Support\Http\RemoteImage;
+use App\Support\ImageUrl;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -332,9 +333,9 @@ final class AssignDepartmentPhotosAction
             ->map(fn (string $path): string => substr($path, strlen('storage/')))
             ->all();
 
-        foreach (Storage::disk('public')->files(self::DIRECTORY) as $file) {
+        foreach (Storage::disk(ImageUrl::disk())->files(self::DIRECTORY) as $file) {
             if (! in_array($file, $referenced, true)) {
-                Storage::disk('public')->delete($file);
+                Storage::disk(ImageUrl::disk())->delete($file);
             }
         }
     }

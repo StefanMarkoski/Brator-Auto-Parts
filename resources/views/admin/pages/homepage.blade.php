@@ -166,7 +166,7 @@
                                         {{-- object-cover, the same way the storefront paints it, so
                                              this preview shows the crop the shopper will see rather
                                              than a squashed whole picture. --}}
-                                        <img src="/{{ $image->image_path }}" alt=""
+                                        <img src="{{ \App\Support\ImageUrl::for($image->image_path) }}" alt=""
                                             class="h-28 w-full bg-gray-100 object-cover dark:bg-gray-900" />
 
                                         <div class="space-y-2 p-3">
@@ -254,7 +254,7 @@
 
                                     <div class="flex flex-wrap items-start justify-between gap-3">
                                         <div class="flex items-center gap-3">
-                                            <img src="/{{ $box->image_path }}" alt=""
+                                            <img src="{{ \App\Support\ImageUrl::for($box->image_path) }}" alt=""
                                                 class="h-14 w-14 rounded-lg border border-gray-200 object-cover dark:border-gray-800" />
                                             <div>
                                                 <p class="text-sm font-medium text-gray-800 dark:text-white/90">

@@ -188,6 +188,43 @@ else comes back from the seeders.
 
 ---
 
+## Hosting on a platform instead of a VM (Render, Laravel Cloud)
+
+Everything above assumes a machine with a real disk. Managed platforms do not have one —
+the filesystem is wiped on every deploy and restart — so uploaded images have to live in
+object storage. That is the *only* app-level difference, and it is one setting:
+
+```dotenv
+UPLOADS_DISK=s3
+AWS_ACCESS_KEY_ID=…
+AWS_SECRET_ACCESS_KEY=…
+AWS_BUCKET=brator
+AWS_DEFAULT_REGION=auto
+AWS_ENDPOINT=https://…            # R2, Supabase Storage, Backblaze — any S3-compatible host
+AWS_USE_PATH_STYLE_ENDPOINT=true  # required by most non-AWS providers
+AWS_URL=https://cdn.example.com   # the bucket's public base URL
+```
+
+`App\Support\ImageUrl` then builds every image URL from that disk. Theme assets under
+`/assets` are deliberately unaffected — they ship with the purchased template and are not in
+anybody's bucket. `ImageUrlTest` pins both halves of that rule.
+
+Three things this does **not** do for you:
+
+- **It does not move files that already exist.** Copy `storage/app/public` into the bucket
+  first, keeping the paths (`products/…`, `hero/…`, `departments/…`, `whats-hot/…`), or
+  re-seed after switching.
+- **It does not make the bucket public.** The URLs are plain reads with no signing, so the
+  bucket (or the `AWS_URL` domain in front of it) has to serve them publicly.
+- **`storage:link` becomes pointless.** Harmless to run, does nothing useful.
+
+Per-platform notes:
+
+| | What changes |
+|---|---|
+| **Laravel Cloud** | Managed MySQL, so no database port. Deploys from Git rather than compose, so `compose.prod.yaml` and the Caddyfile are unused there. Every plan includes an object-storage bucket. Mailpit does not exist — set `MAIL_MAILER=log`, or point the four `MAIL_*` values at a real provider |
+| **Render** | No managed MySQL. Either bring your own MySQL or port to Postgres, which is **not** a config flip — a MySQL-only `FULLTEXT` migration, `DATE_FORMAT`, two seeders using `UPDATE … JOIN … SET`, and the quiet one: MySQL's `LIKE` is case-insensitive and Postgres's is not, so search silently returns fewer results without erroring |
+
 ## What is deliberately not done
 
 Recorded so nobody assumes it was overlooked. This is an internal demo, and each of these

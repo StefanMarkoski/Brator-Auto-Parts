@@ -135,7 +135,7 @@
                                             @foreach (collect($navCategories ?? [])->split(3) as $column)
                                                 <div class="mega-menu-cat-list-left mega-menu-cat-list-single-area">
                                                     @foreach ($column as $navCategory)
-                                                        <a href="{{ route('shop.category', $navCategory['slug'], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $navCategory['image'] }}" alt="{{ $navCategory['name'] }}" /><span>{{ $navCategory['name'] }}</span></a>
+                                                        <a href="{{ route('shop.category', $navCategory['slug'], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="{{ \App\Support\ImageUrl::for($navCategory['image']) }}" alt="{{ $navCategory['name'] }}" /><span>{{ $navCategory['name'] }}</span></a>
                                                     @endforeach
                                                 </div>
                                             @endforeach
@@ -201,7 +201,7 @@
                                             @foreach (collect($navCategories ?? [])->split(3) as $column)
                                                 <div class="mega-menu-cat-list-left mega-menu-cat-list-single-area">
                                                     @foreach ($column as $navCategory)
-                                                        <a href="{{ route('shop.category', $navCategory['slug'], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $navCategory['image'] }}" alt="{{ $navCategory['name'] }}" /><span>{{ $navCategory['name'] }}</span></a>
+                                                        <a href="{{ route('shop.category', $navCategory['slug'], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="{{ \App\Support\ImageUrl::for($navCategory['image']) }}" alt="{{ $navCategory['name'] }}" /><span>{{ $navCategory['name'] }}</span></a>
                                                     @endforeach
                                                 </div>
                                             @endforeach

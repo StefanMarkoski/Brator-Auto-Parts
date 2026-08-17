@@ -74,7 +74,7 @@
                     <div class="brator-categories-list">
                         @foreach ($categories as $category)
                             <div class="brator-categories-single">
-                                <div class="brator-categories-single-img"><a href="{{ route('shop.category', $category->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $category->image_path }}" alt="{{ $category->name }}" /></a></div>
+                                <div class="brator-categories-single-img"><a href="{{ route('shop.category', $category->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="{{ \App\Support\ImageUrl::for($category->image_path) }}" alt="{{ $category->name }}" /></a></div>
                                 <div class="brator-categories-single-title">
                                     <p><a href="{{ route('shop.category', $category->slug, false) }}">{{ $category->name }}</a></p>
                                 </div>

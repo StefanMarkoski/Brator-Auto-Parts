@@ -6,6 +6,7 @@ namespace App\Domain\Catalog\Actions;
 
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductImage;
+use App\Support\ImageUrl;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -135,7 +136,7 @@ final class SaveProductImagesAction
             // is part of the purchased template and shared by thousands of products;
             // deleting one product's image must not delete the theme's file.
             if (str_starts_with($image->path, 'storage/')) {
-                Storage::disk('public')->delete(substr($image->path, strlen('storage/')));
+                Storage::disk(ImageUrl::disk())->delete(substr($image->path, strlen('storage/')));
             }
 
             $image->delete();

@@ -87,7 +87,7 @@
                                 {{-- Origin-relative, single leading slash: seeded rows hold a
                                      theme asset path and uploads hold storage/…, and both are
                                      relative to the document root. --}}
-                                <img src="/{{ $image->path }}" alt="{{ $image->alt }}"
+                                <img src="{{ \App\Support\ImageUrl::for($image->path) }}" alt="{{ $image->alt }}"
                                     class="h-14 w-14 shrink-0 rounded-lg object-cover" />
 
                                 <div class="min-w-0 flex-1">

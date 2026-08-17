@@ -91,7 +91,7 @@
                         @if ($department['photos'] !== [])
                             <div class="flex flex-wrap gap-2">
                                 @foreach ($department['photos'] as $path)
-                                    <img src="/{{ $path }}" alt=""
+                                    <img src="{{ \App\Support\ImageUrl::for($path) }}" alt=""
                                         class="h-16 w-16 rounded-lg border border-gray-200 object-cover dark:border-gray-800" />
                                 @endforeach
                             </div>

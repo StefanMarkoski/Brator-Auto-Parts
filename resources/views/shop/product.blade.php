@@ -60,7 +60,7 @@
                                                 : collect(['assets/images/product-tab-img-01.jpeg']);
                                         @endphp
                                         @foreach ($gallery as $thumb)
-                                            <li><a class="js-tabs__title" href="#" style="background-image:url(/{{ $thumb }})"></a></li>
+                                            <li><a class="js-tabs__title" href="#" style="background-image:url({{ \App\Support\ImageUrl::for($thumb) }})"></a></li>
                                         @endforeach
                                     </ul>
                                 </div>
@@ -71,7 +71,7 @@
                                          whose first paint is the product photograph. The inline
                                          style is what tab.js itself sets, so it clears the moment
                                          a thumbnail is clicked. --}}
-                                    <div class="js-tabs__content brator-product-img-tab-item" @if ($index > 0) style="display:none" @endif><img data-action="zoom" class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $path }}" alt="{{ $product->name }}" />
+                                    <div class="js-tabs__content brator-product-img-tab-item" @if ($index > 0) style="display:none" @endif><img data-action="zoom" class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="{{ \App\Support\ImageUrl::for($path) }}" alt="{{ $product->name }}" />
                                         <p>click image to zoom in</p>
                                     </div>
                                 @endforeach
@@ -100,7 +100,7 @@
                                     --}}
                                     <div class="brator-product-hero-content-brand-img">
                                         @if ($product->brand?->logo_path)
-                                            <a href="{{ route('search', ['brand' => [$product->brand->slug]], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="/{{ $product->brand->logo_path }}" alt="{{ $product->brand->name }}" /></a>
+                                            <a href="{{ route('search', ['brand' => [$product->brand->slug]], false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="{{ \App\Support\ImageUrl::for($product->brand->logo_path) }}" alt="{{ $product->brand->name }}" /></a>
                                         @elseif ($product->brand)
                                             <a href="{{ route('search', ['brand' => [$product->brand->slug]], false) }}">{{ $product->brand->name }}</a>
                                         @endif

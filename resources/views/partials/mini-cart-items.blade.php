@@ -9,7 +9,7 @@
 @forelse ($miniCart->lines as $line)
     <div class="brator-cart-item-list-item">
         <div class="brator-cart-item-list-item-img">
-            <a href="{{ route('shop.product', $line->productSlug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $line->imagePath }}" alt="{{ $line->productName }}" /></a>
+            <a href="{{ route('shop.product', $line->productSlug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="{{ \App\Support\ImageUrl::for($line->imagePath) }}" alt="{{ $line->productName }}" /></a>
         </div>
         <div class="brator-cart-item-list-item-title">
             <div class="brator-cart-item-list-item-title-one">

@@ -15,7 +15,7 @@
                                         @endforeach
                                     </div>
                                 </div>
-                                <div class="brator-product-single-item-img"><a href="{{ route('shop.product', $product->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->imagePath }}" alt="{{ $product->name }}" /></a></div>
+                                <div class="brator-product-single-item-img"><a href="{{ route('shop.product', $product->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="{{ \App\Support\ImageUrl::for($product->imagePath) }}" alt="{{ $product->name }}" /></a></div>
                             </div>
                             <div class="brator-product-single-item-area-mdl">
                                 <div class="brator-product-single-item-mini">

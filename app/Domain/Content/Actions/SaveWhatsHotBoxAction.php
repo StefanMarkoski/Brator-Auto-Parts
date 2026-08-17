@@ -7,6 +7,7 @@ namespace App\Domain\Content\Actions;
 use App\Domain\Catalog\Models\Category;
 use App\Domain\Content\Models\Banner;
 use App\Support\Http\RemoteImage;
+use App\Support\ImageUrl;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -219,7 +220,7 @@ final class SaveWhatsHotBoxAction
         // Only files WE fetched. A seeded row points at the purchased theme's own asset, which is
         // shared and not ours to remove.
         if (str_starts_with($banner->image_path, 'storage/'.self::DIRECTORY.'/')) {
-            Storage::disk('public')->delete(substr($banner->image_path, strlen('storage/')));
+            Storage::disk(ImageUrl::disk())->delete(substr($banner->image_path, strlen('storage/')));
         }
     }
 

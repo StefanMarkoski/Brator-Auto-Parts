@@ -42,7 +42,7 @@
                                 <!-- single item -->
                                 @foreach ($section->items as $banner)
                                     <div class="splide__slide">
-                                        <div class="brator-hot-single-box brator-hot-box-design-{{ ['one', 'two', 'three', 'four'][$loop->index % 4] }} lazyload" data-bg="/{{ $banner->image_path }}">
+                                        <div class="brator-hot-single-box brator-hot-box-design-{{ ['one', 'two', 'three', 'four'][$loop->index % 4] }} lazyload" data-bg="{{ \App\Support\ImageUrl::for($banner->image_path) }}">
                                             <div class="brator-hot-box-content">
                                                 <div class="brator-hot-box-text">
                                                     <p>{{ $banner->subtitle }}</p>

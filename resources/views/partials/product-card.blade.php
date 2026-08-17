@@ -35,7 +35,7 @@
                  from the header: there is no wishlist, so it was a dead link repeated once
                  per product — the single biggest source of unclickable controls in the shop. --}}
                                     </div>
-                                    <div class="brator-product-single-item-img"><a href="{{ route('shop.product', $product->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="/{{ $product->imagePath }}" alt="{{ $product->name }}" /></a></div>
+                                    <div class="brator-product-single-item-img"><a href="{{ route('shop.product', $product->slug, false) }}"><img class="lazyload" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="  data-src="{{ \App\Support\ImageUrl::for($product->imagePath) }}" alt="{{ $product->name }}" /></a></div>
                                     <div class="brator-product-single-item-mini">
                                         <div class="brator-product-single-item-cat"><a href="{{ route('shop.product', $product->slug, false) }}">{{ $product->brandName }}</a></div>
                                         <div class="brator-product-single-item-title">

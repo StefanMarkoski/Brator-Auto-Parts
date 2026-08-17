@@ -19,6 +19,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Uploads Disk
+    |--------------------------------------------------------------------------
+    |
+    | Where product photos, hero banners, "What's Hot" images and department photos are
+    | written, and the disk App\Support\ImageUrl builds their URLs from. Deliberately its
+    | own setting rather than reusing 'default' above: that one is what unqualified
+    | Storage:: calls fall back to, and repointing it would silently move anything else
+    | that ever writes a file.
+    |
+    | 'public' is this machine's disk behind the public/storage symlink — right for a
+    | laptop and for any host with a real filesystem. Set UPLOADS_DISK=s3 on a host with
+    | an ephemeral one (Render, Laravel Cloud, a Codespace) and fill in the AWS_* values
+    | below. Any S3-compatible service works, including Cloudflare R2 and Supabase
+    | Storage, through AWS_ENDPOINT with AWS_USE_PATH_STYLE_ENDPOINT=true.
+    |
+    | Changing this does NOT move files that are already stored. See docs/DEPLOY.md.
+    |
+    */
+
+    'uploads_disk' => env('UPLOADS_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

@@ -6,6 +6,7 @@ namespace App\Domain\Content\Actions;
 
 use App\Domain\Content\Models\Banner;
 use App\Support\Http\RemoteImage;
+use App\Support\ImageUrl;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -95,7 +96,7 @@ final class ImportHeroImageAction
             // Only files WE fetched are removed from disk. The seeded rows point at the
             // purchased theme's own slider assets, which are shared and not ours to delete.
             if (str_starts_with($banner->image_path, 'storage/')) {
-                Storage::disk('public')->delete(substr($banner->image_path, strlen('storage/')));
+                Storage::disk(ImageUrl::disk())->delete(substr($banner->image_path, strlen('storage/')));
             }
 
             $banner->delete();
