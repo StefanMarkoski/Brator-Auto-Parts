@@ -1,0 +1,68 @@
+# Brator Auto Parts — the hosted overlay.
+#
+# Never used on its own. Always both files, in this order:
+#
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+#
+# What it changes, and nothing else:
+#   - PHP is built with the production ini (errors to the log, opcache timestamps off)
+#   - nginx is pulled back to loopback; Caddy is the only thing on 80/443
+#   - Caddy terminates HTTPS and puts the Mailpit UI behind a password
+#   - containers come back after a reboot without anyone logging in
+#
+# Deploy steps are in docs/DEPLOY.md. Read that first — this file assumes .env is already
+# a production .env, and the single most common way to get this wrong is to ship the
+# development one.
+
+services:
+  app:
+    build:
+      args:
+        # The whole reason display_errors is not baked on. See docker/php/php.prod.ini.
+        PHP_INI: php.prod.ini
+    restart: always
+
+  nginx:
+    # No longer published on every interface — see APP_BIND in .env. Caddy reaches this
+    # over the compose network as "nginx:80", which needs no published port at all; the
+    # loopback publish is kept only so you can curl it on the box when something is wrong.
+    restart: always
+
+  mysql:
+    restart: always
+
+  redis:
+    restart: always
+
+  mailpit:
+    restart: always
+
+  caddy:
+    # TLS with no configuration: Caddy gets and renews a Let's Encrypt certificate on its
+    # own, provided SITE_DOMAIN resolves to this machine and 80/443 are open. That is the
+    # entire reason it is here rather than another nginx.
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env, e.g. brator.duckdns.org}
+      MAIL_DOMAIN: ${MAIL_DOMAIN:-}
+      MAIL_USER: ${MAIL_USER:-brator}
+      # A bcrypt hash, NOT a password. Generate it with:
+      #   docker run --rm caddy:2-alpine caddy hash-password --plaintext 'your-password'
+      MAIL_PASSWORD_HASH: ${MAIL_PASSWORD_HASH:-}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here. Losing this volume means re-issuing them, and Let's Encrypt
+      # rate-limits that, so do not prune it casually.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - nginx
+      - mailpit
+
+volumes:
+  caddy-data:
+  caddy-config:

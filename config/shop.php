@@ -40,4 +40,24 @@ return [
         'email' => env('SHOP_EMAIL', 'orders@brator.mk'),
         'address' => env('SHOP_ADDRESS'),
     ],
+
+    /*
+     | The admin account DatabaseSeeder creates. Development values as defaults, so a
+     | laptop is unchanged.
+     |
+     | READ THROUGH CONFIG RATHER THAN env() IN THE SEEDER, which is the entire reason it
+     | lives here. Once `php artisan config:cache` has run, Laravel stops loading the .env
+     | file at all and env() outside a config file returns null — so a seeder calling
+     | env('ADMIN_PASSWORD', 'password') on a cached-config deployment would quietly fall
+     | back to the password "password" while appearing to honour the setting. Config files
+     | are read before the cache is written, so these values survive it.
+     |
+     | That failure mode matters more here than it usually would: there is no customer
+     | login on this shop, so this single account is the whole security boundary.
+    */
+    'admin' => [
+        'name' => env('ADMIN_NAME', 'Stefan Markoski'),
+        'email' => env('ADMIN_LOGIN_EMAIL', 'stefan.m@xgate.io'),
+        'password' => env('ADMIN_PASSWORD', 'password'),
+    ],
 ];

@@ -18,10 +18,22 @@ class DatabaseSeeder extends Seeder
         // you can act on.
         DB::disableQueryLog();
 
+        /*
+         | The admin account. Credentials read from the environment with the development
+         | values as defaults, so nothing changes on a laptop — "password" is still
+         | "password" here.
+         |
+         | Env-driven because this seeder is also how a hosted copy gets its first user, and
+         | the admin panel is this app's ENTIRE security boundary: there is no customer
+         | login, so this one account is all of it. Seeding a public site with a password
+         | that is literally "password", under an email address printed in the git history,
+         | is not a small oversight. .env.production.example carries the slots and
+         | docs/DEPLOY.md does not let you past the step.
+        */
         User::factory()->create([
-            'name' => 'Stefan Markoski',
-            'email' => 'stefan.m@xgate.io',
-            'password' => 'password',
+            'name' => config('shop.admin.name'),
+            'email' => config('shop.admin.email'),
+            'password' => config('shop.admin.password'),
             'role' => UserRole::Admin,
         ]);
 

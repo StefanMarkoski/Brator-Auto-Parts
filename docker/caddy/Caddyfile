@@ -1,0 +1,51 @@
+# Brator Auto Parts — the public edge.
+#
+# Caddy exists here for one reason: it obtains and renews a Let's Encrypt certificate by
+# itself, with no cron job and no certbot. Everything else it does, nginx already does.
+#
+# It talks to nginx over the compose network, so nginx needs no published port.
+
+{
+	# A real address means expiry warnings arrive somewhere. Optional — Let's Encrypt
+	# issues without it.
+	email {$ADMIN_EMAIL:admin@example.com}
+}
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# X-Forwarded-Proto and X-Forwarded-For are set by Caddy automatically. Laravel only
+	# believes them because TRUSTED_PROXIES is set to the compose network — see
+	# bootstrap/app.php. Without that pairing every URL the app builds says http://.
+	reverse_proxy nginx:80
+
+	# The app already caps uploads at 32M in php.ini and nginx; stopping a larger body at
+	# the edge means it is never written to disk at all.
+	request_body {
+		max_size 32MB
+	}
+
+	header {
+		# The storefront is a bought theme with inline styles and scripts, so a strict CSP
+		# would break it and is deliberately not set here. These four cost nothing.
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+}
+
+# The demo's mailbox. Every receipt the shop "sends" lands here, which is the whole reason
+# Mailpit stays in the hosted stack rather than being swapped for a real mail provider: a
+# demo shop that cannot email a real person by accident is a feature, not a limitation.
+#
+# PASSWORD-PROTECTED, because it holds every customer name, email address and order that
+# has been placed on the demo. Skipped entirely if MAIL_DOMAIN is unset.
+{$MAIL_DOMAIN} {
+	basic_auth {
+		{$MAIL_USER} {$MAIL_PASSWORD_HASH}
+	}
+
+	reverse_proxy mailpit:8025
+}

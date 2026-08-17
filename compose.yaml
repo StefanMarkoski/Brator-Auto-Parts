@@ -28,7 +28,10 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8090}:80"
+      # The bind address is a variable so the production overlay can pull this back to
+      # loopback, where only Caddy (on the compose network) reaches it. Default is
+      # unchanged: every interface, so the shop is reachable from your phone on the wifi.
+      - "${APP_BIND:-0.0.0.0}:${APP_PORT:-8090}:80"
     volumes:
       - .:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
