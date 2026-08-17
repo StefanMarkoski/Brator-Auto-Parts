@@ -15,11 +15,30 @@ use Illuminate\Support\Str;
  */
 class HomepageSeeder extends Seeder
 {
-    /** The hero slides the theme actually ships — there is no slide-01.jpg. */
+    /*
+     | The hero slides, in the order they rotate.
+     |
+     | These are OUR pictures, committed to the repo under public/app/images/hero, not the
+     | theme's stock sliders and not uploads. That is deliberate and worth explaining,
+     | because it looks like the wrong place for them at first glance.
+     |
+     | They were originally added through the admin panel, which fetches a picture from a
+     | URL and writes it to the uploads disk. On a host with an ephemeral filesystem that is
+     | exactly the wrong place for the demo's own content: the files vanish on the next
+     | deploy, and re-adding them means still having the source URLs a year later. As repo
+     | assets they are in every deployment, permanently, with no bucket, no credentials and
+     | nothing to remember — the same treatment app/images/categories already gets.
+     |
+     | The uploads disk is still the right home for anything a user adds AFTER deployment.
+     | This is seed content, which is a different thing wearing the same clothes.
+     |
+     | 108 KB for all four.
+    */
     private const HERO_IMAGES = [
-        'assets/images/slider/slider-01.jpg',
-        'assets/images/slider/slide-02.jpg',
-        'assets/images/slider/slide-03.jpg',
+        'app/images/hero/hero-1.jpg',
+        'app/images/hero/hero-2.jpg',
+        'app/images/hero/hero-3.jpg',
+        'app/images/hero/hero-4.jpg',
     ];
 
     /** @var list<array{type: string, heading: ?string, collection: ?string}> */
@@ -91,17 +110,19 @@ class HomepageSeeder extends Seeder
             ];
         }
 
-        for ($i = 1; $i <= 3; $i++) {
+        // Driven by the list, not a hardcoded 3 — adding a fifth picture to HERO_IMAGES
+        // should not also require finding this loop.
+        foreach (self::HERO_IMAGES as $index => $heroImage) {
             $banners[] = [
                 'id' => (string) Str::ulid(),
                 'placement' => 'home_hero',
                 'title' => 'Up to 50% off selected parts',
                 'subtitle' => 'Free delivery on orders over 3.000 ден',
-                'image_path' => self::HERO_IMAGES[$i - 1],
+                'image_path' => $heroImage,
                 'mobile_image_path' => null,
                 'link_url' => '/shop',
                 'link_label' => 'Shop now',
-                'position' => $i - 1,
+                'position' => $index,
                 'is_active' => true,
                 'starts_at' => null,
                 'ends_at' => null,

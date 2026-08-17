@@ -198,7 +198,32 @@ final class NavigationFlowTest extends TestCase
 
         return array_values(array_unique(array_filter(
             $matches[1],
-            fn (string $href) => ! str_starts_with($href, '/assets/')
+            fn (string $href) => ! $this->isStaticFile($href),
         )));
+    }
+
+    /**
+     * Is this href a real file on disk rather than a route?
+     *
+     * This used to be `! str_starts_with($href, '/assets/')`, which assumed every static
+     * file lives in the purchased theme's own directory. That held only while the theme was
+     * the sole source of images. It stopped being true the moment the shop shipped pictures
+     * of its own under /app/images: the hero preload then read as a broken link, because the
+     * test client hands every path to the router and the router has no route for a JPEG.
+     * The link was fine — the rule was wrong.
+     *
+     * Asking the filesystem is self-maintaining, and it is STRICTER than the old rule rather
+     * than looser: a link to a static file that does not exist is no longer waved through
+     * just because of the folder it points at.
+     */
+    private function isStaticFile(string $href): bool
+    {
+        $path = parse_url($href, PHP_URL_PATH);
+
+        if (! is_string($path) || $path === '') {
+            return false;
+        }
+
+        return is_file(public_path(ltrim(rawurldecode($path), '/')));
     }
 }
