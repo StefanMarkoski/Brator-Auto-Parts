@@ -12,6 +12,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Favicons-->
     <link rel="shortcut icon" href="/assets/images/favicon.png" type="image/png" />
+    {{-- Same early-head stack as layouts/storefront.blade.php. Nothing on these pages pushes
+         to it yet; it exists so a shop page that later needs a preload has somewhere to put it
+         rather than inventing a second mechanism. --}}
+    @stack('head')
     <!-- Google Font-->
     <link href="https://fonts.googleapis.com/css?display=swap&amp;family=Inter:300,400,500,600,700,800" rel="stylesheet" />
     <!-- bootstrap grid-->

@@ -516,6 +516,111 @@ final class HeroImageTest extends TestCase
         ));
     }
 
+    public function test_the_first_picture_is_preloaded_from_the_head(): void
+    {
+        $this->heroImage('storage/hero/first.jpg', 0);
+        $this->heroImage('storage/hero/second.jpg', 1);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        /*
+         | WHY THIS EXISTS. The hero is a background lazy-loaded from data-bg, so the picture
+         | appears nowhere a preload scanner can see it — no <img>, no CSS url() — and its request
+         | could not begin until lazysizes or storefront.js had run, both of which sit behind
+         | sixteen blocking scripts. Measured on a cold 400 kbps load: the hero picture was not so
+         | much as REQUESTED until 28.5 seconds in.
+         |
+         | It travels from a partial nested inside @section('content') up to a @stack in the
+         | layout's <head>, which works because Blade captures sections before rendering the
+         | layout — asserted rather than assumed, because "it should work" is how head bugs get in.
+        */
+        $head = substr($html, 0, (int) strpos($html, '</head>'));
+
+        $this->assertStringContainsString(
+            '<link rel="preload" as="image" href="/storage/hero/first.jpg" fetchpriority="high" />',
+            $head,
+            'The hero\'s first picture is no longer preloaded from the <head>, so its download '
+            .'queues behind every blocking script again.'
+        );
+
+        // Only the first. The rest are rotation, and the rotator warms them one at a time
+        // behind this one rather than racing it.
+        $this->assertStringNotContainsString('second.jpg" fetchpriority', $head);
+
+        // Above the stylesheets, so the preload scanner meets it in the first chunk of the
+        // document rather than after 1.1 MB of references.
+        $this->assertLessThan(
+            (int) strpos($head, '/assets/css/theme-style.css'),
+            (int) strpos($head, 'rel="preload" as="image"'),
+            'The hero preload has fallen below the stylesheets in the head.'
+        );
+    }
+
+    public function test_the_fallback_picture_is_preloaded_too(): void
+    {
+        // No staff pictures at all: the theme's own banner is what shows, and it deserves the
+        // same head start.
+        $head = substr(
+            $this->get('/')->assertOk()->getContent(),
+            0,
+            (int) strpos($this->get('/')->getContent(), '</head>')
+        );
+
+        $this->assertStringContainsString('rel="preload" as="image" href="/assets/images/banner/banner-1.jpg"', $head);
+    }
+
+    public function test_no_hero_picture_is_painted_before_the_browser_holds_it(): void
+    {
+        $js = (string) file_get_contents(public_path('app/storefront.js'));
+
+        /*
+         | THE HALF OF "THE IMAGES WHITELABEL" THAT SURVIVED THE FIRST-PAINT FIX.
+         |
+         | Clicking a grey dot for a picture the browser had not fetched assigned that URL to the
+         | fade layer immediately and then, 900ms later and unconditionally, to the banner itself.
+         | Measured on a 150 kbps link with cold pictures: 2.6 seconds of blank white hero with
+         | the headline invisible on it, because the headline is white.
+         |
+         | READ, NOT EXECUTED — no PHP test runs this file. What is pinned is that the gate is
+         | still in the source. The behaviour itself was verified by blocking one picture at the
+         | network layer and clicking its dot: the banner never once carried it, never went blank,
+         | and the rotation carried on past it. That is the assertion that actually matters and it
+         | cannot live here.
+        */
+        $this->assertStringContainsString('if (ready[src]) {', $js,
+            'The hero rotator no longer checks that a picture has loaded before painting it.');
+        $this->assertStringContainsString('broken[src]', $js,
+            'The rotator no longer distinguishes a picture that failed from one still loading — '
+            .'so a 404 will either hang the rotation or paint a blank banner.');
+        $this->assertStringContainsString('function preloadFrom(', $js,
+            'The rotator no longer preloads one picture at a time. Firing all of them at once '
+            .'starves the one on screen: measured, picture 1 (the largest, and the only one '
+            .'anybody was looking at) finished LAST.');
+
+        // The old blanket preload must be gone, not merely joined by the new one.
+        $this->assertStringNotContainsString('images.forEach(function (src) {', $js,
+            'The all-at-once preload loop is back alongside the sequential one.');
+    }
+
+    public function test_the_preloader_dead_mans_handle_can_actually_fire(): void
+    {
+        $js = (string) file_get_contents(public_path('app/storefront.js'));
+
+        /*
+         | The guard used to be `preloader.offsetParent !== null`, and offsetParent is specified
+         | to be null for a position:fixed element — which .preloader-area is. So the condition
+         | was false on every page and the timeout never did anything: the release this function
+         | exists for had never once happened. Measured before the fix, on a throttled cold load,
+         | the sheet was covering the screen in a screenshot while the check reported it hidden;
+         | measured after, with window.load deliberately never firing, the sheet went at
+         | DOMContentLoaded + 4022ms and it was our inline style that did it.
+        */
+        $this->assertStringNotContainsString('preloader.offsetParent !== null', $js,
+            'The preloader guard is back to offsetParent, which is always null on a fixed '
+            .'element — so the dead man\'s handle can never fire.');
+        $this->assertStringContainsString("getComputedStyle(preloader).display !== 'none'", $js);
+    }
+
     private function addUrl(string $url): TestResponse
     {
         return $this->actingAs($this->admin())

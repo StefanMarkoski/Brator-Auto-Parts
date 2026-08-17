@@ -12,6 +12,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Favicons-->
     <link rel="shortcut icon" href="/assets/images/favicon.png" type="image/png" />
+    {{--
+        A place for a page to ask for something EARLY, from a partial buried in its content.
+
+        The hero uses it for a rel=preload on its first picture. That picture is not an <img>
+        and not a CSS url() — the theme lazy-loads it from a data-bg attribute — so nothing in
+        the document told the browser it existed, and the request could not start until every
+        one of the sixteen blocking scripts below had downloaded. Measured on a cold 400 kbps
+        load: the hero picture was not so much as REQUESTED until 28.5 seconds in.
+
+        Placed above the stylesheets on purpose, so the preload scanner sees it in the first
+        chunk of the document rather than after 1.1 MB of CSS and script references.
+
+        Sections are captured before the layout renders, so an @push from inside @section
+        ('content') — even from a nested @include — still lands here. Verified in the rendered
+        HTML rather than assumed, because "it should work" is how the last two head bugs got in.
+    --}}
+    @stack('head')
     <!-- Google Font-->
     <link href="https://fonts.googleapis.com/css?display=swap&amp;family=Inter:300,400,500,600,700,800" rel="stylesheet" />
     <!-- bootstrap grid-->

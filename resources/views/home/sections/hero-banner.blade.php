@@ -22,6 +22,24 @@
     $first = $heroImages->first() ?? 'assets/images/banner/banner-1.jpg';
 @endphp
 
+{{--
+    TELL THE BROWSER ABOUT THE FIRST PICTURE BEFORE ANY SCRIPT RUNS.
+
+    This banner is a background, lazy-loaded from data-bg, so the picture appears nowhere a
+    preload scanner can see it: no <img>, no CSS url(). Its request therefore could not begin
+    until lazysizes — or our own storefront.js — had run, and both of those sit behind sixteen
+    blocking scripts. MEASURED on a cold 400 kbps load: the hero picture was not so much as
+    REQUESTED until 28.5 seconds in, and the visitor spent that time looking at the theme's
+    white preloader, which is indistinguishable from the blank hero Stefan reported.
+
+    fetchpriority=high because this is the largest thing above the fold on the landing page.
+    Only the FIRST picture: the others are rotation, and the rotation now preloads them one at
+    a time behind this one rather than racing it.
+--}}
+@push('head')
+    <link rel="preload" as="image" href="/{{ $first }}" fetchpriority="high" />
+@endpush
+
     <!-- Banner style two start -->
     {{--
         This element carried an inline `position: relative` while the dots were an overlay
