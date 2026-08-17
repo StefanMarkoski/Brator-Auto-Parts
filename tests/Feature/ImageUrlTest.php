@@ -99,6 +99,38 @@ final class ImageUrlTest extends TestCase
         $this->assertSame('s3', ImageUrl::disk());
     }
 
+    public function test_a_misconfigured_bucket_breaks_a_picture_and_not_the_shop(): void
+    {
+        /*
+         | The real incident, reproduced. UPLOADS_DISK=s3 was set on Laravel Cloud while
+         | AWS_DEFAULT_REGION was not reaching the app. The AWS SDK refuses to build a client
+         | without a region, so this threw — once per product card, dozens of times a page —
+         | and every page of the shop returned 500. A storage misconfiguration became a total
+         | outage, over images.
+         |
+         | The right severity for "the picture cannot be located" is a broken picture.
+        */
+        config()->set('filesystems.uploads_disk', 's3');
+        config()->set('filesystems.disks.s3.region', null);
+        config()->set('filesystems.disks.s3.url', null);
+
+        $url = ImageUrl::for('storage/departments/photo.jpg');
+
+        $this->assertSame('/storage/departments/photo.jpg', $url);
+    }
+
+    public function test_the_page_still_renders_when_the_uploads_disk_is_unusable(): void
+    {
+        $this->seed([CatalogStructureSeeder::class, ProductSeederSmall::class]);
+
+        config()->set('filesystems.uploads_disk', 's3');
+        config()->set('filesystems.disks.s3.region', null);
+
+        // The assertion that actually mattered: 200, not 500.
+        $this->get('/')->assertOk();
+        $this->get('/shop/braking')->assertOk();
+    }
+
     public function test_the_storefront_still_emits_origin_relative_images_locally(): void
     {
         $this->seed([CatalogStructureSeeder::class, ProductSeederSmall::class]);

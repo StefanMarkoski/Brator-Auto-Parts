@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 /**
  * The one place a stored image path becomes a URL.
@@ -76,7 +78,31 @@ final class ImageUrl
 
         // Anywhere else — S3, R2, Supabase, whatever the host provides — the disk knows its
         // own public address and the stored prefix is not part of the key.
-        return Storage::disk($disk)->url(substr($path, strlen(self::UPLOAD_PREFIX)));
+        try {
+            return Storage::disk($disk)->url(substr($path, strlen(self::UPLOAD_PREFIX)));
+        } catch (Throwable $e) {
+            /*
+             | A BROKEN PICTURE, NEVER A BROKEN SHOP.
+             |
+             | This is called once per product card, so anything that throws here throws
+             | dozens of times per page and takes the whole site down. That is exactly what
+             | happened on the first deployment with object storage configured: AWS_DEFAULT_REGION
+             | was not reaching the app, the AWS SDK refused to build a client without a
+             | region, and every page of the shop returned 500 — a storage misconfiguration
+             | escalated into a total outage, over IMAGES.
+             |
+             | Falling back to the origin-relative path means the picture 404s and everything
+             | else on the page works, which is the correct severity for this failure. Logged
+             | at error level so it is loud in the log rather than silent on the page.
+            */
+            Log::error('support.image_url.disk_failed', [
+                'disk' => $disk,
+                'path' => $path,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '/'.$path;
+        }
     }
 
     /**
