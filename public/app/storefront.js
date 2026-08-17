@@ -28,6 +28,121 @@
     */
     var listingNavigate = null;
 
+    /*
+     | Set by bindScrollMemory once it has bound, so the in-place cart's fallback path can record
+     | the scroll position before it hands over to a real submit.
+     |
+     | It needs to be reachable from there because that fallback uses form.submit(), which fires
+     | NO submit event — so the listener bindScrollMemory puts on the document never sees it, and
+     | without this the one path most likely to reload is the one path that forgets where you
+     | were. Found by measuring: scrolled to 900, forced the fallback, came back at 0.
+     |
+     | A no-op until bindScrollMemory runs, and on any page without a [data-scroll-memory] region.
+    */
+    var rememberScrollPosition = function () {};
+
+    /* ------------------------------------------------------------------ *
+     | "Meyle Seat Cover Set — 3.522,10 ден added to your cart." — where that sentence goes.
+     |
+     | THIS IS WHAT REPLACED "add to cart, get thrown onto /cart". Stefan's objection was that
+     | being redirected after every add is a shop arguing with the person browsing it, and he is
+     | right — the confirmation belongs where the shopper already is.
+     |
+     | THE FIRST ATTEMPT PUT IT IN THE MINI-CART PANEL AND THAT WAS WRONG, and not subtly wrong.
+     | It worked exactly as designed — right sentence, right money, opened on time, closed after
+     | five seconds — and Stefan still reported it as not working, because it was rendering in
+     | the HEADER. Measured: the message sat at y = -2500, two and a half thousand pixels above
+     | the top of the window, while he was scrolled down a listing looking at the button he had
+     | just pressed. My own verification had measured how long it stayed open and never once
+     | measured where it was.
+     |
+     | So: fixed to the bottom of the VIEWPORT, which is the only place that is on screen no
+     | matter how far down the page somebody has scrolled. Bottom rather than top because the
+     | header is where the shop talks about itself and the bottom is out of the way of what
+     | they are reading.
+     |
+     | WHY IT IS BUILT HERE RATHER THAN RENDERED BY BLADE. It carries a handful of declarations
+     | the purchased theme has no class for — position: fixed, the slide-up, the shadow. This
+     | project has no stylesheet of its own, and the standing rule is that no new CSS class
+     | enters the server-rendered markup, so the alternative was a <style> block in the layout
+     | for one element that only ever exists after JavaScript has run. An element created here,
+     | styled inline, using the theme's own #f73312 — nothing to keep in sync, and nothing for
+     | ThemeFidelityTest to trip over, because it never appears in a server response.
+     |
+     | ONE TOAST, REUSED. Adding three parts in a row replaces the sentence and restarts the
+     | clock rather than stacking three boxes up the side of the window.
+     * ------------------------------------------------------------------ */
+    var basketToast = null;
+    var basketToastTimer = null;
+
+    function showBasketToast(message) {
+        if (!message) return;
+
+        if (basketToast === null) {
+            basketToast = document.createElement('div');
+
+            // role=status, not alert: a confirmation somebody just asked for by pressing a
+            // button is announced politely, without interrupting whatever is being read.
+            basketToast.setAttribute('role', 'status');
+            basketToast.setAttribute('data-basket-toast', '');
+            basketToast.style.cssText = [
+                'position: fixed',
+                'left: 50%',
+                'bottom: 24px',
+                'z-index: 9999',
+                'max-width: min(520px, calc(100vw - 32px))',
+                'padding: 14px 20px',
+                'background: #f73312',
+                'color: #fff',
+                'font-size: 15px',
+                'font-weight: 600',
+                'line-height: 1.4',
+                'border-radius: 4px',
+                'box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28)',
+                'text-align: center',
+                // The transform carries the centring as well as the slide, so both live in one
+                // property and cannot fight each other mid-transition.
+                'transform: translate(-50%, 16px)',
+                'opacity: 0',
+                'transition: opacity 0.25s, transform 0.25s',
+                // Never in the way of the page underneath: there is nothing to click on it, and
+                // it must not swallow a click meant for whatever it is covering.
+                'pointer-events: none',
+            ].join(';');
+
+            document.body.appendChild(basketToast);
+        }
+
+        // textContent: the sentence is the server's flash message and must never be parsed as
+        // markup, whatever ends up in a product name.
+        basketToast.textContent = message;
+
+        /*
+         | Two frames before the visible state is written. One is not enough — the element was
+         | only just inserted, and a transition from a style the browser has not computed yet
+         | does not run at all; the toast would appear instantly instead of rising into place.
+        */
+        window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(function () {
+                if (basketToast === null) return;
+
+                basketToast.style.opacity = '1';
+                basketToast.style.transform = 'translate(-50%, 0)';
+            });
+        });
+
+        if (basketToastTimer !== null) window.clearTimeout(basketToastTimer);
+
+        basketToastTimer = window.setTimeout(function () {
+            basketToastTimer = null;
+
+            if (basketToast === null) return;
+
+            basketToast.style.opacity = '0';
+            basketToast.style.transform = 'translate(-50%, 16px)';
+        }, 4000);
+    }
+
     /* ------------------------------------------------------------------ *
      | Auto-submit: a select or checkbox that applies itself on change.
      | Used by the vehicle cascade, the filter sidebar, and the sort select.
@@ -370,6 +485,8 @@
             var current = 0;
             var timer = null;
             var fadeToken = 0;
+            var showToken = 0;
+            var waiting = false;
 
             if (isNaN(fade)) fade = 900;
 
@@ -381,9 +498,107 @@
                 fade = 0;
             }
 
-            images.forEach(function (src) {
-                var pre = new Image();
-                pre.src = src;
+            /* ---------------------------------------------------------------- *
+             | EVERY PICTURE IS TRACKED, AND NONE IS PAINTED BEFORE THE BROWSER HAS IT.
+             |
+             | Assigning a background-image the browser has not fetched paints the element
+             | EMPTY while it downloads. On this hero that reads as the shop being broken,
+             | because the headline is white: a blank banner is a blank white screen with no
+             | text on it at all.
+             |
+             | MEASURED before this existed, on a 150 kbps link with cold pictures and warm
+             | scripts: clicking the fourth dot put picture four on the fade layer immediately,
+             | faded a transparent layer in over 900ms, then committed the unfetched picture to
+             | the banner — 2.6 seconds of white with the headline invisible, ending only when
+             | the bytes arrived. That was the half of Stefan's "whitelabel" report which
+             | survived the first-paint fix.
+             * ---------------------------------------------------------------- */
+            var ready = {};
+            var broken = {};
+            var loaders = {};
+
+            /*
+             | Calls back with TRUE when the browser holds a decoded picture, FALSE when that
+             | picture is never coming. Both answers matter: false is how a 404 or a dead
+             | connection stops the rotation waiting on it forever, and it must NOT be treated
+             | as "go ahead and paint" — painting a picture that failed is the blank hero all
+             | over again, just with a different cause.
+            */
+            function ensure(src, then) {
+                if (ready[src] || broken[src]) {
+                    if (then) then(!!ready[src]);
+
+                    return;
+                }
+
+                var loader = loaders[src];
+
+                if (!loader) {
+                    var image = new Image();
+
+                    loader = loaders[src] = { image: image, waiting: [] };
+
+                    var settle = function (ok) {
+                        if (ok) {
+                            ready[src] = true;
+                        } else {
+                            broken[src] = true;
+                        }
+
+                        var queue = loader.waiting;
+                        loader.waiting = [];
+                        queue.forEach(function (fn) { fn(ok); });
+                    };
+
+                    /*
+                     | decode() rather than load alone: load means the bytes have arrived,
+                     | decode means the next paint will not stall on them. Guarded because it is
+                     | not in every engine — and a decode that rejects counts as broken, because
+                     | a picture that cannot be decoded cannot be shown.
+                    */
+                    image.onload = function () {
+                        if (typeof image.decode === 'function') {
+                            image.decode().then(
+                                function () { settle(true); },
+                                function () { settle(false); }
+                            );
+                        } else {
+                            settle(true);
+                        }
+                    };
+
+                    image.onerror = function () { settle(false); };
+                    image.src = src;
+                }
+
+                if (then) loader.waiting.push(then);
+            }
+
+            /*
+             | PRELOADED ONE AT A TIME, BEHIND THE PICTURE THAT IS ON SCREEN.
+             |
+             | This used to fire all of them at once. MEASURED on the same throttled load: the
+             | four requests went out together and picture ONE — the only one anybody is looking
+             | at, and the largest at 51 KB — finished LAST at 22.5s, while picture two finished
+             | at 19.3s. The preload was starving the visible picture in order to warm up
+             | pictures nobody had asked for yet.
+             |
+             | So picture one is waited for first, and the rest queue single file behind it.
+             | ensure() on picture one costs no second request: the banner's own background is
+             | already fetching that exact URL, so this joins the cached response.
+            */
+            function preloadFrom(index) {
+                if (index >= images.length) return;
+
+                // Carries on whether or not that one arrived: one broken picture must not stop
+                // the rest of the set being warmed up.
+                ensure(images[index], function () {
+                    preloadFrom(index + 1);
+                });
+            }
+
+            ensure(images[0], function () {
+                preloadFrom(1);
             });
 
             var banded = getComputedStyle(banner);
@@ -455,13 +670,21 @@
                 layer.style.opacity = '0';
             }
 
-            function show(index) {
-                var previous = current;
-                current = ((index % images.length) + images.length) % images.length;
-
+            function markDots(index) {
                 dots.forEach(function (dot, i) {
-                    dot.classList.toggle('is-active', i === current);
+                    dot.classList.toggle('is-active', i === index);
                 });
+            }
+
+            /*
+             | The actual switch. Only ever called for a picture ensure() has confirmed the
+             | browser holds — show() below is what enforces that.
+            */
+            function paint(index) {
+                var previous = current;
+
+                current = index;
+                waiting = false;
 
                 if (fade === 0 || current === previous) {
                     commit(images[current]);
@@ -509,9 +732,60 @@
                 }, fade);
             }
 
+            /*
+             | THE GATE. Everything asks for a picture through here, and nothing gets painted
+             | until the browser actually holds it.
+            */
+            function show(index) {
+                var next = ((index % images.length) + images.length) % images.length;
+                var src = images[next];
+                var token = ++showToken;
+
+                /*
+                 | The dot moves at once even when the picture cannot, so a click is never
+                 | silently swallowed — the dots say what is coming. On a warm cache, which is
+                 | every visit after the first, the dot and the picture move in the same frame
+                 | and none of this is visible.
+                */
+                markDots(next);
+
+                if (ready[src]) {
+                    paint(next);
+
+                    return;
+                }
+
+                // Not here yet, so the banner keeps showing the picture it already has —
+                // rather than going blank while this one downloads.
+                waiting = true;
+
+                ensure(src, function (ok) {
+                    // A dot clicked, or a tick fired, after this one wins. Without the token a
+                    // slow picture landing late would drag the hero back to something nobody
+                    // had chosen.
+                    if (token !== showToken) return;
+
+                    waiting = false;
+
+                    if (!ok) {
+                        // The picture is never arriving. The banner keeps what it has, and the
+                        // dots go back to telling the truth about what is on screen.
+                        markDots(current);
+
+                        return;
+                    }
+
+                    paint(next);
+                });
+            }
+
             function start() {
                 stop();
                 timer = window.setInterval(function () {
+                    // A picture is still on its way. Queueing another one on top of it would
+                    // mean the rotation runs ahead of what the connection can deliver.
+                    if (waiting) return;
+
                     show(current + 1);
                 }, interval);
             }
@@ -1101,9 +1375,17 @@
             var busyLabel = form.getAttribute('data-submit-once-label') || '';
             var submitting = false;
 
-            // Stashed now, not read back off the button when it is time to restore it: by
-            // then it says "Placing your order…". innerHTML rather than text, so a button
-            // holding an icon comes back whole.
+            /*
+             | The label to restore. Captured at SUBMIT time rather than here, and that changed
+             | when the cart's in-place update arrived: the "Place order — 1.459,85 ден" button
+             | now has its total patched as the basket changes, so a copy taken at bind time goes
+             | stale, and a shopper who checks out and presses Back would be shown a total from
+             | several quantity changes ago. It still must not be read back off the button when
+             | restoring, because by then it says "Placing your order…" — so it is read once, in
+             | the submit handler, before markBusy() overwrites anything.
+             |
+             | innerHTML rather than text, so a button holding an icon or a <span> comes back whole.
+            */
             var original = button ? button.innerHTML : '';
 
             function release() {
@@ -1139,6 +1421,9 @@
 
                 if (!button) return;
 
+                // Read before anything overwrites it. See the note where `original` is declared.
+                original = button.innerHTML;
+
                 // See above: a named button is disabled only once the submission is on its
                 // way, so its name/value cannot be dropped from the body.
                 if (button.name) {
@@ -1158,6 +1443,652 @@
         });
     }
 
+    /* ------------------------------------------------------------------ *
+     | The header's mini-cart panel: the parts of it that are shared.
+     |
+     | Called after any basket change, wherever it happened, so the panel and the badge stop
+     | needing a page load to tell the truth. They are fed by a view composer and nothing else,
+     | so before this every change reached them only via a new document.
+     |
+     | The PANEL ELEMENT ITSELF IS NEVER REPLACED — only its contents. It carries the
+     | .mini-cart-open class and the 0.3s transition, so swapping the element would slam an open
+     | panel shut mid-hover. The close button inside it IS replaced, which is why bindMiniCart
+     | closes by delegation rather than leaning on the theme's direct $('.brator-cart-close')
+     | binding: a replaced button would silently stop closing.
+     * ------------------------------------------------------------------ */
+    function refreshMiniCart(doc) {
+        var regions = [
+            ['[data-mini-cart]', 'html'],
+            ['[data-mini-cart-badge]', 'text'],
+            // Only the shop header carries this one; absent on the homepage header.
+            ['[data-mini-cart-total]', 'text'],
+        ];
+
+        regions.forEach(function (region) {
+            var live = document.querySelector(region[0]);
+            var fresh = doc.querySelector(region[0]);
+
+            if (!live || !fresh) return;
+
+            if (region[1] === 'text') {
+                live.textContent = fresh.textContent;
+
+                return;
+            }
+
+            /*
+             | The pictures that just arrived are <img class="lazyload" data-src>, and the
+             | theme's lazysizes watches the DOM with a MutationObserver, so they load
+             | themselves. Nothing to re-run here.
+            */
+            live.innerHTML = fresh.innerHTML;
+        });
+    }
+
+    /* ------------------------------------------------------------------ *
+     | The mini-cart: opens on a click, closes on one, and is usable in between.
+     |
+     | WHAT IT DID BEFORE ANY OF THIS. The theme adds .mini-cart-open on a click on
+     | `.brator-cart-link a` and never calls preventDefault — so the panel appeared and the same
+     | click replaced the document with /cart. Measured: opacity 1, then gone a frame or two
+     | later. Stefan reported it as "shows for a split second and directly redirects", which is
+     | exactly what it did. (He described it as a hover panel; there is no :hover rule touching
+     | .brator-cart-item-list in any of the theme's twelve stylesheets and no mouseenter handler
+     | in its JavaScript. It never was one.)
+     |
+     | AND THEN IT WAS A HOVER PANEL FOR A DAY, WHICH WAS WORSE. I built it that way and Stefan
+     | asked for it removed, correctly. A panel that unfurls over the page because your pointer
+     | crossed the header on its way somewhere else is something the shop does TO you; the cart
+     | icon sits next to the search box and the vehicle picker, so it opened constantly on the
+     | way past. Hover also needed a whole apparatus to survive itself — a 400ms grace period so
+     | it did not run away from the pointer, a separate timer so a phantom mouseenter could not
+     | cut a confirmation short, a flag tracking our own notion of open because the theme wrote
+     | its class behind our back, and focusin/focusout to keep the keyboard from closing it. All
+     | of that is gone with the hover it existed to prop up.
+     |
+     | ONE BEHAVIOUR, NOT TWO. A touch screen has no hover at all, so the tap was always the
+     | real way in and hover was a second path that only some visitors ever saw. Now everybody
+     | gets the same panel, opened the same way, and it stays until it is dismissed rather than
+     | until a pointer wanders off.
+     |
+     | FOUR WAYS OUT, all of them somebody asking: the icon again, the panel's own ×, Escape, or
+     | a click anywhere else on the page.
+     |
+     | THE ANCHOR STAYS AN ANCHOR. The click is swallowed only inside this handler, which only
+     | exists once this file has run — so with JavaScript off `<a href="/cart">` still goes to
+     | the cart, exactly as it always did.
+     |
+     | NO NEW CSS CLASS. .mini-cart-open is the theme's own class, already defined in
+     | theme-style.css, and it is toggled here at runtime — so ThemeFidelityTest, which reads
+     | classes out of the SERVER-RENDERED markup, has nothing to object to either way.
+     * ------------------------------------------------------------------ */
+    function bindMiniCart() {
+        document.querySelectorAll('[data-mini-cart-toggle]').forEach(function (toggle) {
+            var wrapper = toggle.closest('.brator-cart-link');
+            var panel = wrapper && wrapper.querySelector('[data-mini-cart]');
+
+            if (!wrapper || !panel) return;
+            if (wrapper.dataset.miniCartBound) return;
+            wrapper.dataset.miniCartBound = '1';
+
+            /*
+             | OUR OWN NOTION OF OPEN, RATHER THAN READING THE CLASS BACK OFF THE PANEL.
+             |
+             | Measured the hard way: an earlier toggle asked `panel.classList.contains(...)` and
+             | the icon click never opened anything. The theme's own click handler is bound first
+             | (brator-script.js is a blocking script; this file is deferred) and it adds
+             | .mini-cart-open on the way past — so by the time our handler ran, the panel always
+             | looked ALREADY OPEN and the toggle always chose to close it.
+             |
+             | A flag we own cannot be written behind our back. This is why the toggle below is
+             | safe now that hover is gone: `isOpen` is only ever changed by open() and close().
+            */
+            var isOpen = false;
+
+            /*
+             | The theme's click handler also does `$('body').addClass('rtl')`, which is nonsense
+             | on a left-to-right shop — it is a leftover from the demo's direction switcher.
+             | It is inert today because the layout ships the rtl.css link commented out, so
+             | nothing styles that class. Reversed anyway: the panel is ours to open now, and
+             | leaving a class on <body> that says the page is right-to-left is a trap for
+             | whoever loads that stylesheet next.
+            */
+            function undoThemeSideEffect() {
+                document.body.classList.remove('rtl');
+            }
+
+            function open() {
+                isOpen = true;
+                panel.classList.add('mini-cart-open');
+            }
+
+            function close() {
+                isOpen = false;
+                panel.classList.remove('mini-cart-open');
+                undoThemeSideEffect();
+            }
+
+            toggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                undoThemeSideEffect();
+
+                if (isOpen) {
+                    close();
+
+                    return;
+                }
+
+                open();
+            });
+
+            /*
+             | A click anywhere else closes it — the same gesture as clicking off any other menu,
+             | and on a phone the obvious one, where the alternative is finding a small ×.
+             |
+             | Bound on the document, so a click on the panel's own contents must be excluded
+             | explicitly: `wrapper` contains both the icon and the panel, and pressing a remove
+             | button inside the panel would otherwise shut it the moment it did its job.
+            */
+            document.addEventListener('click', function (event) {
+                if (!isOpen) return;
+                if (wrapper.contains(event.target)) return;
+
+                close();
+            });
+
+            /*
+             | Delegated on the wrapper rather than bound to the button, because the panel's
+             | contents are replaced whenever the basket changes and a directly-bound close
+             | button would stop working after the first removal — the exact trap the theme's
+             | own $('.brator-cart-close').on('click') falls into.
+            */
+            wrapper.addEventListener('click', function (event) {
+                var closer = event.target.closest ? event.target.closest('.brator-cart-close') : null;
+
+                if (!closer) return;
+
+                event.preventDefault();
+                close();
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' || event.key === 'Esc') close();
+            });
+        });
+    }
+
+    /* ------------------------------------------------------------------ *
+     | Changing the basket without losing the page.
+     |
+     | THE BUG THIS EXISTS FOR. Every action on /cart — plus, minus, Enter, remove a line, apply
+     | a code, remove a code — was a form post ending in a redirect back to /cart. Measured, with
+     | all five checkout fields filled first: a new document every time, the scroll position
+     | thrown from 1676 to 0, and all five fields empty. Stefan's words were "every time you do
+     | something the form refreshes and you need to start from the beginning".
+     |
+     | It cannot be fixed on the server. The fields are old(), old() is repopulated only from
+     | input flashed by a validation failure on the SAME request, and a quantity post does not
+     | carry the checkout fields at all — so ->withInput() would have nothing to flash. The
+     | reload itself had to go.
+     |
+     | STILL ENHANCEMENT, all of it. Every form here keeps its real method, action and submit
+     | button; any failure falls through to an ordinary submit; and with JavaScript off the page
+     | behaves exactly as it did before this function was written.
+     |
+     | THREE RULES, and they are the specification rather than implementation detail:
+     |
+     |  1. ABSOLUTE QUANTITIES, NEVER A STEP. The +/- buttons post name="step" and the server
+     |     adds it to the posted quantity. Sent as-is through a queue, two fast clicks could be
+     |     coalesced or reordered and a click would vanish. So the step is resolved against the
+     |     input HERE and an absolute number is posted, with `step` deleted from the body. The
+     |     input is also updated immediately, so a second click computes from what the shopper
+     |     can see, and the worst case of a late response is a number flickering to the right
+     |     value rather than a click going missing.
+     |
+     |  2. THE OPTIONAL BLOCKS ARE INSERTED AND REMOVED, not swapped. The order summary and the
+     |     whole checkout block only exist while the basket has something in it, and the discount
+     |     row inside the summary only exists while a code is discounting something. Assuming
+     |     they are present is how you strand somebody on a cart with no checkout form.
+     |
+     |  3. THE CHECKOUT BLOCK IS NEVER RE-RENDERED WHILE IT IS ON THE PAGE. It holds what the
+     |     shopper has typed — the entire point of this work — and it holds the data-submit-once
+     |     binding that stops a double-click placing two orders. Only the total on the button and
+     |     the validation list inside it are patched.
+     * ------------------------------------------------------------------ */
+    function bindBasketForms() {
+        if (document.documentElement.dataset.basketFormsBound) return;
+        document.documentElement.dataset.basketFormsBound = '1';
+
+        // Null everywhere except /cart. The mini-cart's own remove button uses this same
+        // machinery from every other page, and there it only refreshes the panel.
+        var cart = document.querySelector('[data-cart-region]');
+        var chain = Promise.resolve();
+        var pending = 0;
+
+        function fade(on) {
+            if (!cart) return;
+
+            // The checkout block is deliberately NOT dimmed: dimming a field somebody is typing
+            // into, several times while they type, is worse than not acknowledging the request.
+            ['[data-cart-lines]', '[data-cart-summary]'].forEach(function (selector) {
+                var region = cart.querySelector(selector);
+
+                if (!region) return;
+
+                region.style.transition = 'opacity 150ms linear';
+                region.style.opacity = on ? '0.45' : '';
+            });
+        }
+
+        /* Rule 1. Returns the absolute quantity to post, or null if this is not a quantity form. */
+        function absoluteQuantity(form, submitter) {
+            var input = form.querySelector('[data-cart-qty]');
+
+            if (!input) return null;
+
+            var step = (submitter && submitter.name === 'step') ? (parseInt(submitter.value, 10) || 0) : 0;
+            var min = input.min === '' ? 0 : parseInt(input.min, 10);
+            var max = input.max === '' ? 99 : parseInt(input.max, 10);
+            var next = (parseInt(input.value, 10) || 0) + step;
+
+            next = Math.min(max, Math.max(min, next));
+            input.value = next;
+
+            return next;
+        }
+
+        function swap(doc, selector) {
+            var live = cart.querySelector(selector);
+            var fresh = doc.querySelector(selector);
+
+            if (live && fresh) live.innerHTML = fresh.innerHTML;
+        }
+
+        /* Rule 2. */
+        function insertOrRemove(doc, selector) {
+            var live = cart.querySelector(selector);
+            var fresh = doc.querySelector(selector);
+            var tail = cart.querySelector('[data-cart-tail]');
+
+            if (fresh && live) {
+                live.innerHTML = fresh.innerHTML;
+            } else if (fresh && !live && tail) {
+                tail.parentNode.insertBefore(document.importNode(fresh, true), tail);
+            } else if (!fresh && live) {
+                live.remove();
+            }
+        }
+
+        /* Rule 3. */
+        function syncCheckout(doc) {
+            var live = cart.querySelector('[data-cart-checkout]');
+            var fresh = doc.querySelector('[data-cart-checkout]');
+            var tail = cart.querySelector('[data-cart-tail]');
+
+            if (fresh && !live) {
+                if (tail) tail.parentNode.insertBefore(document.importNode(fresh, true), tail);
+
+                return;
+            }
+
+            if (!fresh && live) {
+                live.remove();
+
+                return;
+            }
+
+            if (!fresh || !live) return;
+
+            // On the page in both: left alone but for the two things that really changed.
+            var liveTotal = live.querySelector('[data-cart-total-label]');
+            var freshTotal = fresh.querySelector('[data-cart-total-label]');
+
+            if (liveTotal && freshTotal) liveTotal.textContent = freshTotal.textContent;
+
+            var liveErrors = live.querySelector('[data-cart-checkout-errors]');
+            var freshErrors = fresh.querySelector('[data-cart-checkout-errors]');
+
+            if (liveErrors && freshErrors) liveErrors.innerHTML = freshErrors.innerHTML;
+        }
+
+        /*
+         | The hidden form the "Remove" button targets by id. It lives outside the cart column
+         | (a <form> inside a <form> is invalid and the browser drops the inner one), and it
+         | exists only while a code is applied — so it is inserted and removed too. A form
+         | referenced by the `form` attribute works from anywhere in the document.
+        */
+        function syncCouponRemoveForm(doc) {
+            var live = document.getElementById('remove-coupon');
+            var fresh = doc.getElementById('remove-coupon');
+
+            if (fresh && !live) {
+                document.body.appendChild(document.importNode(fresh, true));
+            } else if (!fresh && live) {
+                live.remove();
+            }
+        }
+
+        function apply(doc) {
+            // Every page: the header panel and the badge.
+            refreshMiniCart(doc);
+
+            if (!cart) return;
+
+            swap(doc, '[data-cart-flash]');
+            swap(doc, '[data-cart-lines]');
+            insertOrRemove(doc, '[data-cart-summary]');
+            syncCheckout(doc);
+            swap(doc, '[data-cart-coupon]');
+            syncCouponRemoveForm(doc);
+
+            /*
+             | The coupon block was just replaced, so the live-check input in it is a new
+             | element with no binding; and a checkout block that was just INSERTED has no
+             | double-submit guard yet. Both of these skip anything already bound.
+            */
+            bindCouponCheck();
+            bindSubmitOnce();
+        }
+
+        /*
+         | Falls back to the submit this replaced, so the shopper's action still happens.
+         |
+         | form.submit() rather than requestSubmit(): requestSubmit would fire the submit event
+         | again and the handler below would swallow it, leaving the control permanently dead.
+         | submit() also activates NO button, which is exactly right here — `step` is therefore
+         | absent and the absolute quantity already written into the input is what the server
+         | applies, so the fallback lands on the same number the in-place path would have.
+        */
+        function fallback(form, absolute) {
+            if (absolute !== null) {
+                var input = form.querySelector('[data-cart-qty]');
+
+                if (input) input.value = absolute;
+            }
+
+            // form.submit() fires no submit event, so the scroll listener will not see this one.
+            // Recorded here instead, or the fallback would land the shopper at the top of the
+            // page — the exact thing this whole change is about.
+            rememberScrollPosition();
+
+            form.submit();
+        }
+
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+
+            if (!form || typeof form.matches !== 'function') return;
+            if (!form.matches('[data-basket-form]')) return;
+            if (event.defaultPrevented) return;
+
+            var absolute = form.matches('[data-cart-qty-form]')
+                ? absoluteQuantity(form, event.submitter)
+                : null;
+
+            var body = new FormData(form);
+
+            if (absolute !== null) {
+                body.delete('step');
+                body.set('quantity', String(absolute));
+            }
+
+            event.preventDefault();
+
+            pending++;
+            fade(true);
+
+            /*
+             | Chained rather than coalesced. The listing's in-place update keeps only the latest
+             | request because ticking three filters in a row has two states nobody cares about;
+             | a basket is the opposite — every click is a change somebody asked for, and
+             | dropping one silently loses money in the shopper's favour or against it.
+             |
+             | @method('DELETE') travels in the body as _method, so every one of these is a POST
+             | as far as fetch is concerned, and Laravel unpacks it exactly as it does for a
+             | normal form.
+            */
+            chain = chain
+                .then(function () {
+                    return fetch(form.action, {
+                        method: 'POST',
+                        body: body,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin',
+                    });
+                })
+                .then(function (response) {
+                    // The server answers these with a redirect to /cart; fetch follows it, so
+                    // this is the cart document with the flash message already in it.
+                    if (!response.ok) throw new Error('status ' + response.status);
+
+                    return response.text();
+                })
+                .then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+
+                    apply(doc);
+
+                    /*
+                     | An ADD, so the shopper is still standing on a product or a listing page and
+                     | needs telling what just happened. The sentence is the server's own flash —
+                     | "{product} — {price} added to your cart." — lifted out of the cart document
+                     | the redirect handed us, so the wording and the money formatting live in one
+                     | place rather than being reassembled here.
+                     |
+                     | THE PANEL IS NOT OPENED. It used to be, and the confirmation went inside it;
+                     | see showBasketToast() for why that was wrong — the message was correct and
+                     | 2,500px above the top of the window. The panel is now only ever opened by
+                     | somebody clicking the cart icon, so adding a part does not throw a menu over
+                     | the listing they are reading. The badge and the panel's contents are still
+                     | brought up to date by apply(), so it tells the truth whenever it is opened.
+                     |
+                     | If there is no sentence the response was not the cart — which means the add
+                     | was refused, and the only route to that is a product going out of stock
+                     | between the page loading and the click, since the button is rendered
+                     | disabled otherwise. Then nothing is claimed: showBasketToast ignores an
+                     | empty message. Saying nothing is worse than a confirmation and far better
+                     | than confirming something that did not happen.
+                    */
+                    if (form.matches('[data-basket-add]')) {
+                        var flash = doc.querySelector('[data-cart-flash]');
+
+                        showBasketToast(flash ? flash.textContent.replace(/\s+/g, ' ').trim() : '');
+                    }
+
+                    pending--;
+                    if (pending === 0) fade(false);
+                })
+                .catch(function () {
+                    pending--;
+                    fallback(form, absolute);
+                });
+        });
+    }
+
+    /* ------------------------------------------------------------------ *
+     | The discount code field, answering while it is typed.
+     |
+     | Before: a wrong code was a full page load. Measured — scroll thrown from 1676 to 0, the
+     | typed code cleared out of the field, and all five checkout fields emptied, for one typo.
+     |
+     | WHAT THIS ENDPOINT MAY AND MAY NOT SAY is the important part, and it is enforced on the
+     | server (see BasketController::checkCoupon). It returns ONE answer for "no such code" and
+     | "that code is switched off", so it cannot be used to find retired codes. Read the note in
+     | the controller before changing the shape of this: it records the condition under which
+     | the whole feature is safe.
+     |
+     | A FAILED CHECK MUST NEVER READ AS AN INVALID CODE. Same trap as the admin's vehicle
+     | cascade, where an empty dropdown reads as "no vehicles match" when it means "the request
+     | failed": here, saying "not valid" because the network hiccuped would talk a shopper out of
+     | a code that works. On any failure — including a rate limit — this says nothing at all and
+     | leaves the Apply button as the authority.
+     * ------------------------------------------------------------------ */
+    function bindCouponCheck() {
+        document.querySelectorAll('[data-coupon-check]').forEach(function (input) {
+            if (input.dataset.couponCheckBound) return;
+            input.dataset.couponCheckBound = '1';
+
+            var endpoint = input.getAttribute('data-coupon-check');
+            var scope = input.closest('[data-cart-coupon]') || document;
+            var message = scope.querySelector('[data-coupon-message]');
+
+            if (!endpoint || !message) return;
+
+            var timer = null;
+            var latest = 0;
+
+            /*
+             | A tick or a cross as a text character, and the theme's own <p> to put it in. An
+             | icon would mean either a new class or a new asset; this needs neither, and the
+             | glyph inherits the paragraph's colour and size for free.
+            */
+            function say(text, ok) {
+                if (!text) {
+                    message.textContent = '';
+                    message.style.display = 'none';
+
+                    return;
+                }
+
+                message.textContent = (ok ? '✓ ' : '✗ ') + text;
+                message.style.display = '';
+            }
+
+            function check() {
+                var code = input.value.trim();
+
+                /*
+                 | TWO CHARACTERS BEFORE THE SERVER IS ASKED ANYTHING.
+                 |
+                 | Stefan's example was literally typing "GH" and seeing the cross, and two is
+                 | what he asked for over my suggestion of four. It is defensible here for a
+                 | specific reason rather than as a general rule: every usable code is already
+                 | printed in the homepage top bar, so this endpoint can only ever confirm what
+                 | is public, and it cannot tell a retired code from a typo. The throttle on the
+                 | route is what keeps it from being a cheap way to walk the code space.
+                */
+                if (code.length < 2) {
+                    say('', false);
+
+                    return;
+                }
+
+                var mine = ++latest;
+
+                fetch(endpoint + '?code=' + encodeURIComponent(code), {
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                })
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('status ' + response.status);
+
+                        return response.json();
+                    })
+                    .then(function (result) {
+                        // A later keystroke has already been answered; this one is history.
+                        if (mine !== latest) return;
+
+                        /*
+                         | `known` is true only for a code that exists AND is switched on, and it
+                         | is what decides whether a cross is shown — a real code that has not
+                         | reached its minimum spend is not wrong, it is not ready, and marking it
+                         | with a cross would talk somebody out of a code they can use by adding
+                         | one more part. The wording comes from the server so that it always
+                         | matches what pressing Apply would say.
+                        */
+                        say(result.message || '', !!result.ok || !!result.known);
+                    })
+                    .catch(function () {
+                        if (mine !== latest) return;
+
+                        say('', false);
+                    });
+            }
+
+            input.addEventListener('input', function () {
+                if (timer !== null) window.clearTimeout(timer);
+
+                // 300ms: long enough that typing a ten-character code is one request rather
+                // than ten, short enough to feel like the field is answering.
+                timer = window.setTimeout(check, 300);
+            });
+        });
+    }
+
+    /* ------------------------------------------------------------------ *
+     | Keeping your place across the reloads that are left.
+     |
+     | The cart's actions no longer reload, but two paths still do: no JavaScript at all, and an
+     | in-place update that failed and fell back to a real submit. Both used to land the shopper
+     | at the top of the page — measured, scroll 1676 → 0 — which on a long cart means scrolling
+     | back down to find what you were doing.
+     |
+     | sessionStorage rather than the browser's own scroll restoration, which does not apply
+     | across a POST → redirect → GET.
+     * ------------------------------------------------------------------ */
+    function bindScrollMemory() {
+        var scope = document.querySelector('[data-scroll-memory]');
+
+        if (!scope) return;
+        if (scope.dataset.scrollMemoryBound) return;
+        scope.dataset.scrollMemoryBound = '1';
+
+        var key = 'brator:scroll:' + window.location.pathname;
+
+        function store() {
+            try {
+                window.sessionStorage.setItem(key, String(Math.round(window.pageYOffset)));
+            } catch (error) {
+                // Private mode, or a full quota. Losing the scroll position is not worth an
+                // exception that would take the rest of init() with it.
+            }
+        }
+
+        // Restored and then consumed, so a later plain visit to the cart starts at the top
+        // rather than wherever the shopper happened to be an hour ago.
+        try {
+            var saved = window.sessionStorage.getItem(key);
+
+            if (saved !== null && window.location.hash === '') {
+                window.sessionStorage.removeItem(key);
+
+                var y = parseInt(saved, 10);
+
+                if (!isNaN(y) && y > 0) {
+                    window.scrollTo(0, y);
+
+                    /*
+                     | Applied a second time on load. The theme's preloader is still covering the
+                     | page at DOMContentLoaded and its images have not been laid out yet, so the
+                     | document is often shorter now than it will be — the first scrollTo can
+                     | land short of where it was asked to go.
+                    */
+                    window.addEventListener('load', function () {
+                        window.scrollTo(0, y);
+                    });
+                }
+            }
+        } catch (error) {
+            // As above.
+        }
+
+        /*
+         | Bubble phase, and bindScrollMemory is called LAST in init() — so every in-place
+         | handler above has already run and cancelled the ones it handles. A submit that never
+         | leaves the page therefore stores nothing, and cannot strand a stale position waiting
+         | to hijack the next real load.
+        */
+        document.addEventListener('submit', function (event) {
+            if (event.defaultPrevented) return;
+
+            store();
+        }, false);
+
+        // Reachable from the in-place cart's fallback, which submits without an event. See the
+        // declaration at the top of this file.
+        rememberScrollPosition = store;
+    }
+
     function init() {
         bindAutoSubmit();
         bindListFilters();
@@ -1169,7 +2100,17 @@
         bindSmoothListing();
         bindVehicleCascade();
         bindSubmitOnce();
+        bindMiniCart();
+        bindBasketForms();
+        bindCouponCheck();
         releaseStuckPreloader();
+        /*
+         | LAST, and the order matters. Its submit listener is on the document in the bubble
+         | phase, so registering it after bindBasketForms is what lets it see that an in-place
+         | handler has already cancelled the navigation — and store nothing for a submit that is
+         | not going anywhere.
+        */
+        bindScrollMemory();
     }
 
     /* ------------------------------------------------------------------ *
@@ -1183,15 +2124,26 @@
      |
      | This does not change the normal path: if load fires first the timer is cancelled and the
      | theme's own fade runs. It only covers the case where load never comes.
+     |
+     | THE GUARD USED TO READ `offsetParent !== null`, AND IT COULD NEVER BE TRUE.
+     |
+     | offsetParent is specified to return null for a `position: fixed` element, and
+     | .preloader-area is fixed (theme-style.css:1665). So the test reported "already hidden" on
+     | every page, the timeout did nothing, and this dead man's handle had never once fired.
+     | Measured before the fix: on a throttled cold load the sheet was plainly covering the
+     | screen in a screenshot while this check said it was hidden.
+     |
+     | The computed `display` is read instead, because display:none is what the theme's own
+     | fadeOut() finishes on. Mid-fade the sheet still computes to display:flex at a fractional
+     | opacity — hiding it then is harmless, it was leaving anyway — and the load listener below
+     | means a normal page never reaches this code at all.
      *------------------------------------------------------------------ */
     function releaseStuckPreloader() {
         var preloader = document.querySelector('.preloader-area');
         if (!preloader) return;
 
         var timer = window.setTimeout(function () {
-            // offsetParent is null once the theme has faded it out, so a normal page that
-            // simply took a while is left alone.
-            if (preloader.offsetParent !== null) {
+            if (window.getComputedStyle(preloader).display !== 'none') {
                 preloader.style.display = 'none';
             }
         }, 4000);

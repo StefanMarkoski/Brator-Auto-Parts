@@ -64,7 +64,12 @@
                         </div>
                             {{-- The customer account icon is REMOVED: there are no customer
                                  accounts. Guests check out; the only login is staff at /admin. --}}
-                        <div class="brator-cart-link"><a href="{{ route('cart', [], false) }}">
+                        {{--
+                            THE MINI-CART. See partials/header.blade.php for the full note on why
+                            the panel needed hooks and what each one is for; this is the shop
+                            layout's copy of the same block.
+                        --}}
+                        <div class="brator-cart-link"><a href="{{ route('cart', [], false) }}" data-mini-cart-toggle>
                                 <div class="brator-cart-icon click-item-count">
                                     <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
                                         <g>
@@ -72,10 +77,10 @@
                                             <path d="M18.2,48.2c-3.9,0-7.1,3.3-7.1,7.3c0,4,3.2,7.3,7.1,7.3s7.1-3.3,7.1-7.3C25.4,51.5,22.2,48.2,18.2,48.2z M18.2,59.3                                        c-2,0-3.6-1.7-3.6-3.8c0-2.1,1.6-3.8,3.6-3.8s3.6,1.7,3.6,3.8C21.9,57.6,20.2,59.3,18.2,59.3z"></path>
                                             <path d="M57.8,1.3h-6.4c-1.5,0-2.8,1.1-3,2.6l-1.8,13.2H7.3c-0.9,0-1.7,0.4-2.2,1.1c-0.5,0.7-0.7,1.6-0.5,2.4c0,0,0,0.1,0,0.1                                        l6.1,18.9c0.3,1.2,1.4,2.1,2.8,2.1h29.5c2.2,0,4-1.6,4.3-3.8l4.6-33.2h6c1,0,1.8-0.8,1.8-1.8S58.8,1.3,57.8,1.3z M43.7,37.4                                        c-0.1,0.4-0.4,0.8-0.9,0.8h-29L8.1,20.6h37.9L43.7,37.4z"></path>
                                         </g>
-                                    </svg><span>{{ $basketCount ?? 0 }}</span>
-                                </div><b>{{ $miniCart->total->format() }}</b>
+                                    </svg><span data-mini-cart-badge>{{ $basketCount ?? 0 }}</span>
+                                </div><b data-mini-cart-total>{{ $miniCart->total->format() }}</b>
                             </a>
-                            <div class="brator-cart-item-list">
+                            <div class="brator-cart-item-list" data-mini-cart>
                                 <div class="brator-cart-item-list-header">
                                     <h2>Cart<span> ({{ $basketCount ?? 0 }} item{{ ($basketCount ?? 0) === 1 ? '' : 's' }})</span></h2>
                                     <button class="brator-cart-close">
@@ -84,14 +89,17 @@
                                         </svg>
                                     </button>
                                 </div>
-                                @include('partials.mini-cart-items')
+                                {{-- The lines scroll; see partials/header.blade.php for the note. --}}
+                                <div data-mini-cart-scroll style="max-height: 296px; overflow-y: auto; overflow-x: hidden">
+                                    @include('partials.mini-cart-items')
+                                </div>
                                 <div class="brator-cart-item-list-money-area">
                                     <div class="brator-cart-item-money"><span>Subtotal (excl. VAT)</span><span>{{ $miniCart->subtotal->format() }}</span></div>
                                     <div class="brator-cart-item-money"><span>VAT ({{ (int) config('shop.vat_rate') }}%)</span><span>{{ $miniCart->vat->format() }}</span></div>
                                 </div>
                                 <div class="brator-cart-total-money">
                                     <div class="brator-cart-total-header"><span>total</span><span>{{ $miniCart->total->format() }}</span></div>
-                                    <div class="brator-cart-total-action"><a href="{{ route('cart', [], false) }}">View Cart</a><a href="{{ route('cart', [], false) }}">Checkout</a></div>
+                                    <div class="brator-cart-total-action"><a href="{{ route('cart', [], false) }}">View Cart</a><a href="{{ route('cart', [], false) }}#checkout">Checkout</a></div>
                                 </div>
                             </div>
                         </div>

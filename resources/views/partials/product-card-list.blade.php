@@ -60,7 +60,9 @@
                                 </div>
                                 <div class="brator-product-single-item-btn">
                                     <div class="brator-product-single-item-btn-cart">
-                                        <form method="post" action="{{ route('cart.add', [], false) }}">
+                                        {{-- Posted in the background like every other add: adding from a listing must not throw
+                                             the shopper off the results they were reading. --}}
+                                        <form method="post" action="{{ route('cart.add', [], false) }}" data-basket-form data-basket-add>
                                             @csrf
                                             <input type="hidden" name="product_id" value="{{ $product->id }}" />
                                             <button type="submit" @disabled(! $product->inStock)>Add To Cart</button>

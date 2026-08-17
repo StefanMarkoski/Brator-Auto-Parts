@@ -16,10 +16,46 @@
                 <a href="{{ route('shop.product', $line->productSlug, false) }}">
                     <h2>{{ $line->productName }}</h2>
                 </a>
-                <div class="price-pdo">
+                {{--
+                    white-space: nowrap, AND WHY IT IS LOAD-BEARING RATHER THAN TIDYING.
+
+                    The theme gives this row a FIXED 17px height and centres its contents. Its own
+                    demo prices were "$25.00" beside product names like "Wheel", so nothing ever
+                    wrapped. Ours are "6.312,79 ден" beside "Monroe Control Arm Bush Heavy Duty" —
+                    the name takes two lines, the price column gets squeezed, and the price broke
+                    into "6.312,79" / "ден". Two lines of text centred in a 17px box overflow it
+                    equally in both directions, so the first line rendered ABOVE the row: every
+                    price in the panel appeared to belong to the line above it. Screenshotted at
+                    eight lines, which is when it becomes obvious.
+
+                    Kept on one line, the flex row squeezes the NAME instead, which wraps properly
+                    because it is a heading with no height fixed on it. An inline declaration: no
+                    new class, and theme-style.css is untouched.
+                --}}
+                <div class="price-pdo" style="white-space: nowrap">
                     <h4>{{ $line->quantity }}</h4>
                     <h5>x</h5>
-                    <h6><span>{{ $line->unitPrice->format() }}</span></h6>
+                    {{--
+                        WHY THERE IS AN EMPTY SECOND SPAN, and it is not a stray.
+
+                        The theme styles this pair as "current price, old price":
+
+                          .price-pdo h6 span            { color: #ff3300 }
+                          .price-pdo h6 span:last-child { color: #999; text-decoration: line-through }
+
+                        With ONE span, that span is also the last child — so every unit price in
+                        the mini-cart rendered grey and STRUCK THROUGH, reading as a price that no
+                        longer applies. Spotted in a screenshot while verifying the scroll region;
+                        it had been wrong since the day the panel was made real.
+
+                        A basket line has no "before" price to show — BasketLineSummary carries one
+                        Money, the price the line was added at — so the second span is empty. It
+                        takes the strikethrough, is invisible with nothing in it, and the real price
+                        stops being :last-child, which is the whole point. Two spans is the theme's
+                        own contract for this element; the alternative was a rule of our own
+                        overriding a purchased stylesheet.
+                    --}}
+                    <h6><span>{{ $line->unitPrice->format() }}</span><span></span></h6>
                 </div>
             </div>
             <div class="brator-cart-item-list-item-title-accetion">
@@ -30,7 +66,11 @@
                             <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"></path>
                             <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"></path>
                         </svg></a>
-                    <form method="post" action="{{ route('cart.remove', $line->lineId, false) }}">
+                    {{-- data-basket-form: storefront.js posts this in the background and refreshes
+                         the panel in place, so removing a line from the mini-cart no longer throws
+                         the shopper onto /cart from whatever page they were browsing. Still a real
+                         form with a real DELETE, so it works with JavaScript off. --}}
+                    <form method="post" action="{{ route('cart.remove', $line->lineId, false) }}" data-basket-form>
                         @csrf
                         @method('DELETE')
                         <button class="cart-item-close" type="submit" aria-label="Remove {{ $line->productName }}">

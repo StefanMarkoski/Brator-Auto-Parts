@@ -139,7 +139,33 @@
                             displaying a hardcoded "0", so it always said you had saved nothing and
                             could never let you save anything.
                         --}}
-                        <div class="brator-cart-link"><a href="{{ route('cart', [], false) }}">
+                        {{--
+                            THE MINI-CART, AND WHY IT NEEDED HOOKS.
+
+                            The panel was reachable only by CLICKING the cart icon — the theme's own
+                            brator-script.js adds .mini-cart-open on that click and never calls
+                            preventDefault, so the same click also navigated to /cart. Measured: the
+                            panel did become visible, and the document was replaced a frame or two
+                            later. Stefan reported it as "shows for a split second and directly
+                            redirects" and described it as a hover panel; there is in fact no hover
+                            rule anywhere in the theme's twelve stylesheets and no mouseenter handler
+                            anywhere in its JavaScript.
+
+                            IT OPENS ON A CLICK AND CLOSES ON ONE. Hover was tried first and Stefan
+                            asked for it gone — with good reason: a panel that appears because your
+                            pointer crossed the header, over the page you were reading, is something
+                            done TO you. A click is somebody asking for it. It is also the only
+                            behaviour a phone can have, so there is now one behaviour rather than two.
+
+                            - data-mini-cart-toggle: the icon link. storefront.js toggles the panel
+                              and swallows the click, but only once it is bound, so this stays a
+                              working <a href="/cart"> for anyone without JavaScript.
+                            - data-mini-cart / -badge: the regions refreshed in place when the basket
+                              changes, so the panel stops needing a page load to tell the truth. It
+                              is fed by a view composer and nothing else, so until now every basket
+                              change reached it only via a new document.
+                        --}}
+                        <div class="brator-cart-link"><a href="{{ route('cart', [], false) }}" data-mini-cart-toggle>
                                 <div class="brator-cart-icon click-item-count">
                                     <svg fill="#000000" width="52" height="52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64">
                                         <g>
@@ -147,10 +173,10 @@
                                             <path d="M18.2,48.2c-3.9,0-7.1,3.3-7.1,7.3c0,4,3.2,7.3,7.1,7.3s7.1-3.3,7.1-7.3C25.4,51.5,22.2,48.2,18.2,48.2z M18.2,59.3                                        c-2,0-3.6-1.7-3.6-3.8c0-2.1,1.6-3.8,3.6-3.8s3.6,1.7,3.6,3.8C21.9,57.6,20.2,59.3,18.2,59.3z"></path>
                                             <path d="M57.8,1.3h-6.4c-1.5,0-2.8,1.1-3,2.6l-1.8,13.2H7.3c-0.9,0-1.7,0.4-2.2,1.1c-0.5,0.7-0.7,1.6-0.5,2.4c0,0,0,0.1,0,0.1                                        l6.1,18.9c0.3,1.2,1.4,2.1,2.8,2.1h29.5c2.2,0,4-1.6,4.3-3.8l4.6-33.2h6c1,0,1.8-0.8,1.8-1.8S58.8,1.3,57.8,1.3z M43.7,37.4                                        c-0.1,0.4-0.4,0.8-0.9,0.8h-29L8.1,20.6h37.9L43.7,37.4z"></path>
                                         </g>
-                                    </svg><span>{{ $basketCount ?? 0 }}</span>
+                                    </svg><span data-mini-cart-badge>{{ $basketCount ?? 0 }}</span>
                                 </div>
                             </a>
-                            <div class="brator-cart-item-list">
+                            <div class="brator-cart-item-list" data-mini-cart>
                                 <div class="brator-cart-item-list-header">
                                     <h2>Cart<span> ({{ $basketCount ?? 0 }} item{{ ($basketCount ?? 0) === 1 ? '' : 's' }})</span></h2>
                                     <button class="brator-cart-close">
@@ -159,14 +185,51 @@
                                         </svg>
                                     </button>
                                 </div>
-                                @include('partials.mini-cart-items')
+                                {{--
+                                    THE LINES SCROLL; THE HEADER AND THE TOTALS DO NOT.
+
+                                    The theme shipped this panel with two hardcoded rows and no bound
+                                    on its height, because a demo never has eleven things in a basket.
+                                    Ours can: the rows are ~98px each, so a basket of eight grew the
+                                    panel past 1,200px — the totals and both buttons pushed off the
+                                    bottom of the screen, on a panel that has no scrollbar of its own.
+                                    The one thing a cart panel exists to do — show the total and get
+                                    you to checkout — became unreachable exactly when the basket was
+                                    worth the most.
+
+                                    296px is three rows and part of a fourth, so it is visibly
+                                    scrollable rather than looking like a basket with three items in
+                                    it. Only the rows move; Cart (n items), the subtotal, the VAT, the
+                                    total and both buttons stay put.
+
+                                    A bare <div> with an inline max-height: no new class, and no
+                                    selector in theme-style.css touches it — every rule for these rows
+                                    is a descendant selector (.brator-cart-item-list .…item), never a
+                                    child or sibling one, so a wrapper changes nothing about how they
+                                    are painted. Checked before writing it.
+
+                                    THE ANNOUNCEMENT SLOT THAT USED TO BE HERE IS GONE. It worked
+                                    exactly as designed and was still useless: measured at y=-2500,
+                                    two and a half thousand pixels above the top of the viewport,
+                                    because you press Add to cart while scrolled down a listing and
+                                    the confirmation was rendering up in the header. It is a toast
+                                    fixed to the bottom of the window now — see showBasketToast() in
+                                    storefront.js.
+                                --}}
+                                <div data-mini-cart-scroll style="max-height: 296px; overflow-y: auto; overflow-x: hidden">
+                                    @include('partials.mini-cart-items')
+                                </div>
                                 <div class="brator-cart-item-list-money-area">
                                     <div class="brator-cart-item-money"><span>Subtotal (excl. VAT)</span><span>{{ $miniCart->subtotal->format() }}</span></div>
                                     <div class="brator-cart-item-money"><span>VAT ({{ (int) config('shop.vat_rate') }}%)</span><span>{{ $miniCart->vat->format() }}</span></div>
                                 </div>
                                 <div class="brator-cart-total-money">
                                     <div class="brator-cart-total-header"><span>total</span><span>{{ $miniCart->total->format() }}</span></div>
-                                    <div class="brator-cart-total-action"><a href="{{ route('cart', [], false) }}">View Cart</a><a href="{{ route('cart', [], false) }}">Checkout</a></div>
+                                    {{-- These two both pointed at /cart, so they were two buttons
+                                         doing one thing. Checkout now lands on the checkout form's
+                                         own block (#checkout on the cart page); View Cart still
+                                         goes to the top of the cart. --}}
+                                    <div class="brator-cart-total-action"><a href="{{ route('cart', [], false) }}">View Cart</a><a href="{{ route('cart', [], false) }}#checkout">Checkout</a></div>
                                 </div>
                             </div>
                         </div>

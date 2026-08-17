@@ -162,7 +162,15 @@
                                     <div class="brator-product-single-cart-sub-total">
                                         <p><span>Subtotal:</span> {{ ($product->sale_price_minor ?? $product->price_minor)->format() }}</p>
                                     </div>
-                                    <form method="post" action="{{ route('cart.add', [], false) }}">
+                                    {{--
+                                        data-basket-add: posted in the background, so adding a part
+                                        no longer throws the shopper onto /cart. The confirmation
+                                        appears in the header's mini-cart, which opens itself for a
+                                        few seconds — the panel finally has a job. Still a real form
+                                        with a real action, so with JavaScript off it redirects to the
+                                        cart exactly as it always did.
+                                    --}}
+                                    <form method="post" action="{{ route('cart.add', [], false) }}" data-basket-form data-basket-add>
                                         @csrf
                                         <input type="hidden" name="product_id" value="{{ $product->id }}" />
                                         <div class="brator-product-single-cart-count-add">
@@ -257,7 +265,8 @@
                         {{-- The theme's combined total was a fixed $409.27. It now sums the
                              ticked items — the current part plus whichever companions are
                              checked — and posts them all to the basket in one go. --}}
-                        <form method="post" action="{{ route('cart.add-many', [], false) }}"
+                        {{-- Same treatment as the single add above. --}}
+                        <form method="post" action="{{ route('cart.add-many', [], false) }}" data-basket-form data-basket-add
                             class="brator-product-single-frequently-list"
                             data-bundle data-currency="{{ config('shop.currency_symbol') }}">
                             @csrf

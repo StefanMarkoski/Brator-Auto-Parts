@@ -40,7 +40,31 @@ Route::post('/cart/add-many', [BasketController::class, 'addMany'])->name('cart.
  |
  | POST rather than a link because it changes session state.
 */
-Route::post('/cart/coupon', [BasketController::class, 'applyCoupon'])->name('cart.coupon.apply');
+/*
+ | BOTH COUPON-READING ENDPOINTS ARE THROTTLED, and that is not boilerplate.
+ |
+ | Codes are SAVE<percent> plus filler from a 30-character alphabet (GenerateCouponAction), which
+ | is 30^4 = 810 000 candidates for a two-digit percentage, behind a prefix set anybody could
+ | guess. Until now POST /cart/coupon had no limit at all: measured, forty wrong codes posted
+ | back to back ALL returned 302, while the identical burst against /newsletter started refusing
+ | at the eleventh. The guessing oracle already existed, at one request per guess, before the
+ | live check below was written — this closes it and keeps the new endpoint from reopening it.
+ |
+ | Twenty and thirty a minute are generous for somebody typing one code and useless for walking a
+ | code space. The check gets the larger allowance because a debounced field legitimately asks
+ | more than once while a ten-character code is being typed.
+*/
+Route::post('/cart/coupon', [BasketController::class, 'applyCoupon'])
+    ->middleware('throttle:20,1')
+    ->name('cart.coupon.apply');
+/*
+ | Two segments, so it cannot be swallowed by the /cart/{line} wildcard below — and it is a GET,
+ | which those are not. Declared here anyway, beside the other coupon routes, so the whole
+ | feature is in one place.
+*/
+Route::get('/cart/coupon/check', [BasketController::class, 'checkCoupon'])
+    ->middleware('throttle:30,1')
+    ->name('cart.coupon.check');
 Route::delete('/cart/coupon', [BasketController::class, 'removeCoupon'])->name('cart.coupon.remove');
 
 Route::post('/cart/{line}', [BasketController::class, 'update'])->name('cart.update');

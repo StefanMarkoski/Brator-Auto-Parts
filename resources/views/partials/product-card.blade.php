@@ -91,7 +91,46 @@
                                                 <div class="arow-check-right"></div>
                                             </div>
                                         @else
-                                            <div class="brator-product-single-item-btn"><form method="post" action="{{ route('cart.add', [], false) }}">@csrf<input type="hidden" name="product_id" value="{{ $product->id }}" /><button type="submit" @disabled(! $product->inStock)>Add to cart</button></form></div>
+                                            {{--
+                                                WHY THIS BUTTON CARRIES button-fill-one AND AN INLINE STYLE.
+
+                                                The theme paints this control with
+
+                                                  .…item-area .…item-mini .brator-product-single-item-btn a
+
+                                                — an ANCHOR. The theme's own card merely links to the product
+                                                page; ours has to POST, so it is a <button> in a <form>, and that
+                                                one element-name difference meant the selector never matched.
+                                                Measured: the shop's Add to cart came out as a raw browser
+                                                button — rgb(239,239,239) grey on black, 80x21px, outset border —
+                                                sitting in a 44px slot, while every other button in the shop is
+                                                #f73312 orange. Stefan's words: "no style at all".
+
+                                                No new class, and theme-style.css is untouched. button-fill-one is
+                                                the theme's OWN class: it is the first selector in the same
+                                                grouped rule the anchor is in, so it is the identical orange fill.
+                                                The inline declarations are that anchor rule's overrides
+                                                (theme-style.css:4373) copied verbatim — they live behind a
+                                                selector we cannot match, and there is no project stylesheet to
+                                                put them in.
+
+                                                display:block is the only value here that is not the theme's: an
+                                                <a> is inline, where width:100% does nothing, so the theme never
+                                                had to say it.
+
+                                                Out of stock is dimmed and says so, rather than being an orange
+                                                button that refuses to be pressed — the theme ships no disabled
+                                                state for this control, so an undimmed one reads as broken.
+                                            --}}
+                                            <div class="brator-product-single-item-btn">
+                                                <form method="post" action="{{ route('cart.add', [], false) }}" style="margin: 0" data-basket-form data-basket-add>
+                                                    @csrf
+                                                    <input type="hidden" name="product_id" value="{{ $product->id }}" />
+                                                    <button type="submit" class="button-fill-one"
+                                                        style="display: block; width: 100%; padding: 13px 20px; font-size: 14px; line-height: 14px; height: auto; text-align: center; font-weight: 500; overflow: hidden;@unless ($product->inStock) opacity: 0.55; cursor: not-allowed;@endunless"
+                                                        @disabled(! $product->inStock)>{{ $product->inStock ? 'Add to cart' : 'Out of stock' }}</button>
+                                                </form>
+                                            </div>
                                         @endisset
                                     </div>
                                 </div>
