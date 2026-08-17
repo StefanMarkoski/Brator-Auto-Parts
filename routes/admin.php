@@ -35,7 +35,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         // Throttled: a login form without a rate limit is an invitation to guess
         // passwords all afternoon.
         Route::post('login', [AuthController::class, 'login'])
-            ->middleware('throttle:6,1')
+            ->middleware('throttle:6,1,admin-login')
             ->name('login.attempt');
     });
 
@@ -96,7 +96,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
          | outbound-request generator for anybody who reaches the admin.
          */
         Route::post('homepage/hero-images', [HeroImageController::class, 'store'])
-            ->middleware('throttle:20,1')
+            ->middleware('throttle:20,1,hero-images')
             ->name('homepage.hero-images.store');
         Route::delete('homepage/hero-images/{banner}', [HeroImageController::class, 'destroy'])
             ->name('homepage.hero-images.destroy');
@@ -106,10 +106,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
          | from an address the poster chose.
          */
         Route::post('homepage/whats-hot', [WhatsHotController::class, 'store'])
-            ->middleware('throttle:20,1')
+            ->middleware('throttle:20,1,whats-hot-store')
             ->name('homepage.whats-hot.store');
         Route::put('homepage/whats-hot/{box}', [WhatsHotController::class, 'update'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,whats-hot-update')
             ->name('homepage.whats-hot.update');
         Route::delete('homepage/whats-hot/{box}', [WhatsHotController::class, 'destroy'])
             ->name('homepage.whats-hot.destroy');
@@ -142,10 +142,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('product-photos', [ProductPhotoController::class, 'index'])->name('product-photos.index');
         // Declared before the {department} route, or "all" is matched as a department id.
         Route::post('product-photos/all', [ProductPhotoController::class, 'storeAll'])
-            ->middleware('throttle:20,1')
+            ->middleware('throttle:20,1,product-photos-all')
             ->name('product-photos.all');
         Route::post('product-photos/{department}', [ProductPhotoController::class, 'store'])
-            ->middleware('throttle:20,1')
+            ->middleware('throttle:20,1,product-photos-department')
             ->name('product-photos.store');
         Route::delete('product-photos/{department}', [ProductPhotoController::class, 'destroy'])
             ->name('product-photos.destroy');

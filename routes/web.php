@@ -53,9 +53,20 @@ Route::post('/cart/add-many', [BasketController::class, 'addMany'])->name('cart.
  | Twenty and thirty a minute are generous for somebody typing one code and useless for walking a
  | code space. The check gets the larger allowance because a debounced field legitimately asks
  | more than once while a ten-character code is being typed.
+ |
+ | THE THIRD ARGUMENT IS THE COUNTER NAME, AND IT IS NOT OPTIONAL DECORATION. The sentence above
+ | was wrong when it was written: it assumes each route gets its own budget, and without a prefix
+ | none of them do. ThrottleRequests::resolveRequestSignature() builds the cache key from the
+ | domain and the IP alone — the limit number is NOT part of it — so every inline throttle in this
+ | app shared ONE counter per visitor, each merely checking that shared count against its own
+ | ceiling. Read in vendor/laravel/framework/.../ThrottleRequests.php:97,229.
+ |
+ | The consequence was not theoretical: admin login allows 6 a minute, so six requests to the
+ | coupon field (allowed 30) locked the shop owner out of their own panel before a password was
+ | ever tried. Naming each counter is what makes the numbers above mean what they say.
 */
 Route::post('/cart/coupon', [BasketController::class, 'applyCoupon'])
-    ->middleware('throttle:20,1')
+    ->middleware('throttle:20,1,coupon-apply')
     ->name('cart.coupon.apply');
 /*
  | Two segments, so it cannot be swallowed by the /cart/{line} wildcard below — and it is a GET,
@@ -63,7 +74,7 @@ Route::post('/cart/coupon', [BasketController::class, 'applyCoupon'])
  | feature is in one place.
 */
 Route::get('/cart/coupon/check', [BasketController::class, 'checkCoupon'])
-    ->middleware('throttle:30,1')
+    ->middleware('throttle:30,1,coupon-check')
     ->name('cart.coupon.check');
 Route::delete('/cart/coupon', [BasketController::class, 'removeCoupon'])->name('cart.coupon.remove');
 
@@ -101,5 +112,5 @@ Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact', [PageController::class, 'submitContact'])->name('contact.submit');
 Route::post('/newsletter', [PageController::class, 'subscribe'])
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:10,1,newsletter')
     ->name('newsletter.subscribe');
