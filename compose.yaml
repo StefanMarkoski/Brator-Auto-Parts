@@ -39,7 +39,11 @@ services:
     image: mysql:8.4
     restart: unless-stopped
     ports:
-      - "${DB_PORT_HOST:-3310}:3306"
+      # BOUND TO LOOPBACK, NOT 0.0.0.0. A bare "3310:3306" publishes on every interface,
+      # so this was MySQL as root with the password "secret", reachable by anyone on the
+      # same wifi. Docker punches its own holes in the firewall, so ufw does not save you
+      # here. Your GUI client still connects on 127.0.0.1:3310 exactly as before.
+      - "127.0.0.1:${DB_PORT_HOST:-3310}:3306"
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-brator}
       MYSQL_USER: ${DB_USERNAME:-brator}
@@ -64,7 +68,10 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "${REDIS_PORT_HOST:-6382}:6379"
+      # Loopback for the same reason as MySQL, and it matters MORE here: SESSION_DRIVER
+      # is redis, so this port was the admin panel's session store, open, with no password.
+      # Anyone who could reach it could write themselves a staff session.
+      - "127.0.0.1:${REDIS_PORT_HOST:-6382}:6379"
     volumes:
       - redis-data:/data
 
@@ -85,7 +92,7 @@ services:
     image: axllent/mailpit:latest
     restart: unless-stopped
     ports:
-      - "${MAILPIT_PORT:-8030}:8025"
+      - "127.0.0.1:${MAILPIT_PORT:-8030}:8025"
 
 volumes:
   mysql-data:

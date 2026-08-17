@@ -23,7 +23,14 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN groupadd -g "${GID}" app 2>/dev/null || true \
     && useradd -u "${UID}" -g "${GID}" -m -s /bin/bash app 2>/dev/null || true
 
-COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-brator.ini
+# Which ini goes in is a BUILD argument rather than a runtime env var, because the settings
+# that matter (display_errors, opcache.validate_timestamps) are read by PHP itself and
+# cannot be undone by anything Laravel does later — APP_DEBUG=false does not stop PHP
+# printing what PHP was told to print. Defaults to development, so a plain
+# `docker compose up` is unchanged; compose.prod.yaml passes php.prod.ini.
+ARG PHP_INI=php.ini
+
+COPY docker/php/${PHP_INI} /usr/local/etc/php/conf.d/zz-brator.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-brator.conf
 
 WORKDIR /var/www/html
