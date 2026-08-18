@@ -16,6 +16,7 @@ use App\Support\Database\SchemaMacros;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -39,6 +40,34 @@ class AppServiceProvider extends ServiceProvider
         // production rather than a slow surprise. Note it only trips on results
         // of 2+ rows, so fixtures must always have at least two.
         Model::preventLazyLoading(! $this->app->isProduction());
+
+        /*
+         | GENERATE https:// URLS WHEN THE SITE IS SERVED OVER https://.
+         |
+         | Laravel decides the scheme from the connection it can see. Behind a TLS
+         | terminator it sees plain HTTP, so it built every redirect, asset URL and signed
+         | URL as http:// on a page the browser had loaded over https.
+         |
+         | That is not cosmetic. MEASURED on the deployed shop: POST /cart/add answered
+         |   location: http://brator-…laravel.cloud/cart
+         | which the browser blocks as mixed content. The background add therefore FAILED
+         | after the server had already added the item, storefront.js fell back to a native
+         | form submit, and the shopper got the product twice and was thrown onto the cart
+         | — the exact behaviour the in-place cart work existed to remove.
+         |
+         | Keyed off APP_URL rather than the environment name, so it is explicit and local
+         | (http://localhost:8090) is untouched.
+         |
+         | WHY THIS RATHER THAN TRUSTING THE PROXY. trustProxies is already set to the
+         | private ranges, and the platform's proxy is not in one. Widening that to '*'
+         | would fix the symptom by believing whatever X-Forwarded-* a visitor sends, which
+         | hands them the scheme and host the whole application believes in. Forcing the
+         | scheme cannot be influenced by a request header at all: it is a statement that
+         | this deployment is HTTPS-only, which is true.
+        */
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
         // Models live in app/Domain/{Context}/Models, so Laravel's default guess of
