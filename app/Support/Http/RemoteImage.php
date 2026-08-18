@@ -7,6 +7,7 @@ namespace App\Support\Http;
 use App\Support\ImageUrl;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -85,7 +86,40 @@ final class RemoteImage
         $path = trim($directory, '/').'/'.Str::ulid()->toString().'.'.self::ALLOWED_TYPES[$info['mime']];
 
         if (! Storage::disk(ImageUrl::disk())->put($path, $body)) {
-            throw new RuntimeException('The image downloaded but could not be saved. Try again.');
+            /*
+             | "Try again" IS THE WRONG ADVICE, so say what is actually wrong.
+             |
+             | The uploads disk is configured 'throw' => false, which is right for a shop —
+             | one unwritable file should not 500 a page. The cost is that Flysystem's real
+             | reason is discarded and every write failure looks identical.
+             |
+             | That cost was paid for real on Laravel Cloud: an object-storage bucket was
+             | attached but AWS_BUCKET never reached the app, so every put() returned false
+             | and the operator was told to retry a thing that could not ever succeed. The
+             | download had worked, the URL was fine, and nothing on screen pointed at the
+             | storage configuration.
+             |
+             | Log the shape of the disk — never the credentials — so the log names the
+             | cause, and tell the operator where to look instead of asking them to retry.
+            */
+            $disk = ImageUrl::disk();
+
+            Log::error('support.remote_image.store_failed', [
+                'disk' => $disk,
+                'path' => $path,
+                'bytes' => strlen($body),
+                'bucket_configured' => config("filesystems.disks.{$disk}.bucket") !== null
+                    && config("filesystems.disks.{$disk}.bucket") !== '',
+                'region_configured' => (bool) config("filesystems.disks.{$disk}.region"),
+                'key_configured' => (bool) config("filesystems.disks.{$disk}.key"),
+                'url_configured' => (bool) config("filesystems.disks.{$disk}.url"),
+            ]);
+
+            throw new RuntimeException(
+                "The image downloaded but could not be saved to the '{$disk}' storage disk. "
+                .'This is a storage configuration problem, not a problem with the image — '
+                .'check the disk credentials rather than retrying.'
+            );
         }
 
         return [
